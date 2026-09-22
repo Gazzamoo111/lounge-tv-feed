@@ -236,8 +236,8 @@ def parse_xmltv_time(value):
 def build_epg(wanted_ids):
     now = datetime.now(timezone.utc)
 
-    start_window = now - timedelta(hours=8)
-    end_window = now + timedelta(hours=72)
+    start_window = now - timedelta(hours=1)
+    end_window = now + timedelta(hours=10)
 
     output = ET.Element("tv")
 
