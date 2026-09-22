@@ -319,18 +319,49 @@ def build_epg(wanted_ids):
         )
 
 
+def playlist_ids():
+    text = CLEAN_M3U.read_text(
+        encoding="utf-8",
+        errors="ignore"
+    )
+
+    ids = set()
+    count = 0
+
+    for line in text.splitlines():
+        if not line.startswith("#EXTINF"):
+            continue
+
+        count += 1
+        a = attrs(line)
+        tvg_id = a.get("tvg-id", "").strip()
+
+        if tvg_id:
+            ids.add(tvg_id)
+
+    if count < 10000:
+        raise RuntimeError(
+            "Safety stop: committed Lounge playlist unexpectedly small"
+        )
+
+    print("Stable Lounge channels:", count)
+    print("EPG IDs:", len(ids))
+
+    return ids
+
+
 def main():
     DOCS.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    download(
-        PLAYLIST_URL,
-        RAW_M3U
-    )
+    if not CLEAN_M3U.exists():
+        raise RuntimeError(
+            "Stable docs/lounge-clean.m3u is missing"
+        )
 
-    wanted_ids = clean_playlist()
+    wanted_ids = playlist_ids()
 
     download(
         EPG_URL,
@@ -338,10 +369,6 @@ def main():
     )
 
     build_epg(wanted_ids)
-
-    RAW_M3U.unlink(
-        missing_ok=True
-    )
 
     EPG_GZ.unlink(
         missing_ok=True
