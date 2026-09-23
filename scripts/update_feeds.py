@@ -356,12 +356,12 @@ def main():
         exist_ok=True
     )
 
-    if not CLEAN_M3U.exists():
-        raise RuntimeError(
-            "Stable docs/lounge-clean.m3u is missing"
-        )
+    download(
+        PLAYLIST_URL,
+        RAW_M3U
+    )
 
-    wanted_ids = playlist_ids()
+    wanted_ids = clean_playlist()
 
     download(
         EPG_URL,
@@ -371,6 +371,10 @@ def main():
     build_epg(wanted_ids)
 
     EPG_GZ.unlink(
+        missing_ok=True
+    )
+
+    RAW_M3U.unlink(
         missing_ok=True
     )
 
