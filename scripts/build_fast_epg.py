@@ -252,3 +252,16 @@ print("Programmes:", count)
 print("Aliases:", len(aliases))
 print("Size:", round(OUTPUT.stat().st_size / 1024 / 1024, 2), "MB")
 print("FAST EPG READY")
+
+# LOUNGE PROGRAMME ARTWORK ENRICHMENT
+import subprocess as _lounge_subprocess
+import sys as _lounge_sys
+
+_lounge_subprocess.run(
+    [
+        _lounge_sys.executable,
+        str(ROOT / "scripts" / "enrich_fast_epg_art.py")
+    ],
+    check=True
+)
+
