@@ -1,0 +1,87 @@
+LOUNGE TV V6.9 / APP 0.4.66 - CATALOGUE EXPANSION
+==================================================================
+
+Starting config rows: 2,204
+Expanded config rows: 2,862
+Expanded generated M3U rows: 2,862
+New visible logical channels: 470
+Existing records enriched with Network/Collections metadata: 2,195
+
+SKY SPORT SOURCE CHANGES
+------------------------------
+Sky Sport 1: primary 4876711 | backups 4876687, 889923, 4329535, 3986364
+Sky Sport 2: primary 4876688 | backups 889924, 4329536, 4876712
+
+NEW VISIBLE CHANNELS BY CATEGORY
+------------------------------
+Sport: 170
+Entertainment: 130
+24/7: 89
+Kids: 30
+Movies: 28
+Australian TV: 23
+
+TOP ADDED NETWORKS
+------------------------------
+Other: 140
+Sky Sport: 35
+BBC: 35
+HBO / Max: 30
+Disney: 28
+TNT Sports: 24
+NBC: 20
+ITV: 20
+Discovery: 15
+Channel 4: 13
+Paramount: 11
+Showtime: 9
+FOX USA: 9
+DAZN: 9
+beIN Sports: 9
+Seven: 8
+Starz: 6
+CBS: 6
+SBS: 6
+History: 5
+HGTV / Magnolia: 4
+Nine: 4
+Nickelodeon: 3
+ESPN: 3
+National Geographic: 3
+Cartoon Network: 2
+Fox Sports: 2
+Food Network: 2
+Network 10: 2
+ABC Australia: 2
+
+COLLECTIONS ADDED
+------------------------------
+NBA / NFL / College: 68
+Premium Movies: 46
+Nostalgia: 19
+Combat & WWE: 11
+Easy Watching: 10
+Kids Favourites: 9
+NRL & Rugby: 2
+
+BROWSE STRUCTURE
+------------------------------
+Sport
+Movies
+Entertainment
+Kids
+Networks
+Collections
+Regions
+24/7
+Events
+Favourites
+All
+
+UNCHANGED
+------------------------------
+Home screen layout
+D-pad/navigation engine
+player geometry
+fullscreen handling
+brand/CSS

@@ -210,12 +210,15 @@ def make_extinf(source, rec):
     a["lounge-backups"] = ",".join(rec.get("backup_cuids") or [])
     a["lounge-status"] = status_slug(rec.get("status"))
     a["lounge-tier"] = rec.get("tier", "")
+    a["lounge-network"] = rec.get("network", "")
+    a["lounge-collections"] = ",".join(rec.get("collections") or [])
 
     preferred = [
         "tvg-id","tvg-name","tvg-logo","group-title","cuid",
         "lounge-original-name","lounge-category","lounge-rail",
         "lounge-layer","lounge-role","lounge-root-cuid",
-        "lounge-backups","lounge-status","lounge-tier"
+        "lounge-backups","lounge-status","lounge-tier",
+        "lounge-network","lounge-collections"
     ]
 
     bits = []
