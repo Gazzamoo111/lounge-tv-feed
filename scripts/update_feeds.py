@@ -36,7 +36,7 @@ def download(url, path):
     print("Downloading:", url)
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": "LoungeTV/0.4.49"}
+        headers={"User-Agent": "LoungeTV/0.4.51"}
     )
 
     with urllib.request.urlopen(req, timeout=180) as response:
@@ -50,6 +50,26 @@ def download(url, path):
     print("Downloaded:", path, path.stat().st_size, "bytes")
 
 
+
+
+def extinf_name(line):
+    quoted = False
+    escaped = False
+
+    for i, ch in enumerate(line):
+        if ch == "\\" and not escaped:
+            escaped = True
+            continue
+
+        if ch == '"' and not escaped:
+            quoted = not quoted
+        elif ch == "," and not quoted:
+            return line[i + 1:].strip()
+
+        escaped = False
+
+    return ""
+
 def attrs(line):
     return {
         k.lower(): v
@@ -58,9 +78,10 @@ def attrs(line):
 
 
 def esc_attr(value):
+    # M3U attributes are not XML. Escaping & as &amp; breaks
+    # Lounge rail/category matching (e.g. HBO & Cinemax, 24/7).
     return (
         str(value or "")
-        .replace("&", "&amp;")
         .replace('"', "'")
         .replace("\r", " ")
         .replace("\n", " ")
@@ -94,11 +115,7 @@ def parse_source():
                 by_cuid[cuid] = {
                     "extinf": pending,
                     "attrs": a,
-                    "name": (
-                        pending.split(",", 1)[1].strip()
-                        if "," in pending
-                        else ""
-                    ),
+                    "name": extinf_name(pending),
                     "url": line,
                 }
 
