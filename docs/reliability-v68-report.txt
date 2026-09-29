@@ -1,0 +1,23 @@
+LOUNGE TV RELIABILITY FLOODGATES V6.8
+==========================================================
+
+Stable app target: 0.4.65
+Feed builder row safety ceiling: 3,500 (was 1,800)
+Original config rows: 2,328
+Rebuilt config rows: 2,204
+Visible/current cards upgraded with hidden fallbacks: 412
+New hidden backup rows: 781
+Current cards with only one unique provider stream: 468
+
+EXPLICIT SOURCE SWITCHES
+------------------------------
+None
+
+KEY NOTES
+------------------------------
+Sky Sport 2: current glitching source is demoted; NZ| Sports source promoted.
+Channel 9: current no-audio source is demoted; independent AU Entertainment source promoted.
+Fox Footy 504: only one unique URL exists in the full provider pool, so no real internal fallback can be created.
+Recess: user-observed stable source remains unchanged.
+
+No UI, CSS, navigation, preview geometry or app player code was modified.
