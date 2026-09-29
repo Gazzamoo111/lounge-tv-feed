@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 import gzip
+import json
 import re
-import sys
 import urllib.request
 import xml.etree.ElementTree as ET
 
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
 
 PLAYLIST_URL = (
     "https://drive.usercontent.google.com/download"
@@ -22,36 +21,33 @@ EPG_URL = (
 
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
+CONFIG = ROOT / "config" / "master_v5.json"
 
 RAW_M3U = DOCS / "ganja-source.m3u"
 CLEAN_M3U = DOCS / "lounge-clean.m3u"
+MISSING_OUT = DOCS / "master-v5-missing.txt"
 EPG_GZ = DOCS / "epg6.xml.gz"
 EPG_OUT = DOCS / "epg6-live.xml"
+
+ATTR_RE = re.compile(r'([\w-]+)="([^"]*)"')
 
 
 def download(url, path):
     print("Downloading:", url)
     req = urllib.request.Request(
         url,
-        headers={
-            "User-Agent": "LoungeTV/1.0"
-        }
+        headers={"User-Agent": "LoungeTV/0.4.49"}
     )
 
     with urllib.request.urlopen(req, timeout=180) as response:
         with open(path, "wb") as f:
             while True:
                 chunk = response.read(1024 * 1024)
-
                 if not chunk:
                     break
-
                 f.write(chunk)
 
     print("Downloaded:", path, path.stat().st_size, "bytes")
-
-
-ATTR_RE = re.compile(r'([\w-]+)="([^"]*)"')
 
 
 def attrs(line):
@@ -61,125 +57,238 @@ def attrs(line):
     }
 
 
-def txt(*values):
-    return " ".join(str(v or "") for v in values).lower()
-
-
-BUSINESS_KEEP = (
-    "bloomberg",
-    "cnbc",
-    "fox business",
-    "cheddar",
-    "yahoo finance",
-)
-
-
-KEEP_247 = (
-    "adventure",
-    "kids",
-    "family",
-    "movie",
-    "cinema",
-    "documentary",
-    "documentaries",
-    "wrestling",
-    "wwe",
-    "pawn stars",
-    "storage wars",
-    "gold rush",
-    "shark tank",
-    "american pickers",
-    "house hunters",
-    "property brothers",
-    "fixer upper",
-    "animation",
-    "animated",
-    "pixar",
-    "bluey",
-    "spongebob",
-    "paw patrol",
-    "tom and jerry",
-    "disney",
-)
-
-
-def should_keep(extinf):
-    a = attrs(extinf)
-
-    group = a.get("group-title", "")
-    name = extinf.split(",", 1)[1] if "," in extinf else ""
-
-    t = txt(group, name)
-
-    if "canada" in t or " canadian" in t:
-        return False
-
-    if "ireland" in t or "irish" in t:
-        return False
-
-    if "news" in group.lower():
-        if any(x in t for x in BUSINESS_KEEP):
-            return True
-
-        return False
-
-    if "24/7" in t:
-        return any(x in t for x in KEEP_247)
-
-    return True
-
-
-def clean_playlist():
-    text = RAW_M3U.read_text(
-        encoding="utf-8",
-        errors="ignore"
+def esc_attr(value):
+    return (
+        str(value or "")
+        .replace("&", "&amp;")
+        .replace('"', "'")
+        .replace("\r", " ")
+        .replace("\n", " ")
     )
 
-    lines = text.splitlines()
 
-    out = ["#EXTM3U"]
-    kept = 0
-    original = 0
-    ids = set()
+def parse_source():
+    lines = RAW_M3U.read_text(
+        encoding="utf-8",
+        errors="ignore"
+    ).splitlines()
 
+    by_cuid = {}
     pending = None
 
-    for line in lines:
-        line = line.strip()
+    for raw in lines:
+        line = raw.strip()
 
         if not line:
             continue
 
         if line.startswith("#EXTINF"):
-            original += 1
             pending = line
             continue
 
         if pending and not line.startswith("#"):
-            if should_keep(pending):
-                out.append(pending)
-                out.append(line)
+            a = attrs(pending)
+            cuid = a.get("cuid", "").strip()
 
-                kept += 1
-
-                a = attrs(pending)
-                tvg_id = a.get("tvg-id", "").strip()
-
-                if tvg_id:
-                    ids.add(tvg_id)
+            if cuid and cuid not in by_cuid:
+                by_cuid[cuid] = {
+                    "extinf": pending,
+                    "attrs": a,
+                    "name": (
+                        pending.split(",", 1)[1].strip()
+                        if "," in pending
+                        else ""
+                    ),
+                    "url": line,
+                }
 
             pending = None
 
-    if kept < 10000:
+    return by_cuid
+
+
+def region_for(rec):
+    category = rec.get("category", "")
+    rail = rec.get("rail", "")
+    source = str(rec.get("source", "")).lower()
+
+    if category == "Australian TV":
+        return "AU"
+
+    if rail == "New Zealand Sport":
+        return "NZ"
+
+    if rail == "Australian Sport":
+        return "AU"
+
+    if rail == "USA Sport":
+        return "USA"
+
+    if rail == "UK Sport" or rail == "UK TV":
+        return "UK"
+
+    if rail == "US Entertainment":
+        return "USA"
+
+    if "uk|" in source:
+        return "UK"
+
+    if "au|" in source or "australia" in source:
+        return "AU"
+
+    if "nz|" in source or "new zealand" in source:
+        return "NZ"
+
+    return ""
+
+
+def status_slug(value):
+    t = str(value or "").lower()
+
+    if "health" in t or "strict" in t or "recovery" in t:
+        return "health-gated"
+
+    if "dynamic" in t:
+        return "dynamic"
+
+    if "lock" in t or "normal" in t:
+        return "locked"
+
+    return "retain"
+
+
+def make_extinf(source, rec):
+    a = dict(source["attrs"])
+
+    original_name = source["name"]
+    display_name = (
+        source["name"]
+        if rec.get("layer") == "ppv"
+        else rec.get("name") or source["name"]
+    )
+
+    if not a.get("tvg-id") and rec.get("tvg_id"):
+        a["tvg-id"] = rec["tvg_id"]
+
+    region = region_for(rec)
+
+    group_parts = ["Lounge"]
+    if region:
+        group_parts.append(region)
+
+    group_parts.append(rec.get("category") or "Other")
+
+    if rec.get("rail"):
+        group_parts.append(rec["rail"])
+
+    a["group-title"] = " | ".join(group_parts)
+    a["cuid"] = rec["cuid"]
+
+    a["lounge-original-name"] = original_name
+    a["lounge-category"] = rec.get("category", "")
+    a["lounge-rail"] = rec.get("rail", "")
+    a["lounge-layer"] = rec.get("layer", "")
+    a["lounge-role"] = rec.get("role", "primary")
+    a["lounge-root-cuid"] = rec.get("root_cuid", rec["cuid"])
+    a["lounge-backups"] = ",".join(rec.get("backup_cuids") or [])
+    a["lounge-status"] = status_slug(rec.get("status"))
+    a["lounge-tier"] = rec.get("tier", "")
+
+    preferred = [
+        "tvg-id","tvg-name","tvg-logo","group-title","cuid",
+        "lounge-original-name","lounge-category","lounge-rail",
+        "lounge-layer","lounge-role","lounge-root-cuid",
+        "lounge-backups","lounge-status","lounge-tier"
+    ]
+
+    bits = []
+
+    for key in preferred:
+        value = a.pop(key, None)
+
+        if value not in (None, ""):
+            bits.append(
+                f'{key}="{esc_attr(value)}"'
+            )
+
+    for key in sorted(a):
+        value = a[key]
+
+        if value not in (None, ""):
+            bits.append(
+                f'{key}="{esc_attr(value)}"'
+            )
+
+    return (
+        "#EXTINF:-1 " +
+        " ".join(bits) +
+        "," +
+        display_name
+    )
+
+
+def clean_playlist():
+    config = json.loads(
+        CONFIG.read_text(encoding="utf-8")
+    )
+
+    wanted = config.get("records", [])
+
+    if len(wanted) < 1000:
         raise RuntimeError(
-            "Safety stop: cleaned playlist unexpectedly small: "
-            + str(kept)
+            "Safety stop: MASTER V5 config unexpectedly small: " +
+            str(len(wanted))
         )
 
-    if kept > 17000:
+    source = parse_source()
+
+    out = ["#EXTM3U"]
+    ids = set()
+    kept = 0
+    missing = []
+    layers = {}
+
+    for rec in wanted:
+        cuid = str(rec.get("cuid", ""))
+
+        item = source.get(cuid)
+
+        if not item:
+            missing.append(
+                cuid + "\t" +
+                str(rec.get("layer", "")) + "\t" +
+                str(rec.get("name", ""))
+            )
+            continue
+
+        out.append(
+            make_extinf(item, rec)
+        )
+        out.append(item["url"])
+
+        kept += 1
+
+        layer = str(rec.get("layer", "other"))
+        layers[layer] = layers.get(layer, 0) + 1
+
+        tvg_id = item["attrs"].get("tvg-id", "").strip()
+
+        if not tvg_id:
+            tvg_id = str(rec.get("tvg_id", "")).strip()
+
+        if tvg_id:
+            ids.add(tvg_id)
+
+    if kept < 900:
         raise RuntimeError(
-            "Safety stop: cleanup unexpectedly kept too much: "
-            + str(kept)
+            "Safety stop: fewer than 900 MASTER V5 rows matched upstream: " +
+            str(kept)
+        )
+
+    if kept > 1800:
+        raise RuntimeError(
+            "Safety stop: MASTER V5 output unexpectedly large: " +
+            str(kept)
         )
 
     CLEAN_M3U.write_text(
@@ -187,8 +296,15 @@ def clean_playlist():
         encoding="utf-8"
     )
 
-    print("Original channels:", original)
-    print("Clean channels:", kept)
+    MISSING_OUT.write_text(
+        "\n".join(missing) + ("\n" if missing else ""),
+        encoding="utf-8"
+    )
+
+    print("MASTER V5 requested:", len(wanted))
+    print("MASTER V5 matched:", kept)
+    print("MASTER V5 missing:", len(missing))
+    print("Layer counts:", layers)
     print("EPG IDs:", len(ids))
 
     return ids
@@ -302,52 +418,17 @@ def build_epg(wanted_ids):
 
     print("EPG channels:", channel_count)
     print("EPG programmes:", programme_count)
-    print(
-        "EPG output:",
-        EPG_OUT.stat().st_size,
-        "bytes"
-    )
+    print("EPG output:", EPG_OUT.stat().st_size, "bytes")
 
-    if channel_count < 5000:
+    if channel_count < 50:
         raise RuntimeError(
-            "Safety stop: too few matching EPG channels"
+            "Safety stop: too few MASTER V5 EPG channels"
         )
 
-    if programme_count < 10000:
+    if programme_count < 100:
         raise RuntimeError(
-            "Safety stop: too few EPG programmes"
+            "Safety stop: too few MASTER V5 EPG programmes"
         )
-
-
-def playlist_ids():
-    text = CLEAN_M3U.read_text(
-        encoding="utf-8",
-        errors="ignore"
-    )
-
-    ids = set()
-    count = 0
-
-    for line in text.splitlines():
-        if not line.startswith("#EXTINF"):
-            continue
-
-        count += 1
-        a = attrs(line)
-        tvg_id = a.get("tvg-id", "").strip()
-
-        if tvg_id:
-            ids.add(tvg_id)
-
-    if count < 10000:
-        raise RuntimeError(
-            "Safety stop: committed Lounge playlist unexpectedly small"
-        )
-
-    print("Stable Lounge channels:", count)
-    print("EPG IDs:", len(ids))
-
-    return ids
 
 
 def main():
@@ -355,6 +436,12 @@ def main():
         parents=True,
         exist_ok=True
     )
+
+    if not CONFIG.exists():
+        raise RuntimeError(
+            "Missing MASTER V5 config: " +
+            str(CONFIG)
+        )
 
     download(
         PLAYLIST_URL,
@@ -379,7 +466,7 @@ def main():
     )
 
     print()
-    print("LOUNGE CLOUD FEEDS READY")
+    print("LOUNGE MASTER V5 CLOUD FEEDS READY")
     print(CLEAN_M3U)
     print(EPG_OUT)
 
