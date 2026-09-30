@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "lounge-tv-gateway",
   "main": "src/index.js",
-  "compatibility_date": "2026-10-01",
+  "compatibility_date": "2026-09-30",
   "workers_dev": true,
   "observability": { "enabled": true }
 }
