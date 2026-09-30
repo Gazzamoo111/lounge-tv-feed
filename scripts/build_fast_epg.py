@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "docs" / "epg6-live.xml"
 PLAYLIST = ROOT / "docs" / "lounge-clean.m3u"
 OUTPUT = ROOT / "docs" / "epg-now-next.json"
+GUIDE_OUTPUT = ROOT / "docs" / "epg-guide.json"
 
 ATTR_RE = re.compile(r'([\w-]+)="([^"]*)"')
 
@@ -206,9 +207,8 @@ if PLAYLIST.exists():
         pending = None
 
 
-result = {
-    "_aliases": aliases
-}
+result = {"_aliases": aliases}
+guide_result = {"_aliases": aliases}
 
 for channel, programmes in by_channel.items():
     programmes.sort(key=lambda p: p["start"])
@@ -222,37 +222,42 @@ for channel, programmes in by_channel.items():
         elif p["start"] > now:
             future.append(p)
 
-    selected = []
+    fast_selected = []
+    guide_selected = []
 
     if current:
-        selected.append(current)
+        fast_selected.append(current)
+        guide_selected.append(current)
 
-    selected.extend([p for p in future if p["start"] <= horizon])
+    fast_selected.extend(future[:2])
+    guide_selected.extend([p for p in future if p["start"] <= horizon])
 
-    if selected:
-        result[channel] = selected
-
+    if fast_selected:
+        result[channel] = fast_selected
+    if guide_selected:
+        guide_result[channel] = guide_selected
 
 OUTPUT.write_text(
-    json.dumps(
-        result,
-        separators=(",", ":"),
-        ensure_ascii=False
-    ),
+    json.dumps(result, separators=(",", ":"), ensure_ascii=False),
     encoding="utf-8"
 )
 
-count = sum(
-    len(v)
-    for k, v in result.items()
-    if not k.startswith("_")
+GUIDE_OUTPUT.write_text(
+    json.dumps(guide_result, separators=(",", ":"), ensure_ascii=False),
+    encoding="utf-8"
 )
 
-print("Channels:", len(result) - 1)
-print("Programmes:", count)
+count = sum(len(v) for k, v in result.items() if not k.startswith("_"))
+guide_count = sum(len(v) for k, v in guide_result.items() if not k.startswith("_"))
+
+print("Fast channels:", len(result) - 1)
+print("Fast programmes:", count)
+print("Fast size:", round(OUTPUT.stat().st_size / 1024 / 1024, 2), "MB")
+print("Guide channels:", len(guide_result) - 1)
+print("Guide programmes:", guide_count)
+print("Guide size:", round(GUIDE_OUTPUT.stat().st_size / 1024 / 1024, 2), "MB")
 print("Aliases:", len(aliases))
-print("Size:", round(OUTPUT.stat().st_size / 1024 / 1024, 2), "MB")
-print("FAST EPG READY")
+print("FAST + 24H GUIDE EPG READY")
 
 # LOUNGE PROGRAMME ARTWORK ENRICHMENT
 import subprocess as _lounge_subprocess
@@ -263,6 +268,6 @@ _lounge_subprocess.run(
         _lounge_sys.executable,
         str(ROOT / "scripts" / "enrich_fast_epg_art.py")
     ],
-    check=True
+    check=False
 )
 
