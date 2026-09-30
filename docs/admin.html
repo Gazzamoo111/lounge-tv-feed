@@ -54,9 +54,12 @@ button{border:0;border-radius:11px;min-height:42px;padding:0 16px;background:lin
         <div id="providerList" class="provider-list"></div>
         <div class="form">
           <h3 style="font-size:15px;margin:18px 0 6px">Add account to pool</h3>
-          <p class="sub" style="font-size:12px;margin-bottom:10px">Store an internal label/reference only. Provider passwords are not stored in this browser page.</p>
+          <p class="sub" style="font-size:12px;margin-bottom:10px">Credentials are sent directly to the Lounge backend and encrypted in Supabase Vault. They are never shown back in this portal.</p>
           <label>Provider</label><select id="provider"></select>
           <label>Internal label</label><input id="accountLabel" placeholder="e.g. Hary 001">
+          <label>Server URL</label><input id="serverUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://provider-server.example">
+          <label>Username</label><input id="providerUsername" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Provider username">
+          <label>Password</label><input id="providerPassword" type="password" autocomplete="new-password" placeholder="Provider password">
           <label>External reference</label><input id="externalReference" placeholder="Optional internal reference">
           <label>Provider expiry</label><input id="expiresAt" type="date">
           <button id="addAccount">ADD PROVIDER ACCOUNT</button>
@@ -94,7 +97,7 @@ function render(){
   const accounts=data.providerAccounts||[];
   const available=accounts.filter(a=>a.status==="AVAILABLE");
   $("providerCount").textContent=available.length+" available";
-  $("providerList").innerHTML=accounts.length?accounts.map(a=>'<div class="provider-item"><strong>'+esc(a.label)+' <span class="pill '+statusClass(a.status)+'">'+esc(a.status)+'</span></strong><small>'+esc(a.provider)+(a.expiresAt?" · expires "+date(a.expiresAt):"")+'</small></div>').join(""):'<div class="empty">No provider accounts yet.</div>';
+  $("providerList").innerHTML=accounts.length?accounts.map(a=>'<div class="provider-item"><strong>'+esc(a.label)+' <span class="pill '+statusClass(a.status)+'">'+esc(a.status)+'</span></strong><small>'+esc(a.provider)+(a.expiresAt?" · expires "+date(a.expiresAt):"")+'</small><small style="margin-top:6px;color:'+(a.credentialsStored?'#65dda0':'#ff8190')+'">'+(a.credentialsStored?'Credentials stored ✓':'Credentials missing')+'</small></div>').join(""):'<div class="empty">No provider accounts yet.</div>';
 
   $("provider").innerHTML=(data.providers||[]).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join("");
 
@@ -132,7 +135,7 @@ $("loginBtn").onclick=async()=>{
 $("signout").onclick=async()=>{await supabase.auth.signOut();location.reload()};
 $("refresh").onclick=load;
 $("addAccount").onclick=async()=>{
-  try{$("addAccount").disabled=true;setMsg("providerMsg","Adding account…");const expiry=$("expiresAt").value?new Date($("expiresAt").value+"T23:59:59").toISOString():null;await api("create_provider_account",{provider_id:$("provider").value,label:$("accountLabel").value.trim(),external_reference:$("externalReference").value.trim(),expires_at:expiry});$("accountLabel").value="";$("externalReference").value="";$("expiresAt").value="";setMsg("providerMsg","Provider account added.","good");await load()}catch(e){setMsg("providerMsg",e.message,"bad")}finally{$("addAccount").disabled=false}
+  try{$("addAccount").disabled=true;setMsg("providerMsg","Adding account…");const expiry=$("expiresAt").value?new Date($("expiresAt").value+"T23:59:59").toISOString():null;await api("create_provider_account",{provider_id:$("provider").value,label:$("accountLabel").value.trim(),server_url:$("serverUrl").value.trim(),username:$("providerUsername").value.trim(),password:$("providerPassword").value,external_reference:$("externalReference").value.trim(),expires_at:expiry});$("accountLabel").value="";$("serverUrl").value="";$("providerUsername").value="";$("providerPassword").value="";$("externalReference").value="";$("expiresAt").value="";setMsg("providerMsg","Provider account added. Credentials stored securely.","good");await load()}catch(e){setMsg("providerMsg",e.message,"bad")}finally{$("addAccount").disabled=false}
 };
 const {data:{session:existing}}=await supabase.auth.getSession();if(existing)await enter(existing);
 </script>
