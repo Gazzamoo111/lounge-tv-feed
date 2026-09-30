@@ -76,13 +76,72 @@ export default {
       return json({ error: "No playable source available" }, 502);
     }
 
-    const format = String(source.source_format || "ts").replace(/[^a-z0-9]/gi, "");
+    let selectedSourceRef = String(source.source_ref);
+    let selectedSourceFormat = String(source.source_format || "ts");
+    const requestedSourceCuid = String(url.searchParams.get("source") || "").trim();
+
+    if (requestedSourceCuid) {
+      const serviceHeaders = {
+        "apikey": env.SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": "Bearer " + env.SUPABASE_SERVICE_ROLE_KEY,
+      };
+
+      const sessionUrl = new URL(env.SUPABASE_URL + "/rest/v1/playback_sessions");
+      sessionUrl.searchParams.set("select", "provider_account_id");
+      sessionUrl.searchParams.set("token_hash", "eq." + tokenHash);
+      sessionUrl.searchParams.set("status", "eq.active");
+      sessionUrl.searchParams.set("limit", "1");
+
+      const sessionResponse = await fetch(sessionUrl.toString(), { headers: serviceHeaders });
+      const sessionRows = sessionResponse.ok ? await sessionResponse.json() : [];
+      const providerAccountId =
+        Array.isArray(sessionRows) && sessionRows[0]?.provider_account_id
+          ? String(sessionRows[0].provider_account_id)
+          : "";
+
+      if (providerAccountId) {
+        const accountUrl = new URL(env.SUPABASE_URL + "/rest/v1/provider_accounts");
+        accountUrl.searchParams.set("select", "provider_id");
+        accountUrl.searchParams.set("id", "eq." + providerAccountId);
+        accountUrl.searchParams.set("limit", "1");
+
+        const accountResponse = await fetch(accountUrl.toString(), { headers: serviceHeaders });
+        const accountRows = accountResponse.ok ? await accountResponse.json() : [];
+        const providerId =
+          Array.isArray(accountRows) && accountRows[0]?.provider_id
+            ? String(accountRows[0].provider_id)
+            : "";
+
+        if (providerId) {
+          const candidateUrl = new URL(env.SUPABASE_URL + "/rest/v1/channel_sources");
+          candidateUrl.searchParams.set("select", "source_ref,source_format,status");
+          candidateUrl.searchParams.set("logical_channel_id", "eq." + channelId);
+          candidateUrl.searchParams.set("provider_id", "eq." + providerId);
+          candidateUrl.searchParams.set("source_cuid", "eq." + requestedSourceCuid);
+          candidateUrl.searchParams.set("limit", "1");
+
+          const candidateResponse = await fetch(candidateUrl.toString(), { headers: serviceHeaders });
+          const candidateRows = candidateResponse.ok ? await candidateResponse.json() : [];
+          const candidate = Array.isArray(candidateRows) ? candidateRows[0] : null;
+
+          if (
+            candidate?.source_ref &&
+            !["dead", "wrong", "stale"].includes(String(candidate.status || "unknown"))
+          ) {
+            selectedSourceRef = String(candidate.source_ref);
+            selectedSourceFormat = String(candidate.source_format || selectedSourceFormat);
+          }
+        }
+      }
+    }
+
+    const format = selectedSourceFormat.replace(/[^a-z0-9]/gi, "");
     const upstream = joinUrl(
       source.server_url,
       "live/" +
         encodeURIComponent(source.provider_username) + "/" +
         encodeURIComponent(source.provider_password) + "/" +
-        encodeURIComponent(source.source_ref) + "." + format
+        encodeURIComponent(selectedSourceRef) + "." + format
     );
 
     const headers = new Headers();
