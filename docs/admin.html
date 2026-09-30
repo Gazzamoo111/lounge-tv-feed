@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#03050a">
 <title>Lounge TV Admin</title>
 <style>
-:root{color-scheme:dark;--bg:#03050a;--panel:#0a0e17;--panel2:#0e1420;--line:rgba(255,255,255,.09);--text:#f6f8fc;--muted:#8f9bad;--blue:#356cff;--good:#65dda0;--warn:#f2bd63;--bad:#ff8190}
-*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg)}body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 88% 0%,rgba(49,101,255,.18),transparent 32%),#03050a}
-.shell{max-width:1320px;margin:auto;padding:26px 22px 70px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.brand{display:flex;align-items:center;gap:11px}.mark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#708bff,#2b61ff);font-weight:950;box-shadow:0 10px 30px rgba(47,104,255,.25)}.brand strong{font-size:14px;letter-spacing:.17em}.brand small{display:block;color:var(--muted);margin-top:2px}
-button{border:0;border-radius:11px;min-height:42px;padding:0 16px;background:linear-gradient(135deg,#6786ff,#3268ff);color:#fff;font-weight:850;cursor:pointer}button.secondary{background:#0d1420;border:1px solid var(--line);color:#c4cfdd}button.danger{background:#271018;color:#ff9eaa;border:1px solid rgba(255,129,144,.18)}button:disabled{opacity:.45;cursor:not-allowed}
+:root{color-scheme:dark;--bg:#03050a;--panel:#0a0e17;--panel2:#0e1420;--line:rgba(255,255,255,.09);--text:#f6f8fc;--muted:#8f9bad;--blue:#00d9ff;--good:#65dda0;--warn:#f2bd63;--bad:#ff8190}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg)}body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 88% 0%,rgba(0,219,255,.16),transparent 30%),radial-gradient(circle at 8% 10%,rgba(101,88,255,.12),transparent 28%),#03050a}
+.shell{max-width:1320px;margin:auto;padding:26px 22px 70px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.brand{display:flex;align-items:center;gap:12px}.brand img{width:170px;height:auto;display:block;filter:drop-shadow(0 10px 24px rgba(0,219,255,.13))}.brand small{display:block;color:var(--muted);font-size:10px;letter-spacing:.14em;margin-left:4px}
+button{border:0;border-radius:11px;min-height:42px;padding:0 16px;background:linear-gradient(135deg,#00d9ff 0%,#3473ff 48%,#7156ff 100%);color:#fff;font-weight:850;cursor:pointer}button.secondary{background:#0d1420;border:1px solid var(--line);color:#c4cfdd}button.danger{background:#271018;color:#ff9eaa;border:1px solid rgba(255,129,144,.18)}button:disabled{opacity:.45;cursor:not-allowed}
 .card{background:linear-gradient(180deg,rgba(13,19,31,.98),rgba(7,11,18,.98));border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.34)}
 .login{max-width:450px;margin:9vh auto 0}.login h1{font-size:30px;margin:0 0 8px}.sub{color:var(--muted);line-height:1.5;margin:0 0 20px}label{display:block;font-size:12px;font-weight:800;color:#c8d1de;margin:14px 0 7px}input,select{width:100%;height:46px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#080d16;color:#fff;padding:0 12px;font-size:14px;outline:0}input:focus,select:focus{border-color:#537cff}.login button{width:100%;margin-top:16px}.hidden{display:none!important}
 .head{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:20px}.head h1{font-size:31px;letter-spacing:-.035em;margin:0}.head p{margin:5px 0 0;color:var(--muted)}
@@ -24,7 +24,7 @@ button{border:0;border-radius:11px;min-height:42px;padding:0 16px;background:lin
 <body>
 <div class="shell">
   <div class="top">
-    <div class="brand"><div class="mark">L</div><div><strong>LOUNGE TV</strong><small>Admin</small></div></div>
+    <div class="brand"><img src="./assets/lounge-tv-logo.webp" alt="Lounge TV"><small>ADMIN</small></div>
     <button id="signout" class="secondary hidden">SIGN OUT</button>
   </div>
 
