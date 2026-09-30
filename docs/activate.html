@@ -89,6 +89,11 @@ const msg=document.getElementById("msg");
 const authArea=document.getElementById("authArea");
 const plansArea=document.getElementById("plansArea");
 const waitingArea=document.getElementById("waitingArea");
+const emailInput=document.getElementById("email");
+const passwordInput=document.getElementById("password");
+const nameInput=document.getElementById("name");
+const newEmailInput=document.getElementById("newEmail");
+const newPasswordInput=document.getElementById("newPassword");
 
 function setMsg(text,type=""){msg.className="msg"+(type?" "+type:"");msg.textContent=text||""}
 function money(cents,currency){try{return new Intl.NumberFormat("en-NZ",{style:"currency",currency:currency||"NZD",maximumFractionDigits:0}).format(cents/100)}catch{return "$"+(cents/100).toFixed(0)}}
@@ -132,8 +137,8 @@ async function afterAuth(session){
 }
 document.getElementById("signinTab").onclick=()=>{document.getElementById("signin").classList.remove("hidden");document.getElementById("signup").classList.add("hidden")};
 document.getElementById("signupTab").onclick=()=>{document.getElementById("signup").classList.remove("hidden");document.getElementById("signin").classList.add("hidden")};
-document.getElementById("signinBtn").onclick=async()=>{try{setMsg("Signing in…");const {data,error}=await supabase.auth.signInWithPassword({email:email.value.trim(),password:password.value});if(error)throw error;await afterAuth(data.session)}catch(e){setMsg(e.message||"Sign in failed","bad")}};
-document.getElementById("signupBtn").onclick=async()=>{try{setMsg("Creating your account…");const nm=name.value.trim();const parts=nm.split(/\s+/).filter(Boolean);const first=parts.shift()||"";const last=parts.join(" ");const {data,error}=await supabase.auth.signUp({email:newEmail.value.trim(),password:newPassword.value,options:{data:{first_name:first,last_name:last,display_name:nm}}});if(error)throw error;if(!data.session){setMsg("Account created. Check your email, confirm it, then return here and sign in.","ok");return}await afterAuth(data.session)}catch(e){setMsg(e.message||"Could not create account","bad")}};
+document.getElementById("signinBtn").onclick=async()=>{try{setMsg("Signing in…");const {data,error}=await supabase.auth.signInWithPassword({email:emailInput.value.trim(),password:passwordInput.value});if(error)throw error;await afterAuth(data.session)}catch(e){setMsg(e.message||"Sign in failed","bad")}};
+document.getElementById("signupBtn").onclick=async()=>{try{setMsg("Creating your account…");const nm=nameInput.value.trim();const parts=nm.split(/\s+/).filter(Boolean);const first=parts.shift()||"";const last=parts.join(" ");const {data,error}=await supabase.auth.signUp({email:newEmailInput.value.trim(),password:newPasswordInput.value,options:{data:{first_name:first,last_name:last,display_name:nm}}});if(error)throw error;if(!data.session){setMsg("Account created. Check your email, confirm it, then return here and sign in.","ok");return}await afterAuth(data.session)}catch(e){setMsg(e.message||"Could not create account","bad")}};
 const {data:{session}}=await supabase.auth.getSession();
 if(session){try{await afterAuth(session)}catch(e){setMsg(e.message||"Could not continue","bad")}}
 else if(qs.get("checkout")==="success"){setMsg("Payment returned successfully. Sign in again to finish connecting your TV.")}
