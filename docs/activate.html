@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#060a11">
+<title>Activate Lounge TV</title>
+<style>
+:root{color-scheme:dark;--bg:#05080d;--panel:#0c131e;--line:rgba(255,255,255,.09);--text:#f7f9fd;--muted:#98a6b8;--blue:#5b91ff;--good:#69dfa3;--bad:#ff8d9a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 84% 4%,rgba(63,116,255,.18),transparent 34%),linear-gradient(180deg,#09101a,#030509 75%);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}
+.wrap{max-width:620px;margin:auto;padding:28px 18px 64px}
+.brand{font-weight:950;letter-spacing:.16em;margin:8px 0 26px;font-size:15px}.brand span{color:#5b91ff}
+.card{background:rgba(10,16,27,.96);border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 30px 90px rgba(0,0,0,.38)}
+h1{font-size:34px;line-height:1.08;margin:0 0 9px}h2{font-size:22px;margin:0 0 7px}
+.lead,.sub{color:var(--muted);line-height:1.5;margin:0 0 22px}
+.code{font-size:30px;font-weight:950;letter-spacing:.18em;background:#fff;color:#07101d;border-radius:13px;padding:13px 15px;text-align:center;margin:0 0 22px}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+button{width:100%;min-height:50px;margin-top:15px;border:0;border-radius:11px;font-size:15px;font-weight:900;background:#fff;color:#07101d;padding:0 16px;cursor:pointer}
+.tabs button{margin:0;height:42px;min-height:42px}.secondary{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.11)}
+button:disabled{opacity:.55}
+label{display:block;color:#c4cedb;font-weight:800;font-size:13px;margin:14px 0 7px}
+input{width:100%;height:50px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:#0d1725;color:#fff;padding:0 14px;font-size:16px;outline:0}
+input:focus{border-color:#5a91ff}.hidden{display:none!important}.msg{margin-top:18px;color:#a9b6c7;line-height:1.5}.ok{color:var(--good)}.bad{color:var(--bad)}
+.plans{display:grid;gap:10px;margin-top:18px}.plan{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;padding:16px;border:1px solid var(--line);border-radius:14px;background:#0d1624}
+.plan strong{display:block;font-size:17px}.plan small{color:var(--muted);display:block;margin-top:4px}.price{font-size:18px;font-weight:950;white-space:nowrap}.plan button{grid-column:1/-1;margin-top:4px}
+.statusbox{padding:18px;border:1px solid rgba(105,223,163,.25);border-radius:14px;background:rgba(105,223,163,.06);margin-top:18px}
+.spinner{width:24px;height:24px;border:3px solid rgba(255,255,255,.18);border-top-color:#fff;border-radius:50%;animation:s .8s linear infinite;margin:12px auto 0}@keyframes s{to{transform:rotate(360deg)}}
+.note{font-size:13px;color:#7f8b9b;line-height:1.45;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">LOUNGE <span>TV</span></div>
+  <div class="card">
+    <h1>Activate your TV</h1>
+    <p class="lead">Sign in or create your Lounge account, choose your plan, then return to your TV.</p>
+    <div class="code" id="code">------</div>
+
+    <div id="authArea">
+      <div class="tabs"><button id="signinTab">SIGN IN</button><button id="signupTab" class="secondary">CREATE ACCOUNT</button></div>
+      <div id="signin">
+        <label>Email</label><input id="email" type="email" autocomplete="email">
+        <label>Password</label><input id="password" type="password" autocomplete="current-password">
+        <button id="signinBtn">SIGN IN & CONTINUE</button>
+      </div>
+      <div id="signup" class="hidden">
+        <label>Name</label><input id="name" autocomplete="name">
+        <label>Email</label><input id="newEmail" type="email" autocomplete="email">
+        <label>Password</label><input id="newPassword" type="password" autocomplete="new-password">
+        <button id="signupBtn">CREATE ACCOUNT</button>
+      </div>
+    </div>
+
+    <div id="plansArea" class="hidden">
+      <h2>Choose your Lounge plan</h2>
+      <p class="sub">Your subscription is confirmed through secure Stripe Checkout.</p>
+      <div class="plans" id="plans"></div>
+    </div>
+
+    <div id="waitingArea" class="hidden">
+      <div class="statusbox">
+        <h2>Payment received</h2>
+        <p class="sub" style="margin:0">Your Lounge service is being set up. Leave your TV on the activation screen and it will connect automatically once setup is complete.</p>
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <div class="msg" id="msg"></div>
+    <div class="note">You only need your Lounge account to use the app.</div>
+  </div>
+</div>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL="https://liqocisegeqzbyuqloql.supabase.co";
+const KEY="sb_publishable_hAnd78k7ZrCH7okAM-ylaQ_Kosu5DnA";
+const PLANS=[
+  {id:"monthly",name:"Monthly Lounge",price_cents:4900,currency:"NZD",term_months:1,sort_order:1},
+  {id:"quarterly",name:"3 Month Lounge",price_cents:11900,currency:"NZD",term_months:3,sort_order:2},
+  {id:"six_month",name:"6 Month Lounge",price_cents:19900,currency:"NZD",term_months:6,sort_order:3},
+  {id:"annual",name:"12 Month Lounge",price_cents:32900,currency:"NZD",term_months:12,sort_order:4}
+];
+const supabase=createClient(SUPABASE_URL,KEY);
+const qs=new URLSearchParams(location.search);
+const code=(qs.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
+document.getElementById("code").textContent=code||"------";
+const msg=document.getElementById("msg");
+const authArea=document.getElementById("authArea");
+const plansArea=document.getElementById("plansArea");
+const waitingArea=document.getElementById("waitingArea");
+
+function setMsg(text,type=""){msg.className="msg"+(type?" "+type:"");msg.textContent=text||""}
+function money(cents,currency){try{return new Intl.NumberFormat("en-NZ",{style:"currency",currency:currency||"NZD",maximumFractionDigits:0}).format(cents/100)}catch{return "$"+(cents/100).toFixed(0)}}
+function showPlans(session){
+  authArea.classList.add("hidden");waitingArea.classList.add("hidden");plansArea.classList.remove("hidden");
+  const el=document.getElementById("plans");el.innerHTML="";
+  PLANS.forEach(p=>{
+    const row=document.createElement("div");row.className="plan";
+    const info=document.createElement("div");info.innerHTML="<strong>"+p.name+"</strong><small>"+p.term_months+" month"+(p.term_months===1?"":"s")+" · recurring</small>";
+    const price=document.createElement("div");price.className="price";price.textContent=money(p.price_cents,p.currency);
+    const btn=document.createElement("button");btn.textContent="CHOOSE "+p.name.toUpperCase();btn.onclick=()=>beginCheckout(session,p.id,btn);
+    row.append(info,price,btn);el.append(row);
+  });
+}
+async function beginCheckout(session,planId,btn){
+  try{
+    btn.disabled=true;setMsg("Opening secure checkout…");
+    const r=await fetch(SUPABASE_URL+"/functions/v1/create-checkout",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":KEY},body:JSON.stringify({plan_id:planId,code})});
+    const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not start checkout");location.href=d.url;
+  }catch(e){btn.disabled=false;setMsg(e.message||"Could not start checkout","bad")}
+}
+async function claim(session,retry=false){
+  setMsg(retry?"Confirming your Lounge subscription…":"Checking your Lounge account…");
+  const r=await fetch(SUPABASE_URL+"/functions/v1/claim-device",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":KEY},body:JSON.stringify({code,device_name:"Lounge TV"})});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===402){showPlans(session);setMsg(qs.get("checkout")==="success"?"Payment is still confirming. This normally takes a few seconds.":"");return "payment"}
+  if(r.status===202||d.status==="awaiting_setup"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.remove("hidden");setMsg("Your TV will activate automatically.","ok");return "waiting"}
+  if(!r.ok)throw new Error(d.error||"Could not activate TV");
+  if(d.status==="claimed"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.add("hidden");setMsg("Your TV is connected. You can return to Lounge TV.","ok");return "claimed"}
+  return d.status||"unknown";
+}
+async function afterAuth(session){
+  if(!code){setMsg("Scan the QR code shown on your TV to start.","bad");return}
+  authArea.classList.add("hidden");
+  if(qs.get("checkout")==="cancelled"){showPlans(session);setMsg("Checkout cancelled. Choose a plan when you're ready.");return}
+  if(qs.get("checkout")==="success"){
+    for(let i=0;i<8;i++){try{const state=await claim(session,true);if(state!=="payment")return}catch(e){if(i===7)throw e}await new Promise(r=>setTimeout(r,1800))}
+    showPlans(session);setMsg("Your payment is taking longer than expected to confirm. Refresh this page in a moment.","bad");return;
+  }
+  await claim(session);
+}
+document.getElementById("signinTab").onclick=()=>{document.getElementById("signin").classList.remove("hidden");document.getElementById("signup").classList.add("hidden")};
+document.getElementById("signupTab").onclick=()=>{document.getElementById("signup").classList.remove("hidden");document.getElementById("signin").classList.add("hidden")};
+document.getElementById("signinBtn").onclick=async()=>{try{setMsg("Signing in…");const {data,error}=await supabase.auth.signInWithPassword({email:email.value.trim(),password:password.value});if(error)throw error;await afterAuth(data.session)}catch(e){setMsg(e.message||"Sign in failed","bad")}};
+document.getElementById("signupBtn").onclick=async()=>{try{setMsg("Creating your account…");const nm=name.value.trim();const parts=nm.split(/\s+/).filter(Boolean);const first=parts.shift()||"";const last=parts.join(" ");const {data,error}=await supabase.auth.signUp({email:newEmail.value.trim(),password:newPassword.value,options:{data:{first_name:first,last_name:last,display_name:nm}}});if(error)throw error;if(!data.session){setMsg("Account created. Check your email, confirm it, then return here and sign in.","ok");return}await afterAuth(data.session)}catch(e){setMsg(e.message||"Could not create account","bad")}};
+const {data:{session}}=await supabase.auth.getSession();
+if(session){try{await afterAuth(session)}catch(e){setMsg(e.message||"Could not continue","bad")}}
+else if(qs.get("checkout")==="success"){setMsg("Payment returned successfully. Sign in again to finish connecting your TV.")}
+</script>
+</body>
+</html>
