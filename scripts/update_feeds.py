@@ -373,7 +373,7 @@ def build_epg(wanted_ids):
     now = datetime.now(timezone.utc)
 
     start_window = now - timedelta(hours=1)
-    end_window = now + timedelta(hours=10)
+    end_window = now + timedelta(hours=30)
 
     output = ET.Element("tv")
 

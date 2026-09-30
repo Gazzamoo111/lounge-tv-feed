@@ -78,6 +78,7 @@ def attrs(line):
 
 
 now = int(datetime.now(timezone.utc).timestamp() * 1000)
+horizon = now + (24 * 60 * 60 * 1000)
 
 by_channel = {}
 alias_candidates = {}
@@ -226,7 +227,7 @@ for channel, programmes in by_channel.items():
     if current:
         selected.append(current)
 
-    selected.extend(future[:2])
+    selected.extend([p for p in future if p["start"] <= horizon])
 
     if selected:
         result[channel] = selected
