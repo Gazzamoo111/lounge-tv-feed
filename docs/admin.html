@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#03050a">
+<title>Lounge TV Admin</title>
+<style>
+:root{color-scheme:dark;--bg:#03050a;--panel:#0a0e17;--panel2:#0e1420;--line:rgba(255,255,255,.09);--text:#f6f8fc;--muted:#8f9bad;--blue:#356cff;--good:#65dda0;--warn:#f2bd63;--bad:#ff8190}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg)}body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif;color:var(--text);background:radial-gradient(circle at 88% 0%,rgba(49,101,255,.18),transparent 32%),#03050a}
+.shell{max-width:1320px;margin:auto;padding:26px 22px 70px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}.brand{display:flex;align-items:center;gap:11px}.mark{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(145deg,#708bff,#2b61ff);font-weight:950;box-shadow:0 10px 30px rgba(47,104,255,.25)}.brand strong{font-size:14px;letter-spacing:.17em}.brand small{display:block;color:var(--muted);margin-top:2px}
+button{border:0;border-radius:11px;min-height:42px;padding:0 16px;background:linear-gradient(135deg,#6786ff,#3268ff);color:#fff;font-weight:850;cursor:pointer}button.secondary{background:#0d1420;border:1px solid var(--line);color:#c4cfdd}button.danger{background:#271018;color:#ff9eaa;border:1px solid rgba(255,129,144,.18)}button:disabled{opacity:.45;cursor:not-allowed}
+.card{background:linear-gradient(180deg,rgba(13,19,31,.98),rgba(7,11,18,.98));border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.34)}
+.login{max-width:450px;margin:9vh auto 0}.login h1{font-size:30px;margin:0 0 8px}.sub{color:var(--muted);line-height:1.5;margin:0 0 20px}label{display:block;font-size:12px;font-weight:800;color:#c8d1de;margin:14px 0 7px}input,select{width:100%;height:46px;border-radius:10px;border:1px solid rgba(255,255,255,.10);background:#080d16;color:#fff;padding:0 12px;font-size:14px;outline:0}input:focus,select:focus{border-color:#537cff}.login button{width:100%;margin-top:16px}.hidden{display:none!important}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:15px;margin-bottom:20px}.head h1{font-size:31px;letter-spacing:-.035em;margin:0}.head p{margin:5px 0 0;color:var(--muted)}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:11px;margin-bottom:18px}.metric{padding:17px;border-radius:16px;background:#0a101a;border:1px solid var(--line)}.metric span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:800}.metric strong{display:block;font-size:27px;margin-top:7px}
+.grid{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(330px,.75fr);gap:16px}.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.section-title h2{font-size:19px;margin:0}.section-title small{color:var(--muted)}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}table{width:100%;border-collapse:collapse;min-width:850px}th,td{padding:13px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px}th{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#78869a;background:#080d15}tr:last-child td{border-bottom:0}.name strong{display:block;font-size:14px}.name small{display:block;color:var(--muted);margin-top:3px}.pill{display:inline-flex;padding:5px 8px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.06em;background:#111a28;color:#aab7c9}.pill.good{color:#75e7ac;background:rgba(101,221,160,.09)}.pill.warn{color:#f5c874;background:rgba(242,189,99,.09)}.pill.bad{color:#ff99a5;background:rgba(255,129,144,.09)}
+.assign{display:flex;gap:7px;min-width:270px}.assign select{height:38px;min-width:160px}.assign button{min-height:38px;padding:0 11px;font-size:12px}
+.provider-list{display:grid;gap:8px;margin:14px 0 18px}.provider-item{padding:12px;border-radius:12px;border:1px solid var(--line);background:#090e17}.provider-item strong{display:block;font-size:13px}.provider-item small{color:var(--muted);display:block;margin-top:4px}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.form button{width:100%;margin-top:13px}.msg{margin-top:12px;font-size:13px;color:var(--muted);line-height:1.45}.msg.bad{color:var(--bad)}.msg.good{color:var(--good)}.empty{padding:24px;text-align:center;color:var(--muted)}
+@media(max-width:980px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}.provider{order:-1}}@media(max-width:620px){.shell{padding:18px 12px 50px}.head{display:block}.metrics{grid-template-columns:1fr 1fr}.top .secondary{padding:0 10px}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="brand"><div class="mark">L</div><div><strong>LOUNGE TV</strong><small>Admin</small></div></div>
+    <button id="signout" class="secondary hidden">SIGN OUT</button>
+  </div>
+
+  <div id="login" class="card login">
+    <h1>Admin sign in</h1>
+    <p class="sub">Use an authorised Lounge admin account.</p>
+    <label>Email</label><input id="email" type="email" autocomplete="email">
+    <label>Password</label><input id="password" type="password" autocomplete="current-password">
+    <button id="loginBtn">SIGN IN</button>
+    <div id="loginMsg" class="msg"></div>
+  </div>
+
+  <main id="app" class="hidden">
+    <div class="head"><div><h1>Customer operations</h1><p>Payments, setup status and provider assignment.</p></div><button id="refresh" class="secondary">REFRESH</button></div>
+    <div id="metrics" class="metrics"></div>
+    <div class="grid">
+      <section class="card">
+        <div class="section-title"><h2>Customers</h2><small id="customerCount"></small></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Customer</th><th>Plan</th><th>Payment</th><th>Service</th><th>Devices</th><th>Provider setup</th></tr></thead>
+          <tbody id="customers"></tbody>
+        </table></div>
+      </section>
+
+      <aside class="card provider">
+        <div class="section-title"><h2>Provider accounts</h2><small id="providerCount"></small></div>
+        <div id="providerList" class="provider-list"></div>
+        <div class="form">
+          <h3 style="font-size:15px;margin:18px 0 6px">Add account to pool</h3>
+          <p class="sub" style="font-size:12px;margin-bottom:10px">Store an internal label/reference only. Provider passwords are not stored in this browser page.</p>
+          <label>Provider</label><select id="provider"></select>
+          <label>Internal label</label><input id="accountLabel" placeholder="e.g. Hary 001">
+          <label>External reference</label><input id="externalReference" placeholder="Optional internal reference">
+          <label>Provider expiry</label><input id="expiresAt" type="date">
+          <button id="addAccount">ADD PROVIDER ACCOUNT</button>
+          <div id="providerMsg" class="msg"></div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const SUPABASE_URL="https://liqocisegeqzbyuqloql.supabase.co";
+const KEY="sb_publishable_hAnd78k7ZrCH7okAM-ylaQ_Kosu5DnA";
+const supabase=createClient(SUPABASE_URL,KEY);
+let session=null,data=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[c]));
+const money=c=>c==null?"—":new Intl.NumberFormat("en-NZ",{style:"currency",currency:"NZD",maximumFractionDigits:0}).format(c/100);
+const date=v=>v?new Intl.DateTimeFormat("en-NZ",{day:"numeric",month:"short",year:"numeric"}).format(new Date(v)):"—";
+function setMsg(id,text,type=""){$(id).className="msg"+(type?" "+type:"");$(id).textContent=text||""}
+async function api(action,payload={}){
+  if(!session)throw new Error("Sign in required");
+  const r=await fetch(SUPABASE_URL+"/functions/v1/admin-dashboard",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":KEY},body:JSON.stringify({action,...payload})});
+  const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Request failed");return d;
+}
+function statusClass(s){s=String(s||"");if(["ACTIVE","PAID","ASSIGNED"].includes(s))return"good";if(["AWAITING_SETUP","PROVISIONING","PENDING","AVAILABLE"].includes(s))return"warn";if(["PAST_DUE","SUSPENDED","EXPIRED"].includes(s))return"bad";return""}
+function render(){
+  const m=data.metrics||{};
+  const metrics=[
+    ["Active customers",m.activeCustomers||0],["Awaiting setup",m.pendingSetup||0],["Active services",m.activeServiceAccounts||0],
+    ["Provider accounts",m.availableProviderAccounts||0],["Payment issues",m.failedPayments||0]
+  ];
+  $("metrics").innerHTML=metrics.map(x=>'<div class="metric"><span>'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join("");
+
+  const accounts=data.providerAccounts||[];
+  const available=accounts.filter(a=>a.status==="AVAILABLE");
+  $("providerCount").textContent=available.length+" available";
+  $("providerList").innerHTML=accounts.length?accounts.map(a=>'<div class="provider-item"><strong>'+esc(a.label)+' <span class="pill '+statusClass(a.status)+'">'+esc(a.status)+'</span></strong><small>'+esc(a.provider)+(a.expiresAt?" · expires "+date(a.expiresAt):"")+'</small></div>').join(""):'<div class="empty">No provider accounts yet.</div>';
+
+  $("provider").innerHTML=(data.providers||[]).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join("");
+
+  const customers=[...(data.customers||[])].sort((a,b)=>{
+    const rank=x=>x.service==="AWAITING_SETUP"&&x.subscription==="ACTIVE"?0:x.subscription==="ACTIVE"?1:2;
+    return rank(a)-rank(b);
+  });
+  $("customerCount").textContent=customers.length+" accounts";
+  $("customers").innerHTML=customers.length?customers.map(c=>{
+    let action='—';
+    if(c.subscription==="ACTIVE"&&c.service==="AWAITING_SETUP"&&c.serviceAssignmentId){
+      if(available.length){
+        action='<div class="assign"><select data-account-for="'+esc(c.serviceAssignmentId)+'">'+available.map(a=>'<option value="'+esc(a.id)+'">'+esc(a.label)+'</option>').join("")+'</select><button data-assign="'+esc(c.serviceAssignmentId)+'">ASSIGN</button></div>';
+      }else action='<span style="color:#8f9bad">Add provider account first</span>';
+    }else if(c.service==="ACTIVE") action='<span class="pill good">READY</span>';
+    else if(c.subscription!=="ACTIVE") action='<span style="color:#78869a">Payment not active</span>';
+    return '<tr><td class="name"><strong>'+esc(c.name)+'</strong><small>'+esc(c.email)+'</small></td><td>'+esc(c.plan)+'<br><small style="color:#78869a">'+money(c.amountCents)+'</small></td><td><span class="pill '+statusClass(c.subscription)+'">'+esc(c.subscription)+'</span></td><td><span class="pill '+statusClass(c.service)+'">'+esc(c.service)+'</span></td><td>'+esc(c.devices)+'</td><td>'+action+'</td></tr>';
+  }).join(""):'<tr><td colspan="6" class="empty">No customers yet.</td></tr>';
+
+  document.querySelectorAll("[data-assign]").forEach(btn=>btn.onclick=async()=>{
+    const id=btn.dataset.assign;const select=document.querySelector('[data-account-for="'+id+'"]');
+    try{btn.disabled=true;btn.textContent="ASSIGNING…";await api("assign_provider_account",{service_assignment_id:id,provider_account_id:select.value});await load()}catch(e){alert(e.message);btn.disabled=false;btn.textContent="ASSIGN"}
+  });
+}
+async function load(){
+  $("refresh").disabled=true;
+  try{data=await api("dashboard");render()}catch(e){setMsg("loginMsg",e.message,"bad");$("app").classList.add("hidden");$("login").classList.remove("hidden")}finally{$("refresh").disabled=false}
+}
+async function enter(s){
+  session=s;$("login").classList.add("hidden");$("app").classList.remove("hidden");$("signout").classList.remove("hidden");await load();
+}
+$("loginBtn").onclick=async()=>{
+  try{$("loginBtn").disabled=true;setMsg("loginMsg","Signing in…");const {data:d,error}=await supabase.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});if(error)throw error;await enter(d.session);setMsg("loginMsg","")}catch(e){setMsg("loginMsg",e.message||"Sign in failed","bad")}finally{$("loginBtn").disabled=false}
+};
+$("signout").onclick=async()=>{await supabase.auth.signOut();location.reload()};
+$("refresh").onclick=load;
+$("addAccount").onclick=async()=>{
+  try{$("addAccount").disabled=true;setMsg("providerMsg","Adding account…");const expiry=$("expiresAt").value?new Date($("expiresAt").value+"T23:59:59").toISOString():null;await api("create_provider_account",{provider_id:$("provider").value,label:$("accountLabel").value.trim(),external_reference:$("externalReference").value.trim(),expires_at:expiry});$("accountLabel").value="";$("externalReference").value="";$("expiresAt").value="";setMsg("providerMsg","Provider account added.","good");await load()}catch(e){setMsg("providerMsg",e.message,"bad")}finally{$("addAccount").disabled=false}
+};
+const {data:{session:existing}}=await supabase.auth.getSession();if(existing)await enter(existing);
+</script>
+</body>
+</html>
