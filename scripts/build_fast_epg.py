@@ -79,7 +79,8 @@ def attrs(line):
 
 
 now = int(datetime.now(timezone.utc).timestamp() * 1000)
-fast_horizon = now + (12 * 60 * 60 * 1000)\nhorizon = now + (24 * 60 * 60 * 1000)
+fast_horizon = now + (12 * 60 * 60 * 1000)
+horizon = now + (24 * 60 * 60 * 1000)
 
 by_channel = {}
 alias_candidates = {}
