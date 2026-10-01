@@ -229,7 +229,23 @@ for channel, programmes in by_channel.items():
         fast_selected.append(current)
         guide_selected.append(current)
 
-    fast_selected.extend(future[:2])
+    for p in future:
+        if p["start"] > fast_horizon:
+            break
+
+        compact = {
+            "start": p["start"],
+            "stop": p["stop"],
+            "title": p.get("title", "")
+        }
+
+        # Keep descriptions for the next two items only. This gives Lounge
+        # useful immediate programme detail without bloating the hourly feed.
+        if len(fast_selected) < 3 and p.get("description"):
+            compact["description"] = p["description"]
+
+        fast_selected.append(compact)
+
     guide_selected.extend([p for p in future if p["start"] <= horizon])
 
     if fast_selected:
