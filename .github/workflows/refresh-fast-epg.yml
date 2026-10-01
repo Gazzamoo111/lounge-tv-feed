@@ -1,6 +1,10 @@
 name: Refresh Lounge Fast EPG
 
 on:
+  push:
+    paths:
+      - "scripts/build_fast_epg.py"
+
   workflow_dispatch:
 
   schedule:
