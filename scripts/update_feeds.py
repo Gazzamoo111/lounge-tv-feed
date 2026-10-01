@@ -25,6 +25,7 @@ CONFIG = ROOT / "config" / "master_v5.json"
 
 RAW_M3U = DOCS / "ganja-source.m3u"
 CLEAN_M3U = DOCS / "lounge-clean.m3u"
+SECURE_M3U = DOCS / "lounge-secure.m3u"
 MISSING_OUT = DOCS / "master-v5-missing.txt"
 EPG_GZ = DOCS / "epg6.xml.gz"
 EPG_OUT = DOCS / "epg6-live.xml"
@@ -209,6 +210,8 @@ def make_extinf(source, rec):
     a["lounge-root-cuid"] = rec.get("root_cuid", rec["cuid"])
     a["lounge-backups"] = ",".join(rec.get("backup_cuids") or [])
     a["lounge-status"] = status_slug(rec.get("status"))
+    if rec.get("reliability") is not None:
+        a["lounge-reliability"] = rec.get("reliability")
     a["lounge-tier"] = rec.get("tier", "")
     a["lounge-network"] = rec.get("network", "")
     a["lounge-collections"] = ",".join(rec.get("collections") or [])
@@ -217,7 +220,7 @@ def make_extinf(source, rec):
         "tvg-id","tvg-name","tvg-logo","group-title","cuid",
         "lounge-original-name","lounge-category","lounge-rail",
         "lounge-layer","lounge-role","lounge-root-cuid",
-        "lounge-backups","lounge-status","lounge-tier",
+        "lounge-backups","lounge-status","lounge-reliability","lounge-tier",
         "lounge-network","lounge-collections"
     ]
 
@@ -263,6 +266,7 @@ def clean_playlist():
     source = parse_source()
 
     out = ["#EXTM3U"]
+    secure_out = ["#EXTM3U"]
     ids = set()
     kept = 0
     missing = []
@@ -281,10 +285,13 @@ def clean_playlist():
             )
             continue
 
-        out.append(
-            make_extinf(item, rec)
-        )
+        extinf = make_extinf(item, rec)
+        out.append(extinf)
         out.append(item["url"])
+        secure_out.append(extinf)
+        secure_out.append(
+            "lounge://channel/" + cuid + "?source=" + cuid
+        )
 
         kept += 1
 
@@ -316,6 +323,14 @@ def clean_playlist():
         encoding="utf-8"
     )
 
+    SECURE_M3U.write_text(
+        "\n".join(secure_out) + "\n",
+        encoding="utf-8"
+    )
+
+    if sum(1 for line in secure_out if line.startswith("#EXTINF:")) != kept:
+        raise RuntimeError("Safety stop: secure playlist row count drift")
+
     MISSING_OUT.write_text(
         "\n".join(missing) + ("\n" if missing else ""),
         encoding="utf-8"
@@ -326,6 +341,7 @@ def clean_playlist():
     print("MASTER V5 missing:", len(missing))
     print("Layer counts:", layers)
     print("EPG IDs:", len(ids))
+    print("Secure rows:", kept)
 
     return ids
 
@@ -488,6 +504,7 @@ def main():
     print()
     print("LOUNGE MASTER V5 CLOUD FEEDS READY")
     print(CLEAN_M3U)
+    print(SECURE_M3U)
     print(EPG_OUT)
 
 
