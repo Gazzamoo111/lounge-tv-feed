@@ -305,7 +305,7 @@ def clean_playlist():
             str(kept)
         )
 
-    if kept > 3500:
+    if kept > 10000:
         raise RuntimeError(
             "Safety stop: MASTER V5 output unexpectedly large: " +
             str(kept)
