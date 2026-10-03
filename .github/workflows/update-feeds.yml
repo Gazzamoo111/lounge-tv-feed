@@ -28,6 +28,12 @@ jobs:
       - name: Build fast Now Next feed
         run: python scripts/build_fast_epg.py
 
+      - name: Build premium artwork cache
+        if: ${{ secrets.TMDB_BEARER_TOKEN != '' }}
+        env:
+          TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
+        run: python scripts/build_artwork_manifest.py
+
       - name: Commit updated feeds
         run: |
           git config user.name "Lounge Feed Bot"
@@ -36,6 +42,9 @@ jobs:
           git add docs/lounge-clean.m3u
           git add docs/epg6-live.xml
           git add docs/epg-now-next.json
+          git add docs/epg-guide.json
+          git add docs/lounge-events.json
+          git add docs/artwork
 
           if git diff --cached --quiet; then
             echo "No changes"

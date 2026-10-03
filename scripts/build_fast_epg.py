@@ -208,8 +208,15 @@ if PLAYLIST.exists():
         pending = None
 
 
-result = {"_aliases": aliases}
-guide_result = {"_aliases": aliases}
+metadata = {
+    "generatedAt": now,
+    "fastHorizon": fast_horizon,
+    "guideHorizon": horizon,
+    "schema": "lounge-epg-v2"
+}
+
+result = {"_meta": metadata, "_aliases": aliases}
+guide_result = {"_meta": metadata, "_aliases": aliases}
 
 for channel, programmes in by_channel.items():
     programmes.sort(key=lambda p: p["start"])
@@ -279,3 +286,267 @@ print("FAST 12H + 24H GUIDE EPG READY")
 # Programme artwork is now resolved locally in Lounge TV from the bundled
 # high-confidence TMDB manifest. Keeping image URLs out of this hourly EPG
 # feed makes startup smaller and more reliable on TV hardware.
+
+
+# =========================================================
+# LOUNGE_PREPARED_EVENT_FEED_V1
+#
+# Build a small future-event manifest from the FULL XMLTV
+# source. This is deliberately separate from the compact
+# Now/Next client feed.
+# =========================================================
+
+EVENTS_OUTPUT = ROOT / "docs" / "lounge-events.json"
+EVENT_HORIZON = now + (7 * 24 * 60 * 60 * 1000)
+
+def event_norm(value):
+    return re.sub(
+        r"\s+",
+        " ",
+        re.sub(r"[^a-z0-9@]+", " ", str(value or "").lower())
+    ).strip()
+
+
+def prepared_event_detail(title, description=""):
+    title = str(title or "").strip()
+    description = str(description or "").strip()
+
+    text = (title + " " + description).lower()
+
+    if not title:
+        return None
+
+    # Programmes, repeats and studio content are not events.
+    if re.search(
+        r"\b("
+        r"highlights?|replay|classic|throwback|archive|"
+        r"preview|countdown|press conference|weigh[- ]?in|"
+        r"post[- ]?fight|magazine|roundup|sportscenter|"
+        r"nba today|nfl live|news"
+        r")\b",
+        text
+    ):
+        return None
+
+    matchup = bool(
+        re.search(
+            r"\b(?:v|vs\.?|@)\b",
+            title,
+            flags=re.I
+        )
+    )
+
+    finalish = bool(
+        re.search(
+            r"\b("
+            r"grand final|semi[ -]?final|quarter[ -]?final|"
+            r"finals?|playoffs?|championship|title fight|"
+            r"world cup|test match|ashes"
+            r")\b",
+            text
+        )
+    )
+
+    # Tier 1: marquee combat/finals/world events.
+    if re.search(r"\bufc\s*(?:\d+|fight night)\b", text):
+        return ("UFC / MMA", 320)
+
+    if re.search(r"\b(?:bkfc|bare knuckle)\b", text):
+        return ("Bare knuckle", 315)
+
+    if re.search(
+        r"\bboxing\b",
+        text
+    ) and (
+        matchup or
+        re.search(
+            r"\b(?:fight|card|title|championship|main event)\b",
+            text
+        )
+    ):
+        return ("Boxing", 310)
+
+    if re.search(
+        r"\b(?:wrestlemania|royal rumble|summerslam|"
+        r"survivor series|money in the bank|elimination chamber|"
+        r"crown jewel|backlash|wwe ple)\b",
+        text
+    ):
+        return ("Wrestling", 300)
+
+    if re.search(r"\bnrlw?\b", text) and finalish:
+        return ("Rugby League", 300)
+
+    if re.search(
+        r"\b(?:rugby|all blacks|wallabies|springboks)\b",
+        text
+    ) and finalish:
+        return ("Rugby", 295)
+
+    if re.search(r"\bcricket\b", text) and finalish:
+        return ("Cricket", 290)
+
+    # Tier 2: real fixtures.
+    if re.search(
+        r"\b(?:bunnings\s+)?npc\b|national provincial championship",
+        text
+    ) and (matchup or finalish):
+        return ("Rugby", 255)
+
+    if re.search(r"\bnrlw?\b", text) and matchup:
+        return ("Rugby League", 250)
+
+    if re.search(
+        r"\b(?:rugby|super rugby|six nations|rugby championship)\b",
+        text
+    ) and matchup:
+        return ("Rugby", 245)
+
+    if re.search(r"\bnfl\b", text) and (
+        matchup or
+        re.search(r"\b(?:game|wild card|divisional|conference|super bowl)\b", text)
+    ):
+        return ("NFL", 245)
+
+    if re.search(r"\bnba\b", text) and matchup:
+        return ("NBA", 225)
+
+    if re.search(r"\bnhl\b", text) and matchup:
+        return ("NHL", 220)
+
+    if re.search(r"\bmlb\b", text) and matchup:
+        return ("MLB", 220)
+
+    if re.search(r"\baflw?\b", text) and matchup:
+        return ("AFL", 220)
+
+    if re.search(
+        r"\b(?:premier league|champions league|europa league|"
+        r"football|soccer|a-league)\b",
+        text
+    ) and matchup:
+        return ("Football", 215)
+
+    if re.search(r"\bcricket\b", text) and (
+        matchup or
+        re.search(
+            r"\b(?:odi|t20|test|ashes|world cup|champions trophy)\b",
+            text
+        )
+    ):
+        return ("Cricket", 215)
+
+    # Tier 3: useful marquee events, only after major sport.
+    if re.search(
+        r"\b(?:tennis|golf|pga|atp|wta|formula 1|f1|motogp|"
+        r"supercars|motorsport|athletics|swimming)\b",
+        text
+    ) and (
+        finalish or
+        re.search(
+            r"\b(?:round\s*\d+|race|qualifying|grand prix)\b",
+            text
+        )
+    ):
+        return ("Other Sport", 120)
+
+    return None
+
+
+prepared_events = []
+prepared_seen = set()
+
+for channel_id, programmes in by_channel.items():
+
+    for programme in programmes:
+
+        start = int(programme.get("start") or 0)
+        stop = int(programme.get("stop") or 0)
+
+        if not start or not stop:
+            continue
+
+        if stop <= now:
+            continue
+
+        if start > EVENT_HORIZON:
+            continue
+
+        title = str(programme.get("title") or "").strip()
+        description = str(
+            programme.get("description") or ""
+        ).strip()
+
+        detail = prepared_event_detail(
+            title,
+            description
+        )
+
+        if not detail:
+            continue
+
+        sport_type, priority = detail
+
+        key = (
+            event_norm(title) +
+            "|" +
+            str(start)
+        )
+
+        if key in prepared_seen:
+            continue
+
+        prepared_seen.add(key)
+
+        prepared_events.append({
+            "id": "epg-" + str(abs(hash(key))),
+            "title": title,
+            "description": description[:600],
+            "sportType": sport_type,
+            "startTime": start,
+            "endTime": stop,
+            "channelId": channel_id,
+            "priority": priority,
+            "source": "epg-publisher"
+        })
+
+
+prepared_events.sort(
+    key=lambda item: (
+        -int(item.get("priority") or 0),
+        int(item.get("startTime") or 0),
+        event_norm(item.get("title"))
+    )
+)
+
+event_payload = {
+    "version": datetime.now(timezone.utc).isoformat(),
+    "generatedAt": now,
+    "horizonHours": 168,
+    "events": prepared_events[:750]
+}
+
+EVENTS_OUTPUT.write_text(
+    json.dumps(
+        event_payload,
+        separators=(",", ":"),
+        ensure_ascii=False
+    ),
+    encoding="utf-8"
+)
+
+print(
+    "Prepared future events:",
+    len(event_payload["events"])
+)
+
+for event in event_payload["events"][:20]:
+    print(
+        event["priority"],
+        event["sportType"],
+        datetime.fromtimestamp(
+            event["startTime"] / 1000,
+            timezone.utc
+        ).isoformat(),
+        event["title"]
+    )
