@@ -250,6 +250,179 @@ def make_extinf(source, rec):
     )
 
 
+
+def _lounge_current_source_name(item, rec):
+    if isinstance(item, dict):
+        for key in ("name", "title", "display_name"):
+            value = item.get(key)
+            if value:
+                return str(value).strip()
+
+    return str(rec.get("name", "")).strip()
+
+
+def _lounge_dynamic_public_ok(item, rec):
+    """
+    Customer-only dynamic visibility gate.
+
+    Secure/internal output still keeps the source record.
+    This only suppresses dormant or stale Sport event slots
+    from lounge-clean.m3u.
+    """
+    import re
+    from datetime import datetime, timedelta
+
+    if str(rec.get("category", "")).strip().lower() != "sport":
+        return True
+
+    name = _lounge_current_source_name(item, rec)
+
+    if not name:
+        return True
+
+    upper = re.sub(r"\s+", " ", name).strip().upper()
+
+    source = str(rec.get("source", "")).strip().upper()
+    layer = str(rec.get("layer", "")).strip().lower()
+
+    # Permanent product exclusion.
+    if re.search(r"\bF1\b|FORMULA 1", upper):
+        return False
+
+    # Explicitly dormant.
+    if (
+        "NO EVENT STREAMING" in upper
+        or "OFFLINE" in upper
+        or "2098-12-31" in upper
+    ):
+        return False
+
+    dynamic_source = (
+        "PPV" in source
+        or "LEAGUE PASS" in source
+        or "CENTER ICE" in source
+        or "MLB.TV" in source
+        or "NFL SUNDAY TICKET" in source
+        or "UFC FIGHT PASS" in source
+        or "COLLEGE FOOTBALL" in source
+        or layer == "ppv"
+    )
+
+    if not dynamic_source:
+        return True
+
+    # Generic dormant event-bank labels.
+    generic_patterns = [
+        r"^#+\s*TRI?LLER TV PPV\s*#+$",
+        r"^\(AU\)\s*ESPN PLAY\s+\d+\s*\(D\)$",
+        r"^:MAX US\s+\d+$",
+        r"^:PARAMOUNT\+\s+\d+$",
+        r"^AU\s*\(STAN\s+\d+\)$",
+        r"^US\s*\(PEACOCK\s+\d+\)$",
+        r"^UK:\s*SKY SPORTS\+\s*EVENT\s+\d+$",
+        r"^ROGERS SUPER SPORTS PACK(?:\s+\d+)?$",
+        r"^NBA\s+\d+\s*:?\s*$",
+        r"^MLB\s+\d+\s*:?\s*$",
+        r"^NCAAF\s+\d+\s*:?\s*$",
+        r"^UFC\s+\d+\s*:?\s*$",
+        r"^US\s*\(WNBA\s+\d+\)\s*$",
+    ]
+
+    for pattern in generic_patterns:
+        if re.fullmatch(pattern, upper, re.I):
+            return False
+
+    # Catch numbered provider slots with no meaningful event description.
+    semantic_event = re.search(
+        r"\b("
+        r"VS|AT|ROUND|DAY|RACE|MATCH|UFC|BOXING|"
+        r"RUGBY|TENNIS|WTA|ATP|NFL|NBA|NHL|MLB|"
+        r"CRICKET|FOOTBALL|SOCCER|CYCLING|"
+        r"WORLD CUP|CHAMPIONSHIP|FINAL|SEMI"
+        r")\b",
+        upper
+    )
+
+    looks_numbered = re.search(
+        r"(PLAY|EVENT|PPV|PACK|STAN|PEACOCK|"
+        r"PARAMOUNT|MAX US|PRIME|DAZN)"
+        r".*\d+\D*$",
+        upper
+    )
+
+    if looks_numbered and not semantic_event:
+        return False
+
+    now = datetime.now()
+
+    # ISO timestamps embedded in event names.
+    iso_dates = []
+
+    for value in re.findall(
+        r"(20\d{2}-\d{2}-\d{2}"
+        r"(?:\s+\d{2}:\d{2}:\d{2})?)",
+        name
+    ):
+        try:
+            fmt = (
+                "%Y-%m-%d %H:%M:%S"
+                if " " in value
+                else "%Y-%m-%d"
+            )
+            iso_dates.append(
+                datetime.strptime(value, fmt)
+            )
+        except ValueError:
+            pass
+
+    if iso_dates:
+        latest = max(iso_dates)
+
+        # Event slots older than 36 hours are no longer useful
+        # as customer-facing "live/upcoming" entries.
+        if latest < now - timedelta(hours=36):
+            return False
+
+    # Obvious old year embedded in another date format.
+    years = [
+        int(y)
+        for y in re.findall(r"\b(20\d{2})\b", name)
+    ]
+
+    if years and max(years) < now.year:
+        return False
+
+    # Provider labels such as "@ Sep 20 8:35 AM".
+    months = {
+        "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4,
+        "MAY": 5, "JUN": 6, "JUL": 7, "AUG": 8,
+        "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12,
+    }
+
+    md = re.search(
+        r"\b("
+        r"JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|"
+        r"SEP|OCT|NOV|DEC"
+        r")\s+(\d{1,2})\b",
+        upper
+    )
+
+    if md:
+        try:
+            dt = datetime(
+                now.year,
+                months[md.group(1)],
+                int(md.group(2))
+            )
+
+            if dt < now - timedelta(hours=36):
+                return False
+        except ValueError:
+            pass
+
+    return True
+
+
 def clean_playlist():
     config = json.loads(
         CONFIG.read_text(encoding="utf-8")
@@ -318,6 +491,7 @@ def clean_playlist():
         is_public = (
             visible is not False
             and role != "backup"
+            and _lounge_dynamic_public_ok(item, rec)
         )
 
         if not is_public:
