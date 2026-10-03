@@ -268,7 +268,12 @@ def clean_playlist():
     out = ["#EXTM3U"]
     secure_out = ["#EXTM3U"]
     ids = set()
-    kept = 0
+
+    # secure_kept = every matched MASTER record.
+    # public_kept = customer-visible catalogue rows only.
+    secure_kept = 0
+    public_kept = 0
+
     missing = []
     layers = {}
 
@@ -286,18 +291,48 @@ def clean_playlist():
             continue
 
         extinf = make_extinf(item, rec)
-        out.append(extinf)
-        out.append(item["url"])
+
+        # -------------------------------------------------
+        # SECURE / INTERNAL PLAYLIST
+        #
+        # Keep every matched MASTER record here, including
+        # hidden backup sources required for source failover.
+        # -------------------------------------------------
         secure_out.append(extinf)
         secure_out.append(
             "lounge://channel/" + cuid + "?source=" + cuid
         )
 
-        kept += 1
+        secure_kept += 1
+
+        # -------------------------------------------------
+        # CUSTOMER PLAYLIST
+        #
+        # Only expose visible, non-backup logical channels.
+        # Hidden backup records remain available internally
+        # through lounge-secure.m3u.
+        # -------------------------------------------------
+        role = str(rec.get("role", "primary")).strip().lower()
+        visible = rec.get("visible", True)
+
+        is_public = (
+            visible is not False
+            and role != "backup"
+        )
+
+        if not is_public:
+            continue
+
+        out.append(extinf)
+        out.append(item["url"])
+
+        public_kept += 1
 
         layer = str(rec.get("layer", "other"))
         layers[layer] = layers.get(layer, 0) + 1
 
+        # EPG should represent customer-visible logical
+        # channels, not hidden backup source rows.
         tvg_id = item["attrs"].get("tvg-id", "").strip()
 
         if not tvg_id:
@@ -306,16 +341,22 @@ def clean_playlist():
         if tvg_id:
             ids.add(tvg_id)
 
-    if kept < 900:
+    if secure_kept < 900:
         raise RuntimeError(
             "Safety stop: fewer than 900 MASTER V5 rows matched upstream: " +
-            str(kept)
+            str(secure_kept)
         )
 
-    if kept > 10000:
+    if secure_kept > 10000:
         raise RuntimeError(
-            "Safety stop: MASTER V5 output unexpectedly large: " +
-            str(kept)
+            "Safety stop: MASTER V5 secure output unexpectedly large: " +
+            str(secure_kept)
+        )
+
+    if public_kept < 900:
+        raise RuntimeError(
+            "Safety stop: customer-visible output unexpectedly small: " +
+            str(public_kept)
         )
 
     CLEAN_M3U.write_text(
@@ -328,8 +369,11 @@ def clean_playlist():
         encoding="utf-8"
     )
 
-    if sum(1 for line in secure_out if line.startswith("#EXTINF:")) != kept:
+    if sum(1 for line in secure_out if line.startswith("#EXTINF:")) != secure_kept:
         raise RuntimeError("Safety stop: secure playlist row count drift")
+
+    if sum(1 for line in out if line.startswith("#EXTINF:")) != public_kept:
+        raise RuntimeError("Safety stop: customer playlist row count drift")
 
     MISSING_OUT.write_text(
         "\n".join(missing) + ("\n" if missing else ""),
@@ -337,11 +381,13 @@ def clean_playlist():
     )
 
     print("MASTER V5 requested:", len(wanted))
-    print("MASTER V5 matched:", kept)
+    print("MASTER V5 matched:", secure_kept)
     print("MASTER V5 missing:", len(missing))
+    print("Customer-visible rows:", public_kept)
+    print("Hidden/internal rows:", secure_kept - public_kept)
     print("Layer counts:", layers)
     print("EPG IDs:", len(ids))
-    print("Secure rows:", kept)
+    print("Secure rows:", secure_kept)
 
     return ids
 
