@@ -142,6 +142,9 @@ def region_for(rec):
     if rail == "USA Sport":
         return "USA"
 
+    if rail == "US Sports Networks":
+        return "USA"
+
     if rail == "UK Sport" or rail == "UK TV":
         return "UK"
 
