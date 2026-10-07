@@ -26,8 +26,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Rebuild fast Now Next feed
-        run: python scripts/build_fast_epg.py
+      - name: Refresh upstream EPG and rebuild Lounge guide
+        run: python scripts/refresh_epg_only.py
 
       - name: Refresh premium artwork cache
         if: ${{ secrets.TMDB_BEARER_TOKEN != '' }}
