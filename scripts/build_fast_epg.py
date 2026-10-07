@@ -80,7 +80,7 @@ def attrs(line):
 
 now = int(datetime.now(timezone.utc).timestamp() * 1000)
 fast_horizon = now + (12 * 60 * 60 * 1000)
-horizon = now + (24 * 60 * 60 * 1000)
+horizon = now + (48 * 60 * 60 * 1000)
 
 by_channel = {}
 alias_candidates = {}
@@ -281,7 +281,7 @@ print("Guide channels:", len(guide_result) - 1)
 print("Guide programmes:", guide_count)
 print("Guide size:", round(GUIDE_OUTPUT.stat().st_size / 1024 / 1024, 2), "MB")
 print("Aliases:", len(aliases))
-print("FAST 12H + 24H GUIDE EPG READY")
+print("FAST 12H + 48H GUIDE EPG READY")
 
 # Programme artwork is now resolved locally in Lounge TV from the bundled
 # high-confidence TMDB manifest. Keeping image URLs out of this hourly EPG

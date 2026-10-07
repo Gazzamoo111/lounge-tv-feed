@@ -21,7 +21,7 @@ def pt(v):
         tz=timezone(sign*timedelta(hours=int(o[1:3]),minutes=int(o[3:5])))
         return d.replace(tzinfo=tz).astimezone(timezone.utc)
     return d.replace(tzinfo=timezone.utc)
-now=datetime.now(timezone.utc); lo=now-timedelta(hours=1); hi=now+timedelta(hours=30)
+now=datetime.now(timezone.utc); lo=now-timedelta(hours=1); hi=now+timedelta(hours=54)
 out=ET.Element('tv'); cc=pc=0
 with gzip.open(GZ,'rb') as src:
     for _,e in ET.iterparse(src,events=('end',)):
