@@ -45,7 +45,8 @@ for _, e in ET.iterparse(SOURCE, events=("end",)):
             start, stop = time_value(e.get("start")), time_value(e.get("stop"))
             if start < HORIZON and stop > NOW:
                 info["next12h"] += 1
-    e.clear()
+    if e.tag in ("channel", "programme"):
+        e.clear()
 
 DEST.write_text(
     json.dumps({
