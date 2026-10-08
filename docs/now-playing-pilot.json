@@ -5,7 +5,15 @@
     "channels": 20,
     "verifiedNowPlaying": 0,
     "scope": "read-only 20-channel pilot; not connected to Lounge TV app",
-    "warning": "Channel identity is NOT verified current programme; do not render as Now Playing"
+    "warning": "Channel identity is NOT verified current programme; do not render as Now Playing",
+    "lastValidatedAt": "2026-10-08T21:18:35.595958+00:00",
+    "lastValidatedStatus": "20 playable; no usable title tags or recognition matches",
+    "reachable": 20,
+    "videoAndAudio": 20,
+    "embeddedProgrammeTitles": 0,
+    "recognitionConfigured": false,
+    "provenance": "Mac ffprobe pilot result, user-provided report; guide API sample previously returned zero listings",
+    "safety": "Do not display channelIdentity as a confirmed current movie/episode; unrecognized streams remain unverified."
   },
   "channels": [
     {
@@ -14,7 +22,17 @@
       "channelName": "CM Netflix 1",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1430467,
@@ -22,7 +40,17 @@
       "channelName": "CM Netflix 3",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1430465,
@@ -30,7 +58,17 @@
       "channelName": "CM Netflix 5",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1337328,
@@ -38,7 +76,17 @@
       "channelName": "Disney+ Premiere 1",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1337326,
@@ -46,7 +94,17 @@
       "channelName": "Disney+ Series 1",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1337323,
@@ -54,7 +112,17 @@
       "channelName": "Disney+ Series 4",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1095797,
@@ -62,7 +130,17 @@
       "channelName": "Sky Store Premiere 1",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1095791,
@@ -70,7 +148,17 @@
       "channelName": "Sky Store Premiere 7",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1095785,
@@ -78,7 +166,17 @@
       "channelName": "Sky Store Premiere 13",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1430509,
@@ -86,7 +184,17 @@
       "channelName": "Cinemania Hollywood 4K",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1438487,
@@ -94,7 +202,17 @@
       "channelName": "CM Hollywood Premiere 1",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1438484,
@@ -102,7 +220,17 @@
       "channelName": "CM Hollywood Premiere 4",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1916901,
@@ -110,7 +238,17 @@
       "channelName": "OnePlay Action",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1916904,
@@ -118,7 +256,17 @@
       "channelName": "OnePlay Premiere",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1916889,
@@ -126,7 +274,17 @@
       "channelName": "OnePlay Disney+",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 1916863,
@@ -134,7 +292,17 @@
       "channelName": "OnePlay 007",
       "nowPlaying": null,
       "nowPlayingStatus": "unverified",
-      "channelIdentity": null
+      "channelIdentity": null,
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
+      }
     },
     {
       "streamId": 2024512,
@@ -146,6 +314,16 @@
         "title": "Star Wars: Andor",
         "type": "series",
         "basis": "Best VOD catalogue series identity; no current episode verified"
+      },
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
       }
     },
     {
@@ -158,6 +336,16 @@
         "title": "The Mandalorian",
         "type": "series",
         "basis": "Best VOD catalogue series identity; no current episode verified"
+      },
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
       }
     },
     {
@@ -170,6 +358,16 @@
         "title": "Back to the Future",
         "type": "film_collection",
         "basis": "Best VOD film collection; current movie not verified"
+      },
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
       }
     },
     {
@@ -182,6 +380,16 @@
         "title": "Harry Potter",
         "type": "film_collection",
         "basis": "Best VOD film collection; current movie not verified"
+      },
+      "probe": {
+        "status": "media_ok",
+        "video": true,
+        "audio": true,
+        "serviceName": "Service01",
+        "programmeMetadata": false
+      },
+      "recognition": {
+        "status": "not_configured"
       }
     }
   ]
