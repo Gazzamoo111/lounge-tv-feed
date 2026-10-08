@@ -56,4 +56,6 @@ jobs:
           fi
 
           git commit -m "Refresh Lounge fast EPG"
+          # Keep a refresh from failing when an unrelated commit lands mid-run.
+          git pull --rebase origin main
           git push
