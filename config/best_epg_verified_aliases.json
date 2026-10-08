@@ -1,7 +1,8 @@
 {
   "_meta": {
-    "schema": "lounge-best-epg-aliases-v1",
-    "notes": "Exact network mappings verified against the international XMLTV channel index and current programme counts. Fox Sports News excluded until an Australian news-guide source is verified."
+    "schema": "lounge-best-epg-aliases-v2",
+    "scope": "Targeted AU/NZ/UK/US premium linear networks with real source EPG schedules; no inferred event/24-7 metadata",
+    "verification": "Each target has live programme entries in the published source index; actual stream-to-broadcast correctness must be checked on device"
   },
   "NSW-SydneyFOXCRICKET.au": [
     "AU| FOX CRICKET HD",
@@ -38,5 +39,652 @@
     "AU| FOX SPORTS 507 HD",
     "AU| KAYO - FOX SPORTS 507",
     "AU| FOX SPORTS MORE HD"
+  ],
+  "beinsports2.au": [
+    "beINSports2.au",
+    "AU| BEIN SPORTS 2 HD"
+  ],
+  "bbcfirst.au": [
+    "AU| BBC FIRST HD"
+  ],
+  "skyracing1.au": [
+    "SKYRacing.au",
+    "AU| SKY RACING 1 HD"
+  ],
+  "skyracing2.au": [
+    "SKYRacing2.au",
+    "AU| SKY RACING 2 HD"
+  ],
+  "racingcommelbourne.au": [
+    "RacingCom.au",
+    "AU| RACING.COM MELBOURNE"
+  ],
+  "SBSWorldMoviesSydney.au": [
+    "SBSWorldMovies.au",
+    "AU| SBS WORLD MOVIES NATIONAL"
+  ],
+  "SBSVicelandMelbourne.au": [
+    "SBSViceland.au",
+    "AU| SBS VICELAND MELBOURNE"
+  ],
+  "SBSFoodSydney.au": [
+    "SBSFood.au",
+    "AU| SBS FOOD NATIONAL"
+  ],
+  "9gem.au": [
+    "9Gem.au",
+    "AU| CHANNEL 9 GEM"
+  ],
+  "9rush.au": [
+    "AU| 9RUSH HD"
+  ],
+  "ABCMESydney.au": [
+    "ABCME.au",
+    "AU| ABC ME NATIONAL"
+  ],
+  "skysport1.nz": [
+    "SkySport1.nz",
+    "NZ| SKY SPORTS NZ 1"
+  ],
+  "skysport2.nz": [
+    "SkySport2.nz",
+    "NZ| SKY SPORTS NZ 2"
+  ],
+  "skysport3.nz": [
+    "SkySport3.nz",
+    "NZ| SKY SPORTS NZ 3"
+  ],
+  "skysport4.nz": [
+    "SkySport4.nz",
+    "NZ| SKY SPORTS NZ 4"
+  ],
+  "skysport5.nz": [
+    "SkySport5.nz",
+    "NZ| SKY SPORTS NZ 5"
+  ],
+  "skysport6.nz": [
+    "SkySport6.nz",
+    "NZ| SKY SPORTS NZ 6"
+  ],
+  "skysport7.nz": [
+    "SkySport7.nz",
+    "NZ| SKY SPORTS NZ 7"
+  ],
+  "skysport8.nz": [
+    "SkySport8.nz",
+    "NZ| SKY SPORTS NZ PL"
+  ],
+  "skysport9.nz": [
+    "SkySport9.nz",
+    "NZ| SKY SPORTS NZ 9"
+  ],
+  "skysportselect.nz": [
+    "SkySportSelect.nz",
+    "NZ| SKY SPORTS NZ SELECT"
+  ],
+  "skysportpremierleague.nz": [
+    "NZ| SKY SPORT PREMIER LEAGUE"
+  ],
+  "espn.nz": [
+    "NZ| SKY NZ ESPN",
+    "NZ| SKY ESPN 1"
+  ],
+  "espn2.nz": [
+    "NZ| SKY NZ ESPN 2",
+    "NZ| SKY ESPN 2"
+  ],
+  "skycinemaaction.uk": [
+    "SkyCinemaAction.uk",
+    "UK| SKY CINEMA ACTION FHD"
+  ],
+  "skycinemacomedy.uk": [
+    "SkyCinemaComedy.uk",
+    "UK| SKY CINEMA COMEDY FHD"
+  ],
+  "skycinemadrama.uk": [
+    "SkyCinemaDrama.uk",
+    "UK| SKY CINEMA DRAMA FHD"
+  ],
+  "skycinemafamily.uk": [
+    "SkyCinemaFamily.uk",
+    "UK| SKY CINEMA FAMILY FHD"
+  ],
+  "skycinemagreats.uk": [
+    "SkyCinemaGreats.uk",
+    "UK| SKY CINEMA GREATS FHD"
+  ],
+  "skycinemahits.uk": [
+    "SkyCinemaHits.uk",
+    "UK| SKY CINEMA HITS FHD"
+  ],
+  "skycinemapremiere.uk": [
+    "SkyPremiere.uk",
+    "UK| SKY CINEMA PREMIER FHD"
+  ],
+  "skycinemascifihorror.uk": [
+    "SkyCinemaSciFiHorror.uk",
+    "UK| SKY CINEMA SCI-FI FHD"
+  ],
+  "skycinemathriller.uk": [
+    "SkyCinemaThriller.uk",
+    "UK| SKY CINEMA THRILLER HD"
+  ],
+  "skyselect.uk": [
+    "UK| SKY CINEMA SELECT HD"
+  ],
+  "skyatlantic.uk": [
+    "SkyAtlantic.uk",
+    "UK| SKY ATLANTIC FHD"
+  ],
+  "skymax.uk": [
+    "SkyMax.uk",
+    "UK| SKY MAX FHD"
+  ],
+  "skywitness.uk": [
+    "SkyWitness.uk",
+    "UK| SKY WITNESS FHD"
+  ],
+  "skyarts.uk": [
+    "SkyArts.uk",
+    "UK| SKY ARTS FHD"
+  ],
+  "skycomedy.uk": [
+    "SkyComedy.uk",
+    "UK| SKY COMEDY FHD"
+  ],
+  "skydocumentaries.uk": [
+    "SkyDocumentaries.uk",
+    "UK| SKY DOCUMENTARIES FHD"
+  ],
+  "skycrime.uk": [
+    "SkyCrime.uk",
+    "UK| SKY CRIME FHD"
+  ],
+  "skynature.uk": [
+    "SkyNature.uk",
+    "UK| SKY NATURE FHD"
+  ],
+  "skyhistory.uk": [
+    "UK| SKY HISTORY HD"
+  ],
+  "skyhistory2.uk": [
+    "UK| SKY HISTORY 2 HD"
+  ],
+  "skysportsmainevent.uk": [
+    "SkySportsMainEvent.uk",
+    "UK| SKY SPORTS MAIN EVENTS HD"
+  ],
+  "skysportscricket.uk": [
+    "SkySportsCricket.uk",
+    "UK| SKY SPORTS CRICKET FHD"
+  ],
+  "skysportsfootball.uk": [
+    "SkySportsFootball.uk",
+    "UK| SKY SPORTS FOOTBALL FHD"
+  ],
+  "skysportsgolf.uk": [
+    "SkySportsGolf.uk",
+    "UK| SKY SPORTS GOLF HD"
+  ],
+  "skysportspremierleague.uk": [
+    "SkySportsPremiereLeague.uk",
+    "UK| SKY SPORTS PL HD"
+  ],
+  "skysportsnews.uk": [
+    "SkySportsNews.uk",
+    "UK| SKY SPORTS NEWS FHD"
+  ],
+  "skysportsracing.uk": [
+    "SkySportsRacing.uk",
+    "UK| SKY SPORTS RACING FHD"
+  ],
+  "skysportstennis.uk": [
+    "SkySportsTennis.uk",
+    "UK| SKY SPORTS TENNIS HD"
+  ],
+  "skysportsmix.uk": [
+    "SkySportsMix.uk",
+    "UK| SKY SPORTS MIX FHD"
+  ],
+  "skysportsplus.uk": [
+    "UK| SKY SPORTS + HD",
+    "UK| SKY SPORTS + FHD"
+  ],
+  "skysportsactionhd.uk": [
+    "SkySportsAction.uk",
+    "UK| SKY SPORTS ACTION FHD"
+  ],
+  "tntsports1.uk": [
+    "TNT.Sports.1.HD.uk",
+    "TNTSports1.uk",
+    "UK| TNT SPORTS 1 FHD"
+  ],
+  "tntsports2.uk": [
+    "TNT.Sports.2.HD.uk",
+    "TNTSports2.uk",
+    "UK| TNT SPORTS 2 FHD"
+  ],
+  "tntsports3.uk": [
+    "TNT.Sports.3.HD.uk",
+    "TNTSports3.uk",
+    "UK| TNT SPORTS 3 FHD"
+  ],
+  "tntsports4.uk": [
+    "TNT.Sports.4.HD.uk",
+    "TNTSports4.uk",
+    "UK| TNT SPORTS 4 FHD"
+  ],
+  "TNTSports5.uk": [
+    "TNT.Sports.5.HD.uk",
+    "UK| TNT SPORTS 5 FHD"
+  ],
+  "tntultimate.uk": [
+    "BTSportUltimate.uk",
+    "UK| TNT ULTIMATE 4K+ [LIVE-EVENT]"
+  ],
+  "premiersports1.uk": [
+    "ViaplaySports1.uk",
+    "UK| PREMIER SPORTS 1 FHD"
+  ],
+  "premiersports2.uk": [
+    "ViaplaySports2.uk",
+    "UK| PREMIER SPORTS 2 FHD"
+  ],
+  "eurosport1.uk": [
+    "uk.Eurosport 1",
+    "UK| EUROSPORT 1 HD"
+  ],
+  "discoverychannel.uk": [
+    "DiscoveryChannel.uk",
+    "UK| DISCOVERY FHD"
+  ],
+  "discoveryhistory.uk": [
+    "DiscoveryHistory.uk",
+    "UK| DISCOVERY HISTORY"
+  ],
+  "discoveryscience.uk": [
+    "DiscoveryScience.uk",
+    "UK| DISCOVERY SCIENCE"
+  ],
+  "discoveryturbo.uk": [
+    "DiscoveryTurbo.uk",
+    "UK| DISCOVERY TURBO"
+  ],
+  "animalplanet.uk": [
+    "AnimalPlanet.uk",
+    "UK| ANIMAL PLANET FHD"
+  ],
+  "natgeowild.uk": [
+    "NatGeoWild.uk",
+    "UK| NAT GEO WILD HD"
+  ],
+  "investigationdiscovery.uk": [
+    "InvestigationDiscovery.uk",
+    "UK| INVESTIGATION DISCOVERY"
+  ],
+  "quest.uk": [
+    "Quest.uk",
+    "UK| QUEST FHD"
+  ],
+  "questred.uk": [
+    "QuestRed.uk",
+    "UK| QUEST RED"
+  ],
+  "film4.uk": [
+    "Film4.uk",
+    "UK| FILM 4 FHD"
+  ],
+  "more4.uk": [
+    "More4.uk",
+    "UK| MORE 4 FHD"
+  ],
+  "e4.uk": [
+    "E4.uk",
+    "UK| E4 FHD"
+  ],
+  "itv1.uk": [
+    "ITV1.uk",
+    "UK| ITV 1 HD"
+  ],
+  "itv2.uk": [
+    "ITV2.uk",
+    "UK| ITV 2 HD"
+  ],
+  "itv3.uk": [
+    "ITV3.uk",
+    "UK| ITV 3 HD"
+  ],
+  "itv4.uk": [
+    "ITV4.uk",
+    "UK| ITV 4 HD"
+  ],
+  "nick.uk": [
+    "Nickelodeon.uk",
+    "UK| NICKELODEON FHD"
+  ],
+  "nickjr.uk": [
+    "NickJunior.uk",
+    "UK| NICK JR FHD"
+  ],
+  "nicktoons.uk": [
+    "Nicktoons.uk",
+    "UK| NICK TOONS"
+  ],
+  "cartoonnetwork.uk": [
+    "CartoonNetwork.uk",
+    "UK| CARTOON NETWORK FHD"
+  ],
+  "boomerang.uk": [
+    "Boomerang.uk",
+    "UK| BOOMERANG FHD"
+  ],
+  "hbo.us": [
+    "HBO.us",
+    "US| HBO HD"
+  ],
+  "hbowest.us": [
+    "US| HBO WEST HD"
+  ],
+  "hbocomedy.us": [
+    "HBOComedy.us",
+    "US| HBO COMEDY HD"
+  ],
+  "hbozone.us": [
+    "HBOZone.us",
+    "US| HBO ZONE HD"
+  ],
+  "cinemax.us": [
+    "US| CINEMAX HD",
+    "US| CINEMAX EAST HD"
+  ],
+  "cinemaxwest.us": [
+    "US| CINEMAX WEST HD"
+  ],
+  "actionmax.us": [
+    "ActionMax.us",
+    "US| ACTION MAX HD",
+    "US| CINEMAX ACTION EAST HD"
+  ],
+  "moremax.us": [
+    "MoreMax.us",
+    "US| CINEMAX MOREMAX HD"
+  ],
+  "mgmplus.us": [
+    "US| MGM+ HD"
+  ],
+  "mgmplushits.us": [
+    "MGMPlusHits.us",
+    "US| MGM+ HITS HD"
+  ],
+  "mgmplusdrivein.us": [
+    "MGMPlusDriveIn.us",
+    "US| MGM+ DRIVE"
+  ],
+  "mgmplusmarquee.us": [
+    "MGMPlusMarquee.us",
+    "US| MGM+ MARQUEE"
+  ],
+  "showtime.us": [
+    "Showtime.us",
+    "US| SHOWTIME EAST HD",
+    "US| SHOWTIME HD"
+  ],
+  "showtimewest.us": [
+    "US| SHOWTIME WEST HD"
+  ],
+  "showtimeextreme.us": [
+    "ShowtimeExtreme.us",
+    "US| SHOWTIME EXTREME HD"
+  ],
+  "showtimefamily.us": [
+    "ShowtimeFamilyZone.us",
+    "US| SHOWTIME FAMILY ZONE HD"
+  ],
+  "showtimenext.us": [
+    "ShowtimeNext.us",
+    "US| SHOWTIME NEXT HD"
+  ],
+  "showtimeshowcase.us": [
+    "ShowtimeShowcase.us",
+    "US| SHOWTIME SHOWCASE HD"
+  ],
+  "showtimewomen.us": [
+    "ShowtimeWomen.us",
+    "US| SHOWTIME WOMEN HD"
+  ],
+  "starz.us": [
+    "Starz.us",
+    "US| STARZ EAST HD"
+  ],
+  "starzwest.us": [
+    "US| STARZ WEST HD"
+  ],
+  "starzcinema.us": [
+    "StarzCinema.us",
+    "US| STARZ CINEMA HD"
+  ],
+  "starzcomedy.us": [
+    "StarzComedy.us",
+    "US| STARZ COMEDY HD"
+  ],
+  "starzedge.us": [
+    "StarzEdge.us",
+    "US| STARZ EDGE HD"
+  ],
+  "starzinblack.us": [
+    "StarzInBlack.us",
+    "US| STARZ BLACK HD"
+  ],
+  "starzencore.us": [
+    "StarzEncore.us",
+    "US| STARZ ENCORE HD"
+  ],
+  "starzencoreaction.us": [
+    "StarzEncoreAction.us",
+    "US| STARZ ENCORE ACTION HD"
+  ],
+  "starzencoreblack.us": [
+    "StarzEncoreBlack.us",
+    "US| STARZ ENCORE BLACK HD"
+  ],
+  "starzencoreclassic.us": [
+    "StarzEncoreClassics.us",
+    "US| STARZ ENCORE CLASSIC HD"
+  ],
+  "starzencorefamily.us": [
+    "StarzEncoreFamily.us",
+    "US| STARZ ENCORE FAMILY HD"
+  ],
+  "starzencorewest.us": [
+    "US| STARZ ENCORE WEST HD"
+  ],
+  "starzencorewesterns.us": [
+    "StarzEncoreWesterns.us",
+    "US| STARZ ENCORE WESTERNS HD"
+  ],
+  "screenpix.us": [
+    "ScreenPix.us",
+    "US| SCREENPIX HD"
+  ],
+  "screenpixaction.us": [
+    "ScreenPixAction.us",
+    "US| SCREENPIX ACTION HD"
+  ],
+  "screenpixvoices.us": [
+    "ScreenPixVoices.us",
+    "US| SCREENPIX VOICES HD"
+  ],
+  "screenpixwesterns.us": [
+    "ScreenPixWestern.us",
+    "US| SCREENPIX WESTERNS HD"
+  ],
+  "themoviechannel.us": [
+    "US| THE MOVIE CHANNEL HD"
+  ],
+  "amc.us": [
+    "AMC.us",
+    "US| AMC HD"
+  ],
+  "amcplus.us": [
+    "AMCPlus.us",
+    "US| AMC PLUS"
+  ],
+  "fx.us": [
+    "FX.us",
+    "US| FX HD"
+  ],
+  "fxm.us": [
+    "US| FXM HD"
+  ],
+  "fxxwest.us": [
+    "US| FXX WEST HD"
+  ],
+  "paramountnetwork.us": [
+    "US| PARAMOUNT HD"
+  ],
+  "hgtv.us": [
+    "HGTV.us",
+    "US| HGTV HD"
+  ],
+  "hgtvwest.us": [
+    "US| HGTV WEST HD"
+  ],
+  "foodnetwork.us": [
+    "FoodNetwork.us",
+    "US| FOOD NETWORK HD"
+  ],
+  "foodnetworkwest.us": [
+    "US| FOOD NETWORK WEST HD"
+  ],
+  "history.us": [
+    "HistoryChannel.us",
+    "US| HISTORY HD"
+  ],
+  "investigationdiscovery.us": [
+    "InvestigationDiscovery.us",
+    "US| ID HD"
+  ],
+  "discoverychannel.us": [
+    "DiscoveryChannel.us",
+    "US| DISCOVERY CHANNEL EAST"
+  ],
+  "discoveryfamily.us": [
+    "DiscoveryFamily.us",
+    "US| DISCOVERY FAMILY HD"
+  ],
+  "bbcamerica.us": [
+    "BBCAmerica.us",
+    "US| BBC AMERICA HD"
+  ],
+  "hallmarkchannel.us": [
+    "Hallmark.us",
+    "US| HALLMARK HD"
+  ],
+  "hallmarkfamily.us": [
+    "HallmarkFamily.us",
+    "US| HALLMARK FAMILY HD"
+  ],
+  "lifetime.us": [
+    "US| LIFETIME HD"
+  ],
+  "lifetimemovienetwork.us": [
+    "US| LIFETIME MOVIE NETWORK HD"
+  ],
+  "syfy.us": [
+    "Syfy.us",
+    "US| SYFY HD"
+  ],
+  "syfywest.us": [
+    "US| SYFY WEST HD"
+  ],
+  "comedycentral.us": [
+    "US| COMEDY CENTRAL HD"
+  ],
+  "cartoonnetwork.us": [
+    "CartoonNetwork.us",
+    "US| CARTOON NETWORK EAST HD"
+  ],
+  "cartoonnetworkwest.us": [
+    "US| CARTOON NETWORK WEST HD"
+  ],
+  "nickelodeonwest.us": [
+    "US| NICKELODEON WEST HD"
+  ],
+  "disneyxd.us": [
+    "DisneyXD.us",
+    "US| DISNEY XD HD"
+  ],
+  "disneychannelwest.us": [
+    "US| DISNEY CHANNEL WEST HD"
+  ],
+  "disneyjuniorwest.us": [
+    "US| DISNEY JR WEST HD"
+  ],
+  "espn.us": [
+    "ESPN.us",
+    "US| ESPN HD"
+  ],
+  "espn2.us": [
+    "ESPN2.us",
+    "US| ESPN 2 HD"
+  ],
+  "espnnews.us": [
+    "ESPNNews.us",
+    "US| ESPN NEWS HD"
+  ],
+  "espnu.us": [
+    "ESPNU.us",
+    "US| ESPN U"
+  ],
+  "foxsports1.us": [
+    "FoxSports1.us",
+    "US| FOX SPORTS 1 HD"
+  ],
+  "foxsports2.us": [
+    "FoxSports2.us",
+    "US| FOX SPORTS 2 HD"
+  ],
+  "cbssportsnetwork.us": [
+    "US| CBS SPORTS NETWORK HD"
+  ],
+  "nflnetwork.us": [
+    "NFLNetwork.us",
+    "US| NFL NETWORK HD"
+  ],
+  "nbatv.us": [
+    "NBATV.us",
+    "US| NBA TV HD"
+  ],
+  "nhlnetwork.us": [
+    "NHLNetwork.us",
+    "US| NHL NETWORK HD"
+  ],
+  "mlbnetwork.us": [
+    "MLBNetwork.us",
+    "US| MLB NETWORK"
+  ],
+  "golfchannel.us": [
+    "GolfChannel.us",
+    "US| GOLF CHANNEL HD"
+  ],
+  "tennischannel.us": [
+    "TennisChannel.us",
+    "US| TENNIS CHANNEL"
+  ],
+  "nbcsportsbayarea.us": [
+    "NBCSportsBayArea.us",
+    "US| NBC SPORTS BAY AREA"
+  ],
+  "nbcsportsboston.us": [
+    "NBCSportsBoston.us",
+    "US| NBC SPORTS BOSTON"
+  ],
+  "nbcsportscalifornia.us": [
+    "NBCSportsCalifornia.us",
+    "US| NBC SPORTS CALIFORNIA"
+  ],
+  "nbcsportsphiladelphia.us": [
+    "NBCSportsPhiladelphia.us",
+    "US| NBC SPORTS PHILADELFIA"
   ]
 }
