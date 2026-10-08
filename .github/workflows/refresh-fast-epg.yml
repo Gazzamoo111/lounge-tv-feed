@@ -48,7 +48,7 @@ jobs:
           git add docs/epg-now-next.json
           git add docs/epg-guide.json
           git add docs/lounge-events.json
-          git add docs/artwork
+          if [ -d docs/artwork ]; then git add docs/artwork; fi
 
           if git diff --cached --quiet; then
             echo "No changes"
