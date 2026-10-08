@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "schema": "lounge-best-epg-aliases-v1",
+    "notes": "Only deterministic network aliases; 507 and Sports News excluded pending verified guide programme source. All targets must be present and have current programmes."
+  },
+  "NSW-SydneyFOXCRICKET.au": [
+    "AU| FOX CRICKET HD",
+    "AU| FOX SPORTS 501 HD",
+    "AU| KAYO - FOX SPORTS 501 CRICKET",
+    "FOXCricket.au"
+  ],
+  "NSW-SydneyFOXLEAGUE.au": [
+    "AU| FOX SPORTS 502 HD",
+    "AU| KAYO - FOX SPORTS 502 LEAUGE",
+    "AU| FOX LEAGUE HD"
+  ],
+  "NSW-SydneyFOXSPORTS503.au": [
+    "AU| FOX SPORTS 503 HD",
+    "AU| KAYO - FOX SPORTS 503",
+    "FoxSports3.au"
+  ],
+  "NSW-SydneyFoxFooty.au": [
+    "AU| FOX SPORTS 504 HD",
+    "AU| KAYO - FOX SPORTS 504 FOTTY",
+    "AU| FOX FOOTY HD"
+  ],
+  "NSW-SydneyFOXSPORTS505.au": [
+    "AU| FOX SPORTS 505 HD",
+    "AU| KAYO - FOX SPORTS 505",
+    "FoxSports5.au"
+  ],
+  "NSW-SydneyFOXSPORTS506.au": [
+    "AU| FOX SPORTS 506 HD",
+    "AU| KAYO - FOX SPORTS 506",
+    "FoxSports6.au"
+  ]
+}
