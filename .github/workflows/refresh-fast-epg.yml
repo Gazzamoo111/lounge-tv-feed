@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - "scripts/build_fast_epg.py"
+      - "scripts/export_epg_channel_index.py"
+      - "config/best_epg_verified_aliases.json"
       - ".github/workflows/refresh-fast-epg.yml"
 
   workflow_dispatch:
