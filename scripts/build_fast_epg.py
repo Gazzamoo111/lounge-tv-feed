@@ -208,6 +208,34 @@ if PLAYLIST.exists():
         pending = None
 
 
+# Best IPTV carries valid AU Fox network streams with blank/misaligned EPG IDs.
+# Map only externally verified stations to an EPG target that has real programmes.
+# Overrides are narrowly scoped, auditable, and separate from the Hary playlist.
+BEST_ALIASES = ROOT / "config" / "best_epg_verified_aliases.json"
+best_active_targets = 0
+best_active_aliases = 0
+best_missing_targets = []
+if BEST_ALIASES.exists():
+    curated = json.loads(BEST_ALIASES.read_text(encoding="utf-8"))
+    for target, names in curated.items():
+        if target.startswith("_"):
+            continue
+        if target not in by_channel or not by_channel[target]:
+            best_missing_targets.append(target)
+            continue
+        if not isinstance(names, list):
+            raise ValueError("Best EPG override requires a list for " + target)
+        best_active_targets += 1
+        for name in names:
+            key = normal(name)
+            if key:
+                aliases[key] = target
+                best_active_aliases += 1
+    print("Best verified guide targets:", best_active_targets)
+    print("Best verified guide aliases:", best_active_aliases)
+    print("Missing current guide targets:", ", ".join(best_missing_targets) or "none")
+
+
 metadata = {
     "generatedAt": now,
     "fastHorizon": fast_horizon,
