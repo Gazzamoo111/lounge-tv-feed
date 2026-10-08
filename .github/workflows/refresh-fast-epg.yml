@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - "scripts/build_fast_epg.py"
+      - ".github/workflows/refresh-fast-epg.yml"
 
   workflow_dispatch:
 
@@ -30,10 +31,14 @@ jobs:
         run: python scripts/refresh_epg_only.py
 
       - name: Refresh premium artwork cache
-        if: ${{ secrets.TMDB_BEARER_TOKEN != '' }}
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
-        run: python scripts/build_artwork_manifest.py
+        run: |
+          if [ -n "$TMDB_BEARER_TOKEN" ]; then
+            python scripts/build_artwork_manifest.py
+          else
+            echo "TMDB token unset; skip optional artwork"
+          fi
 
       - name: Commit refreshed fast EPG
         run: |
