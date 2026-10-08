@@ -1,7 +1,7 @@
 {
   "_meta": {
     "schema": "lounge-best-epg-aliases-v1",
-    "notes": "Only deterministic network aliases; 507 and Sports News excluded pending verified guide programme source. All targets must be present and have current programmes."
+    "notes": "Exact network mappings verified against the international XMLTV channel index and current programme counts. Fox Sports News excluded until an Australian news-guide source is verified."
   },
   "NSW-SydneyFOXCRICKET.au": [
     "AU| FOX CRICKET HD",
@@ -33,5 +33,10 @@
     "AU| FOX SPORTS 506 HD",
     "AU| KAYO - FOX SPORTS 506",
     "FoxSports6.au"
+  ],
+  "NSW-SydneyFOXSPORTSMORE.au": [
+    "AU| FOX SPORTS 507 HD",
+    "AU| KAYO - FOX SPORTS 507",
+    "AU| FOX SPORTS MORE HD"
   ]
 }
