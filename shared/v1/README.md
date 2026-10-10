@@ -48,3 +48,24 @@ ticket from the existing backend.
 Keep Android 1.0.72 and working LG 0.11.8 untouched while staging.
 
 No production changes, database changes, APK or IPK installation are included.
+
+## First isolated upload using Wrangler OAuth
+
+From the repository root after `git pull --ff-only`:
+
+```bash
+python3 shared/v1/publish.py shared/v1/examples/release.json \
+  --out "$HOME/Projects/LoungeTV-Stage10-Demo-Output" \
+  --publish --confirm-authorised --wrangler
+```
+
+This uses the Cloudflare Wrangler OAuth session, not the separate rclone
+credentials for the public artwork bucket. It writes four versioned demo
+JSON files to private `loungetv-content`, verifies the uploads by downloading
+and hashing them, and updates the private staging `current.json` pointer only
+after verifying the four files. The Worker keeps `CONTENT_ENABLED=false`
+until a deliberate, separately reviewed activation. Reruns with the same
+local output path stop rather than overwrite the existing local release.
+
+The demonstration programme and film names are fictional. Do not upload real
+supplier playlists or customer data through this test command.
