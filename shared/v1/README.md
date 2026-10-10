@@ -13,7 +13,7 @@ Android / Fire TV and LG webOS. Playback remains platform-specific.
 - Cloudflare R2 public `loungetv-artwork` continues serving image assets.
 - The shared metadata content is loaded from a **separate private**
   `loungetv-content` R2 bucket. Never place credentials or provider URLs there.
-- The new `lounge-tv-content-dev` Worker is **disabled by default**.
+- The new `lounge-tv-content-dev` Worker is a **separate development-only Worker**. Its metadata route is enabled only to test authorised devices against the fictional sample release. It is not linked to customer apps.
 
 ## API contract
 
@@ -63,9 +63,12 @@ This uses the Cloudflare Wrangler OAuth session, not the separate rclone
 credentials for the public artwork bucket. It writes four versioned demo
 JSON files to private `loungetv-content`, verifies the uploads by downloading
 and hashing them, and updates the private staging `current.json` pointer only
-after verifying the four files. The Worker keeps `CONTENT_ENABLED=false`
-until a deliberate, separately reviewed activation. Reruns with the same
+after verifying the four files. The development Worker may set `CONTENT_ENABLED=true` after the mock-auth tests pass. It remains protected by the existing Supabase `device-status` endpoint and requires an active device, subscription and service assignment. This is only demo content, not the customer catalogue. Reruns with the same
 local output path stop rather than overwrite the existing local release.
 
 The demonstration programme and film names are fictional. Do not upload real
 supplier playlists or customer data through this test command.
+
+## Staging authentication
+
+The Worker calls the existing Supabase `device-status` Edge Function with the device's established headers. This endpoint authenticates the device internally. The Worker additionally requires active subscription and service status with unexpired dates. **No Supabase service-role key is configured in Cloudflare**. Unauthorised requests cannot read the private R2 metadata. The existing `device-status` handler updates the device's `last_seen_at` timestamp on status checks. This is a staged solution; before production, perform a full live-device and account-level test, including revoked/expired devices and connection limits.
