@@ -52,8 +52,8 @@ async function authorised(request, env) {
         "X-Device-Token": token,
       },
       body: JSON.stringify({ action: "status" }),
-      redirect: "error",
-      signal: AbortSignal.timeout(8000),
+      redirect: "manual",
+      
     });
   } catch (_) {
     // Do not send tokens, provider URLs, error messages or stack traces to clients.
