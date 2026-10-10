@@ -13,5 +13,8 @@
       "binding": "CONTENT",
       "bucket_name": "loungetv-content"
     }
+  ],
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
   ]
 }
