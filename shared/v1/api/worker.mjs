@@ -21,6 +21,10 @@ const baseHeaders = {
 const reply = (payload, status = 200) =>
   new Response(JSON.stringify(payload), { status, headers: baseHeaders });
 
+class AuthFailure extends Error {
+  constructor(code) { super(code); this.code = code; }
+}
+
 const validDate = (value) => {
   if (value == null) return true; // existing subscriptions can be open-ended
   const timestamp = Date.parse(value);
@@ -35,23 +39,31 @@ async function authorised(request, env) {
   }
   const base = String(env.SUPABASE_URL || "").replace(/\/$/, "");
   if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(base)) {
-    throw new Error("Supabase endpoint not configured");
+    throw new AuthFailure("auth_endpoint_invalid");
   }
 
-  const response = await fetch(base + "/functions/v1/device-status", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Device-Id": id,
-      "X-Device-Token": token,
-    },
-    body: JSON.stringify({ action: "status" }),
-    redirect: "error",
-    signal: AbortSignal.timeout(8000),
-  });
+  let response;
+  try {
+    response = await fetch(base + "/functions/v1/device-status", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Device-Id": id,
+        "X-Device-Token": token,
+      },
+      body: JSON.stringify({ action: "status" }),
+      redirect: "error",
+      signal: AbortSignal.timeout(8000),
+    });
+  } catch (_) {
+    // Do not send tokens, provider URLs, error messages or stack traces to clients.
+    throw new AuthFailure("auth_transport_error");
+  }
   if (response.status === 401 || response.status === 403) return false;
-  if (!response.ok) throw new Error("Device status unavailable");
-  const data = await response.json();
+  if (!response.ok) throw new AuthFailure("auth_upstream_http_" + response.status);
+  let data;
+  try { data = await response.json(); }
+  catch (_) { throw new AuthFailure("auth_invalid_response"); }
 
   // Fail closed if the existing entitlement system doesn't give a full match.
   return data?.ok === true &&
@@ -93,8 +105,11 @@ export default {
     let allowed;
     try {
       allowed = await authorised(request, env);
-    } catch (_) {
-      return reply({ error: "Authorisation unavailable" }, 503);
+    } catch (error) {
+      return reply({
+        error: "Authorisation unavailable",
+        code: error instanceof AuthFailure ? error.code : "auth_unexpected",
+      }, 503);
     }
     if (!allowed) return reply({ error: "Inactive device or subscription" }, 401);
 
