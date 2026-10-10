@@ -5,7 +5,7 @@
   "compatibility_date": "2026-10-10",
   "workers_dev": true,
   "vars": {
-    "CONTENT_ENABLED": "false",
+    "CONTENT_ENABLED": "true",
     "SUPABASE_URL": "https://liqocisegeqzbyuqloql.supabase.co"
   },
   "r2_buckets": [
