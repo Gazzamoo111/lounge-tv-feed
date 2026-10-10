@@ -1,0 +1,30 @@
+name: Shared Lounge Content V1
+on:
+  pull_request:
+    paths:
+      - 'shared/v1/**'
+      - '.github/workflows/shared-content-v1.yml'
+  push:
+    branches: ['dev/shared-content-v1']
+    paths:
+      - 'shared/v1/**'
+      - '.github/workflows/shared-content-v1.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript
+        run: |
+          node --check shared/v1/api/worker.mjs
+          node --check shared/v1/validate.mjs
+          node --test shared/v1/tests/test.mjs
+      - name: Validate Python
+        run: python3 -m py_compile shared/v1/publish.py
+      - name: Test release publisher (no upload)
+        run: python3 shared/v1/publish.py shared/v1/examples/release.json --out /tmp/lounge-v1-ci
