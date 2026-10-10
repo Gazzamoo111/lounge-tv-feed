@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Prepare and publish a verified, versioned metadata release to PRIVATE R2."""
-import argparse, hashlib, json, re, shutil, subprocess
+import argparse, hashlib, json, re, shutil, subprocess, tempfile
 from pathlib import Path
 
 HERE=Path(__file__).resolve().parent
@@ -15,6 +15,8 @@ def main():
     a.add_argument("--publish",action="store_true")
     a.add_argument("--confirm-authorised",action="store_true")
     a.add_argument("--remote",default="",help="Private R2, e.g. s3:loungetv-content")
+    a.add_argument("--wrangler",action="store_true",help="Upload and verify using authorised Wrangler OAuth")
+    a.add_argument("--bucket",default="loungetv-content",help="Private staging bucket for --wrangler")
     args=a.parse_args()
     source=args.release.read_text(encoding="utf8")
     validator="import {validateRelease} from "+json.dumps((HERE/"validate.mjs").as_uri())+";"+"let s='';for await(const x of process.stdin)s+=x;try{console.log(JSON.stringify(validateRelease(JSON.parse(s))));}catch(e){console.error(e.message);process.exit(1);}"
@@ -37,6 +39,31 @@ def main():
         print("DRY RUN: No remote changes made")
         return
     if not args.confirm_authorised:raise RuntimeError("Explicit --confirm-authorised required")
+    if args.wrangler:
+        if args.bucket != "loungetv-content":raise RuntimeError("Wrangler publishing is restricted to private loungetv-content bucket")
+        if not shutil.which("npx"):raise RuntimeError("npx missing")
+        config=HERE/"api"/"wrangler.jsonc"
+        if not config.is_file():raise RuntimeError("Wrangler config missing")
+        def wrangler_object(action,key,path):
+            return run(["npx","--yes","wrangler@4","r2","object",action,
+                        args.bucket+"/"+key,"--file",str(path),"--remote",
+                        "--config",str(config)])
+        with tempfile.TemporaryDirectory(prefix="loungetv-r2-verify-") as tmp:
+            temp=Path(tmp)
+            for name in docs:
+                key="shared/v1/releases/"+revision+"/"+name
+                wrangler_object("put",key,folder/name)
+                fetched=temp/name
+                wrangler_object("get",key,fetched)
+                if hashlib.sha256(fetched.read_bytes()).digest()!=hashlib.sha256((folder/name).read_bytes()).digest():
+                    raise RuntimeError("Upload mismatch; pointer unchanged: "+name)
+                print("VERIFIED:", name, flush=True)
+            wrangler_object("put","shared/v1/current.json",pointer)
+            wrangler_object("get","shared/v1/current.json",temp/"current.json")
+            if (temp/"current.json").read_bytes()!=pointer.read_bytes():
+                raise RuntimeError("Pointer did not match; inspect staging bucket")
+        print("PUBLISHED AND VERIFIED: "+revision+" (private staging bucket; existing clients untouched)")
+        return
     if not re.fullmatch(r"[A-Za-z0-9_-]+:[A-Za-z0-9._-]+",args.remote):raise RuntimeError("Specify private bucket remote")
     if "artwork" in args.remote.lower():raise RuntimeError("Never use public artwork bucket")
     if not shutil.which("rclone"):raise RuntimeError("rclone missing")
