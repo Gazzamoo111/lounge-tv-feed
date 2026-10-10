@@ -4,6 +4,14 @@
   "main": "worker.mjs",
   "compatibility_date": "2026-10-10",
   "workers_dev": true,
-  "vars": {"CONTENT_ENABLED": "false"},
-  "r2_buckets": [{"binding":"CONTENT","bucket_name":"loungetv-content"}]
+  "vars": {
+    "CONTENT_ENABLED": "false",
+    "SUPABASE_URL": "https://liqocisegeqzbyuqloql.supabase.co"
+  },
+  "r2_buckets": [
+    {
+      "binding": "CONTENT",
+      "bucket_name": "loungetv-content"
+    }
+  ]
 }
