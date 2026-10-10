@@ -80,3 +80,25 @@ test('inactive API does not expose catalogue even to device headers', async () =
   const response = await worker.fetch(request(), { ...env, CONTENT_ENABLED: 'false' });
   assert.equal(response.status, 503);
 });
+
+
+test('upstream 404 is diagnosed without granting access', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(null, { status: 404 });
+  try {
+    const response = await worker.fetch(request(), env);
+    assert.equal(response.status, 503);
+    assert.equal((await response.json()).code, 'auth_upstream_http_404');
+  } finally { globalThis.fetch = originalFetch; }
+});
+test('transport failure is diagnosed without revealing raw error', async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error('private-test-secret'); };
+  try {
+    const response = await worker.fetch(request(), env);
+    assert.equal(response.status, 503);
+    const body = await response.text();
+    assert.match(body, /auth_transport_error/);
+    assert.doesNotMatch(body, /private-test-secret/);
+  } finally { globalThis.fetch = originalFetch; }
+});
