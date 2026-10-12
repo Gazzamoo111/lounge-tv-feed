@@ -13,28 +13,34 @@ Cloud-generated Lounge TV playlist, guide, and related feed assets.
 
 ## BEST backend QA progress
 
-**12 October 2026: staging import and paginated QA backend deployed.**
+**12 October 2026: private synchronisation and record-level tracking verified.**
 
-- 7,737 BEST source metadata rows staged privately in Supabase.
-- 5,544 are eligible browsing candidates, 2,193 remain hidden or reserved.
-- The versioned `public.lounge_best_qa_page` RPC returns up to 200
-  metadata-only entries per request and is executable by service role only.
-- The Supabase Edge Function `best-catalogue-qa` is deployed with JWT
-  verification and an explicit Lounge owner/admin check.
-- BEST remains paused in `public.providers`; existing HaryTV playback
-  sources and Android/Fire TV applications are not switched.
-- **Authenticated BEST inventory polling is now scheduled every four hours**
-  for live channels, movies, and series, with response collection every
-  ten minutes. Poll results are stored privately in Supabase as counts,
-  checksums, and change flags. A manual end-to-end polling test passed.
-- The private polling system does **not** import new titles directly to
-  customer catalogues or rewrite playback mappings. Automatic item-level
-  reconciliation, approved curation, BEST provider-account provisioning,
-  and Android QA integration remain to be completed.
+- BEST Xtream credentials are held in Supabase Vault, **not** this public repository.
+- 7,737 approved BEST source IDs exist in the private staging table:
+  5,544 browsing candidates and 2,193 hidden/backup/reserve sources.
+- The provider inventory is imported by BEST ID into private database tables:
+  **20,575 live sources, 67,005 movie entries, 14,010 series entries
+  (101,590 records total)**. These are not customer-visible counts.
+- Scheduled background polling runs every four hours; results are checked
+  every ten minutes; batch record imports run every minute.
+- The record-level importer tracks added, changed, restored and
+  twice-confirmed-missing source IDs without automatically deleting channels.
+  A repeat live check processed all 20,575 records and identified **175 changed
+  metadata records, zero added**; the audit trigger was corrected and retested.
+- `public.lounge_best_qa_page_v2` supplies only approved live browsing candidates
+  in metadata-only pages of up to 200, preserving curated labels separately
+  from provider-renamed titles. The `best-catalogue-qa` Supabase Edge Function
+  is on **version 2**, with JWT verification and Lounge owner/admin checks.
+- 18 preliminary EPG-based identity matches have been queued for **manual**
+  review; no customer favourites or old HaryTV channel identities were remapped.
+- The BEST provider remains **paused**. Existing HaryTV playback mappings,
+  EPG, public GitHub M3U feeds, Android/Fire TV packages and My Lounge are untouched.
 
-**Production and QA are not synchronised yet.** Do not represent the 7,737 QA
-IDs as already imported to Supabase or published in this GitHub feed. Do not
-confuse logical channels, playback sources, and visible browsing entries.
+**Production and QA are not yet switched together.** BEST metadata is
+synchronised privately in Supabase, but it is **not live in the customer
+feed**. Next steps: verify the exact installed QA runtime loader, use the
+new versioned QA API safely, configure verified BEST playback-account
+resolution, test channels/EPG/favourites, and then plan a controlled release.
 
 ## Current feed pipeline
 
@@ -51,12 +57,12 @@ regenerating the existing playlist does not perform that migration.
 
 ## Required for the next production catalogue release
 
-1. Match approved BEST numeric source IDs to existing `channel_sources`.
-2. Preserve `logical_channels.id` and customers' saved-channel associations.
-3. Keep backup, hidden, review and event-reserve sources out of ordinary browsing.
-4. Reconcile duplicates, EPG mapping and provider metadata before publishing.
-5. Verify which feed the installed Android/Fire TV app actually reads.
-6. Release and verify the Supabase and GitHub catalogue updates separately.
+1. Review BEST-to-legacy channel identity suggestions; never cross-map numeric provider IDs.
+2. Preserve customer favourites, stable `logical_channels.id`, and all existing HaryTV backups.
+3. Verify the locked Android/Fire TV QA runtime loader and its current BEST session.
+4. Keep hidden, event-reserve, adult and unverified sources out of normal browsing.
+5. Validate BEST playback-ticket/proxy routing, EPG, startup, caching, and My Lounge in QA.
+6. Release the new customer catalogue through an explicit tested cutover; do not overwrite legacy `docs/lounge-clean.m3u` blindly.
 
 **Never commit IPTV provider credentials, authenticated URLs, service-role
 keys or private tokens to this public repository.**
