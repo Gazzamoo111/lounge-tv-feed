@@ -42,6 +42,29 @@ feed**. Next steps: verify the exact installed QA runtime loader, use the
 new versioned QA API safely, configure verified BEST playback-account
 resolution, test channels/EPG/favourites, and then plan a controlled release.
 
+## Android V4 QA source inspection
+
+**12 October 2026:** Read-only inspection of the approved V4 Sport Categories,
+V4 Additive Priority, and protected RowHeight QA source bundles confirms:
+
+- The newer V4 Additive Priority project is an isolated QA build with
+  package `com.loungetv.app.categoryfixedqa`, present on Fire TV and emulator.
+- Existing `app.js` calls the native authenticated BEST M3U bridge and
+  separately fetches the working HaryTV playlist; it preserves HaryTV fallback
+  and only enters the BEST path after passing source-count checks.
+- `LoungeUltimateQA.transform` filters the native BEST M3U against an
+  **embedded** approved exact-ID map; it does not yet consult the private
+  Supabase QA API.
+- That embedded adapter contains 7,738 selected IDs, 5,545 visible:
+  one additional explicitly approved channel (`1789688`) beyond the
+  7,737/5,544 private backend manifest. This exception must be preserved.
+- The private `best-catalogue-qa` endpoint requires an authenticated Lounge
+  owner/admin session and is **not** callable from an unauthenticated Android
+  device. Never embed a Supabase service-role key or management token in APK.
+- Before wiring backend metadata into the app, inspect the existing
+  `js/customer/customer.js` and native Android bridge authentication.
+  Treat this as a scoped isolated QA change; **no production APK/feed changes**.
+
 ## Current feed pipeline
 
 - `config/master_v5.json` controls the legacy GitHub catalogue selection.
