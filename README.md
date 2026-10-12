@@ -11,6 +11,22 @@ Cloud-generated Lounge TV playlist, guide, and related feed assets.
 | BEST curated Android QA manifest | 7,737 | Approved numeric provider source IDs, **not** 7,737 live customer-facing channels |
 | BEST full source register | 20,575 | Discovery/reference inventory, not a production playlist |
 
+## BEST backend QA progress
+
+**12 October 2026: staging import and paginated QA backend deployed.**
+
+- 7,737 BEST source metadata rows staged privately in Supabase.
+- 5,544 are eligible browsing candidates, 2,193 remain hidden or reserved.
+- The versioned `public.lounge_best_qa_page` RPC returns up to 200
+  metadata-only entries per request and is executable by service role only.
+- The Supabase Edge Function `best-catalogue-qa` is deployed with JWT
+  verification and an explicit Lounge owner/admin check.
+- BEST remains paused in `public.providers`; existing HaryTV playback
+  sources and Android/Fire TV applications are not switched.
+- **Automatic upstream BEST polling, provider account configuration,
+  reviewed channel identity mapping, and Android QA integration
+  are not yet complete.**
+
 **Production and QA are not synchronised yet.** Do not represent the 7,737 QA
 IDs as already imported to Supabase or published in this GitHub feed. Do not
 confuse logical channels, playback sources, and visible browsing entries.
