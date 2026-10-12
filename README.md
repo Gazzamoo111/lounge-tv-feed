@@ -23,9 +23,14 @@ Cloud-generated Lounge TV playlist, guide, and related feed assets.
   verification and an explicit Lounge owner/admin check.
 - BEST remains paused in `public.providers`; existing HaryTV playback
   sources and Android/Fire TV applications are not switched.
-- **Automatic upstream BEST polling, provider account configuration,
-  reviewed channel identity mapping, and Android QA integration
-  are not yet complete.**
+- **Authenticated BEST inventory polling is now scheduled every four hours**
+  for live channels, movies, and series, with response collection every
+  ten minutes. Poll results are stored privately in Supabase as counts,
+  checksums, and change flags. A manual end-to-end polling test passed.
+- The private polling system does **not** import new titles directly to
+  customer catalogues or rewrite playback mappings. Automatic item-level
+  reconciliation, approved curation, BEST provider-account provisioning,
+  and Android QA integration remain to be completed.
 
 **Production and QA are not synchronised yet.** Do not represent the 7,737 QA
 IDs as already imported to Supabase or published in this GitHub feed. Do not
