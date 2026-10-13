@@ -68,7 +68,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
   <div class="brand"><img class="brand-logo" src="./assets/lounge-tv-logo-full.webp" alt="Lounge TV"></div>
   <div class="card">
     <div class="eyebrow">Device activation</div><h1>Connect your Lounge TV</h1>
-    <p class="lead">Sign in or create your Lounge account. If you have not paid yet, choose a prepaid plan below. Your TV connects once your Emerge payment has been verified and service activated.</p>
+    <p class="lead">Sign in or create your Lounge account to connect your TV. If you do not yet have a subscription, view the available prepaid plans and contact us for the next step.</p>
     <div class="code" id="code">------</div>
 
     <div id="authArea">
@@ -88,7 +88,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
 
     <div id="plansArea" class="hidden">
       <h2>Choose your Lounge plan</h2>
-      <p class="sub">Choose your prepaid plan and pay securely through ZONE. Then message us through WhatsApp with your Lounge account email and Emerge payment reference. We will verify your payment manually before activating your subscription.</p>
+      <p class="sub">These are our prepaid plans. Payments will open once account provisioning is ready. Please contact Lounge TV through WhatsApp for availability. When sales open, payments will be processed securely through ZONE and verified manually before activation.</p>
       <div class="plans" id="plans"></div>
       <button id="checkAccess" class="secondary">I HAVE PAID - CHECK ACTIVATION STATUS</button>
       <p class="note">Payments are prepaid and do not renew automatically. If your payment is not yet confirmed, please contact Lounge TV through <a href="https://wa.me/61434737022?text=Hey%20there%2C%20I%20have%20paid%20for%20Lounge%20TV.%20Please%20verify%20my%20payment%20for%20activation." target="_blank" rel="noopener noreferrer" style="color:#7edbff">WhatsApp</a>.</p>
@@ -111,6 +111,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL="https://liqocisegeqzbyuqloql.supabase.co";
 const KEY="sb_publishable_hAnd78k7ZrCH7okAM-ylaQ_Kosu5DnA";
+const PAYMENTS_OPEN=false; // Launch gate: enable only after BEST reseller capacity and full activation test.
 const PLANS=[{"id":"lounge_1m_1c","name":"Lounge TV 1 Month, 1 Connection","price_cents":4900,"currency":"NZD","term_months":1,"simultaneous_streams":1,"emerge_payment_url":"https://pay.emerge.nz/zone?data=-Wd8LObLCdE4_FdKpWKz2zHgPeJiVJUVXuIHdc8iKIpFYawy9S7B5Vg085aQ83zCBNNJpXnEdLbVItb_wmLQfkTMQ0hNuFXO2hBwFtKUQpf58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_O-XcXRvxT327ThiU4J586dWTwD3E2gj2QmPRiWkBDruRNxkpg4QGCim6hZbcChsO4"},{"id":"lounge_1m_2c","name":"Lounge TV 1 Month, 2 Connections","price_cents":7000,"currency":"NZD","term_months":1,"simultaneous_streams":2,"emerge_payment_url":"https://pay.emerge.nz/zone?data=8lA5zOi-BR8uJY6tnw3inT7qWXTZ_zCKRLbmQXHZl6aiOpgYVTkhukHRqOBe1PGkcvVjYNoVJ6u4qsKIN5brI9n8d1CAB3L3aAxLDvK2HDv58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_N9N_R8bN2c_eU3E-sgRSy_No0GbQGodnteaeGKNeNRnNhFg2axVxW0DwTlE4V8qHWljMOAVgLnCmfTQqxq1vke"},{"id":"lounge_3m_1c","name":"Lounge TV 3 Months, 1 Connection","price_cents":11900,"currency":"NZD","term_months":3,"simultaneous_streams":1,"emerge_payment_url":"https://pay.emerge.nz/zone?data=SWp-EWEqb_mHFDiwCwHbrHORwAYdrMeJh0EmBMG0eJyvifJZHIUMHzMzgsS5qN9VoNEIxt-A_3VAB7o7-AHWfOKGo7mgeDLvGNC3nH0sCxP58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_MuOXdcQtmrrmKjATrJKDHHNvfC2_kcCMmmJkEv1ayDKq__Fw0i_DsdDY9dC_E8uf2ew_6OZy8PXY0d3zkilb56"},{"id":"lounge_3m_2c","name":"Lounge TV 3 Months, 2 Connections","price_cents":17000,"currency":"NZD","term_months":3,"simultaneous_streams":2,"emerge_payment_url":"https://pay.emerge.nz/zone?data=_YCuAJRt71X_W8X6gAxawv8NZN_YFwtHfRRBLvwm5Vrpt3NMpRvi3yYX-QiFrEG-9gBhoVfwk7qzlJEZiSRv7bzNIR_4bNB3KQ0LaIJg6eL58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_MvHBERMTIv10NRzRdyPVkgNvfC2_kcCMmmJkEv1ayDKqsiuHe30PL9RUvDmD3XmYZchmGG412R_gOu5pS9bfIJ"},{"id":"lounge_6m_1c","name":"Lounge TV 6 Months, 1 Connection","price_cents":19900,"currency":"NZD","term_months":6,"simultaneous_streams":1,"emerge_payment_url":"https://pay.emerge.nz/zone?data=I6KH29NOhawosSIdvuKCvdoKvUdQMVKCACwZZP2ishdl0__GceGrfJcZpDBQwfCK65TlpCCed53SIrU_fqwCuR9h6lLvnKCiemXgwpPRqDr58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_NGGMg7PDXwL70U_9TwEm-vh_GYMTjdOLNWDXVcCBmQqK__Fw0i_DsdDY9dC_E8uf2ew_6OZy8PXY0d3zkilb56"},{"id":"lounge_6m_2c","name":"Lounge TV 6 Months, 2 Connections","price_cents":28500,"currency":"NZD","term_months":6,"simultaneous_streams":2,"emerge_payment_url":"https://pay.emerge.nz/zone?data=W8zziui0eg1YVdkewK_OW-AIJPljIhR9r9wLgMGNXK9aJ9QPB5MiyVDYUfqiruhe6QASkBzCeX0sCNVekET7rRpogLtav_kqSO5oYFZksFn58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_Nj3uUZRlP-vrdQLIKXWOpsh_GYMTjdOLNWDXVcCBmQqKsiuHe30PL9RUvDmD3XmYZchmGG412R_gOu5pS9bfIJ"}];
 const supabase=createClient(SUPABASE_URL,KEY);
 const qs=new URLSearchParams(location.search);
@@ -138,11 +139,12 @@ function showPlans(session){
     const small=document.createElement("small");small.textContent=p.term_months+" month"+(p.term_months===1?"":"s")+" prepaid · "+p.simultaneous_streams+" connection"+(p.simultaneous_streams===1?"":"s");
     info.append(strong,small);
     const price=document.createElement("div");price.className="price";price.textContent=money(p.price_cents,p.currency);
-    const btn=document.createElement("button");btn.textContent="CHOOSE "+p.name.toUpperCase();btn.onclick=()=>beginCheckout(session,p.id,btn);
+    const btn=document.createElement("button");btn.textContent=PAYMENTS_OPEN?"CHOOSE "+p.name.toUpperCase():"PAYMENT NOT OPEN YET";btn.disabled=!PAYMENTS_OPEN;btn.onclick=()=>beginCheckout(session,p.id,btn);
     row.append(info,price,btn);el.append(row);
   });
 }
 function beginCheckout(session,planId,btn){
+  if(!PAYMENTS_OPEN){setMsg("Payments are not open yet. Please contact Lounge TV through WhatsApp.","bad");return}
   const p=PLANS.find(x=>x.id===planId);
   if(!p||!p.emerge_payment_url||!p.emerge_payment_url.startsWith("https://pay.emerge.nz/zone?data=")){
     setMsg("This payment link is unavailable. Please contact Lounge TV through WhatsApp.","bad");return;
