@@ -68,7 +68,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
   <div class="brand"><img class="brand-logo" src="./assets/lounge-tv-logo-full.webp" alt="Lounge TV"></div>
   <div class="card">
     <div class="eyebrow">Device activation</div><h1>Connect your Lounge TV</h1>
-    <p class="lead">Sign in or create your Lounge account, choose your plan, then return to your TV.</p>
+    <p class="lead">Sign in or create your Lounge account. If you have not paid yet, choose a prepaid plan below. Your TV connects once your Emerge payment has been verified and service activated.</p>
     <div class="code" id="code">------</div>
 
     <div id="authArea">
@@ -88,14 +88,16 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
 
     <div id="plansArea" class="hidden">
       <h2>Choose your Lounge plan</h2>
-      <p class="sub">Your subscription is confirmed through secure Stripe Checkout.</p>
+      <p class="sub">Choose your prepaid plan and pay securely through ZONE. Then message us through WhatsApp with your Lounge account email and Emerge payment reference. We will verify your payment manually before activating your subscription.</p>
       <div class="plans" id="plans"></div>
+      <button id="checkAccess" class="secondary">I HAVE PAID - CHECK ACTIVATION STATUS</button>
+      <p class="note">Payments are prepaid and do not renew automatically. If your payment is not yet confirmed, please contact Lounge TV through <a href="https://wa.me/61434737022?text=Hey%20there%2C%20I%20have%20paid%20for%20Lounge%20TV.%20Please%20verify%20my%20payment%20for%20activation." target="_blank" rel="noopener noreferrer" style="color:#7edbff">WhatsApp</a>.</p>
     </div>
 
     <div id="waitingArea" class="hidden">
       <div class="statusbox">
-        <h2>Payment received</h2>
-        <p class="sub" style="margin:0">Your Lounge service is being set up. Leave your TV on the activation screen and it will connect automatically once setup is complete.</p>
+        <h2>Setting up your Lounge access</h2>
+        <p class="sub" style="margin:0">Your subscription has been confirmed. We are preparing your BEST service. Keep your TV on the activation screen. Return here if it does not connect after we confirm setup.</p>
         <div class="spinner"></div>
       </div>
     </div>
@@ -109,12 +111,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const SUPABASE_URL="https://liqocisegeqzbyuqloql.supabase.co";
 const KEY="sb_publishable_hAnd78k7ZrCH7okAM-ylaQ_Kosu5DnA";
-const PLANS=[
-  {id:"monthly",name:"Monthly Lounge",price_cents:4900,currency:"NZD",term_months:1,sort_order:1},
-  {id:"quarterly",name:"3 Month Lounge",price_cents:11900,currency:"NZD",term_months:3,sort_order:2},
-  {id:"six_month",name:"6 Month Lounge",price_cents:19900,currency:"NZD",term_months:6,sort_order:3},
-  {id:"annual",name:"12 Month Lounge",price_cents:32900,currency:"NZD",term_months:12,sort_order:4}
-];
+const PLANS=[{"id":"lounge_1m_1c","name":"Lounge TV 1 Month, 1 Connection","price_cents":4900,"currency":"NZD","term_months":1,"simultaneous_streams":1,"emerge_payment_url":"https://pay.emerge.nz/zone?data=-Wd8LObLCdE4_FdKpWKz2zHgPeJiVJUVXuIHdc8iKIpFYawy9S7B5Vg085aQ83zCBNNJpXnEdLbVItb_wmLQfkTMQ0hNuFXO2hBwFtKUQpf58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_O-XcXRvxT327ThiU4J586dWTwD3E2gj2QmPRiWkBDruRNxkpg4QGCim6hZbcChsO4"},{"id":"lounge_1m_2c","name":"Lounge TV 1 Month, 2 Connections","price_cents":7000,"currency":"NZD","term_months":1,"simultaneous_streams":2,"emerge_payment_url":"https://pay.emerge.nz/zone?data=8lA5zOi-BR8uJY6tnw3inT7qWXTZ_zCKRLbmQXHZl6aiOpgYVTkhukHRqOBe1PGkcvVjYNoVJ6u4qsKIN5brI9n8d1CAB3L3aAxLDvK2HDv58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_N9N_R8bN2c_eU3E-sgRSy_No0GbQGodnteaeGKNeNRnNhFg2axVxW0DwTlE4V8qHWljMOAVgLnCmfTQqxq1vke"},{"id":"lounge_3m_1c","name":"Lounge TV 3 Months, 1 Connection","price_cents":11900,"currency":"NZD","term_months":3,"simultaneous_streams":1,"emerge_payment_url":"https://pay.emerge.nz/zone?data=SWp-EWEqb_mHFDiwCwHbrHORwAYdrMeJh0EmBMG0eJyvifJZHIUMHzMzgsS5qN9VoNEIxt-A_3VAB7o7-AHWfOKGo7mgeDLvGNC3nH0sCxP58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_MuOXdcQtmrrmKjATrJKDHHNvfC2_kcCMmmJkEv1ayDKq__Fw0i_DsdDY9dC_E8uf2ew_6OZy8PXY0d3zkilb56"},{"id":"lounge_3m_2c","name":"Lounge TV 3 Months, 2 Connections","price_cents":17000,"currency":"NZD","term_months":3,"simultaneous_streams":2,"emerge_payment_url":"https://pay.emerge.nz/zone?data=_YCuAJRt71X_W8X6gAxawv8NZN_YFwtHfRRBLvwm5Vrpt3NMpRvi3yYX-QiFrEG-9gBhoVfwk7qzlJEZiSRv7bzNIR_4bNB3KQ0LaIJg6eL58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_MvHBERMTIv10NRzRdyPVkgNvfC2_kcCMmmJkEv1ayDKqsiuHe30PL9RUvDmD3XmYZchmGG412R_gOu5pS9bfIJ"},{"id":"lounge_6m_1c","name":"Lounge TV 6 Months, 1 Connection","price_cents":19900,"currency":"NZD","term_months":6,"simultaneous_streams":1,"emerge_payment_url":"https://pay.emerge.nz/zone?data=I6KH29NOhawosSIdvuKCvdoKvUdQMVKCACwZZP2ishdl0__GceGrfJcZpDBQwfCK65TlpCCed53SIrU_fqwCuR9h6lLvnKCiemXgwpPRqDr58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_NGGMg7PDXwL70U_9TwEm-vh_GYMTjdOLNWDXVcCBmQqK__Fw0i_DsdDY9dC_E8uf2ew_6OZy8PXY0d3zkilb56"},{"id":"lounge_6m_2c","name":"Lounge TV 6 Months, 2 Connections","price_cents":28500,"currency":"NZD","term_months":6,"simultaneous_streams":2,"emerge_payment_url":"https://pay.emerge.nz/zone?data=W8zziui0eg1YVdkewK_OW-AIJPljIhR9r9wLgMGNXK9aJ9QPB5MiyVDYUfqiruhe6QASkBzCeX0sCNVekET7rRpogLtav_kqSO5oYFZksFn58kokgrmrL_-kbkqMy_yUxSnPByEAkR64jwN8PD7Qu1YzZ_18Y0ZBSVpc1HBC4kKTG-PnXviMGpTibFNA19XwC9dlBmDev5Cm2oW1V9b5Gl59nJTYGUmXiJZLTEB8-_Nj3uUZRlP-vrdQLIKXWOpsh_GYMTjdOLNWDXVcCBmQqKsiuHe30PL9RUvDmD3XmYZchmGG412R_gOu5pS9bfIJ"}];
 const supabase=createClient(SUPABASE_URL,KEY);
 const qs=new URLSearchParams(location.search);
 const code=(qs.get("code")||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6);
@@ -136,24 +133,28 @@ function showPlans(session){
   const el=document.getElementById("plans");el.innerHTML="";
   PLANS.forEach(p=>{
     const row=document.createElement("div");row.className="plan";
-    const info=document.createElement("div");info.innerHTML="<strong>"+p.name+"</strong><small>"+p.term_months+" month"+(p.term_months===1?"":"s")+" · recurring</small>";
+    const info=document.createElement("div");
+    const strong=document.createElement("strong");strong.textContent=p.name;
+    const small=document.createElement("small");small.textContent=p.term_months+" month"+(p.term_months===1?"":"s")+" prepaid · "+p.simultaneous_streams+" connection"+(p.simultaneous_streams===1?"":"s");
+    info.append(strong,small);
     const price=document.createElement("div");price.className="price";price.textContent=money(p.price_cents,p.currency);
     const btn=document.createElement("button");btn.textContent="CHOOSE "+p.name.toUpperCase();btn.onclick=()=>beginCheckout(session,p.id,btn);
     row.append(info,price,btn);el.append(row);
   });
 }
-async function beginCheckout(session,planId,btn){
-  try{
-    btn.disabled=true;setMsg("Opening secure checkout…");
-    const r=await fetch(SUPABASE_URL+"/functions/v1/create-checkout",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":KEY},body:JSON.stringify({plan_id:planId,code})});
-    const d=await r.json();if(!r.ok)throw new Error(d.error||"Could not start checkout");location.href=d.url;
-  }catch(e){btn.disabled=false;setMsg(e.message||"Could not start checkout","bad")}
+function beginCheckout(session,planId,btn){
+  const p=PLANS.find(x=>x.id===planId);
+  if(!p||!p.emerge_payment_url||!p.emerge_payment_url.startsWith("https://pay.emerge.nz/zone?data=")){
+    setMsg("This payment link is unavailable. Please contact Lounge TV through WhatsApp.","bad");return;
+  }
+  window.open(p.emerge_payment_url,"_blank","noopener,noreferrer");
+  setMsg("Complete your payment through ZONE, then message Lounge TV on WhatsApp with your Lounge account email and transaction reference. Access begins only after we verify payment.","ok");
 }
 async function claim(session,retry=false){
   setMsg(retry?"Confirming your Lounge subscription…":"Checking your Lounge account…");
   const r=await fetch(SUPABASE_URL+"/functions/v1/claim-device",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":KEY},body:JSON.stringify({code,device_name:"Lounge TV"})});
   const d=await r.json().catch(()=>({}));
-  if(r.status===402){showPlans(session);setMsg(qs.get("checkout")==="success"?"Payment is still confirming. This normally takes a few seconds.":"");return "payment"}
+  if(r.status===402){showPlans(session);setMsg("No confirmed subscription yet. If you have already paid, contact Lounge TV through WhatsApp so we can verify your Emerge payment.","bad");return "payment"}
   if(r.status===202||d.status==="awaiting_setup"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.remove("hidden");setMsg("Your TV will activate automatically.","ok");return "waiting"}
   if(!r.ok)throw new Error(d.error||"Could not activate TV");
   if(d.status==="claimed"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.add("hidden");setMsg("Your TV is connected. You can return to Lounge TV.","ok");return "claimed"}
@@ -162,20 +163,20 @@ async function claim(session,retry=false){
 async function afterAuth(session){
   if(!code){setMsg("Scan the QR code shown on your TV to start.","bad");return}
   authArea.classList.add("hidden");
-  if(qs.get("checkout")==="cancelled"){showPlans(session);setMsg("Checkout cancelled. Choose a plan when you're ready.");return}
-  if(qs.get("checkout")==="success"){
-    for(let i=0;i<8;i++){try{const state=await claim(session,true);if(state!=="payment")return}catch(e){if(i===7)throw e}await new Promise(r=>setTimeout(r,1800))}
-    showPlans(session);setMsg("Your payment is taking longer than expected to confirm. Refresh this page in a moment.","bad");return;
-  }
   await claim(session);
 }
 document.getElementById("signinTab").onclick=()=>{document.getElementById("signin").classList.remove("hidden");document.getElementById("signup").classList.add("hidden")};
 document.getElementById("signupTab").onclick=()=>{document.getElementById("signup").classList.remove("hidden");document.getElementById("signin").classList.add("hidden")};
 document.getElementById("signinBtn").onclick=async()=>{try{setMsg("Signing in…");const {data,error}=await supabase.auth.signInWithPassword({email:emailInput.value.trim(),password:passwordInput.value});if(error)throw error;await afterAuth(data.session)}catch(e){setMsg(e.message||"Sign in failed","bad")}};
 document.getElementById("signupBtn").onclick=async()=>{try{setMsg("Creating your account…");const nm=nameInput.value.trim();const parts=nm.split(/\s+/).filter(Boolean);const first=parts.shift()||"";const last=parts.join(" ");const {data,error}=await supabase.auth.signUp({email:newEmailInput.value.trim(),password:newPasswordInput.value,options:{data:{first_name:first,last_name:last,display_name:nm}}});if(error)throw error;if(!data.session){setMsg("Account created. Check your email, confirm it, then return here and sign in.","ok");return}await afterAuth(data.session)}catch(e){setMsg(e.message||"Could not create account","bad")}};
+document.getElementById("checkAccess").onclick=async()=>{
+  const {data:{session}}=await supabase.auth.getSession();
+  if(!session){setMsg("Please sign in again to check your activation.","bad");return}
+  try{await claim(session)}catch(e){setMsg(e.message||"Could not check activation status.","bad")}
+};
 const {data:{session}}=await supabase.auth.getSession();
 if(session){try{await afterAuth(session)}catch(e){setMsg(e.message||"Could not continue","bad")}}
-else if(qs.get("checkout")==="success"){setMsg("Payment returned successfully. Sign in again to finish connecting your TV.")}
+
 </script>
 </body>
 </html>
