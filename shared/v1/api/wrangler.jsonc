@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "lounge-tv-content-dev",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-10-10",
+  "workers_dev": true,
+  "vars": {
+    "CONTENT_ENABLED": "true",
+    "SUPABASE_URL": "https://liqocisegeqzbyuqloql.supabase.co"
+  },
+  "r2_buckets": [
+    {
+      "binding": "CONTENT",
+      "bucket_name": "loungetv-content"
+    }
+  ],
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "revision": "20261010-demo-1",
+  "generated_at": "2026-10-10T00:00:00Z",
+  "live": {"channels": [{"id":"nz-example-1","name":"Example Channel","artwork":"https://example.org/logo.png"}]},
+  "vod": {"titles": [{"id":"movie-example-1","name":"Example Film","type":"movie"}]},
+  "epg": {"programmes": [{"channel_id":"nz-example-1","start":"2026-10-10T12:00:00Z","end":"2026-10-10T13:00:00Z","title":"Example"}]}
+}
