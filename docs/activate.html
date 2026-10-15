@@ -69,7 +69,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
   <div class="brand"><img class="brand-logo" src="./assets/lounge-tv-logo-full.webp" alt="Lounge TV"></div>
   <div class="card">
     <div class="eyebrow">Device activation</div><h1>Connect your Lounge TV</h1>
-    <p class="lead">Already approved? Sign in below to connect your TV. New to Lounge TV? Register and request your trial on our website first, then scan a fresh TV QR code after approval.</p>
+    <p class="lead">Sign in to connect this television. If your trial is still pending, you can link the TV now and wait for approval without scanning again, provided the TV stays on the activation screen.</p>
     <div class="code" id="code">------</div>
 
     <div id="authArea">
@@ -81,27 +81,27 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
       </div>
       <div id="signup" class="hidden">
         <p class="sub">New customers register securely through the official Lounge TV website. Your account, device choice and free-trial request are handled together, with one email confirmation.</p>
-        <a class="linkbtn" href="https://loungetv.lovable.app/free-trial">CREATE ACCOUNT &amp; REQUEST FREE TRIAL</a>
-        <a class="linkbtn outline" href="https://loungetv.lovable.app/pricing">VIEW PREPAID PLANS</a>
-        <p class="note">Once our team approves your request, return to the TV and scan its latest QR code. Do not create a second account.</p>
+        <a class="linkbtn" href="https://loungetv.nz/free-trial">CREATE ACCOUNT &amp; REQUEST FREE TRIAL</a>
+        <a class="linkbtn outline" href="https://loungetv.nz/pricing">VIEW PREPAID PLANS</a>
+        <p class="note">Once you've requested a trial, keep the TV on its activation screen. Don't create a second account.</p>
       </div>
     </div>
 
     <div id="plansArea" class="hidden">
       <h2>Your Lounge access is not active yet</h2>
       <p class="sub">If you have already requested a trial, check its status below. If this is your first visit, register and request your trial on the official Lounge TV website.</p>
-      <a class="linkbtn" href="https://loungetv.lovable.app/free-trial">REQUEST A FREE TRIAL</a>
-      <a class="linkbtn outline" href="https://loungetv.lovable.app/my-request">CHECK MY REQUEST</a>
-      <a class="linkbtn outline" href="https://loungetv.lovable.app/pricing">VIEW PREPAID PLANS</a>
+      <a class="linkbtn" href="https://loungetv.nz/free-trial">REQUEST A FREE TRIAL</a>
+      <a class="linkbtn outline" href="https://loungetv.nz/my-request">CHECK MY REQUEST</a>
+      <a class="linkbtn outline" href="https://loungetv.nz/pricing">VIEW PREPAID PLANS</a>
       <div class="plans" id="plans"></div>
       <button id="checkAccess" class="secondary">CHECK ACCESS AGAIN</button>
-      <p class="note">After approval, open Lounge TV on your television and scan a fresh QR code to connect. Need help? <a href="https://wa.me/61434737022" target="_blank" rel="noopener noreferrer" style="color:#7edbff">WhatsApp Lounge TV</a>.</p>
+      <p class="note">You can scan the TV QR code while your trial request is pending. Keep the TV on its activation screen until approval to complete setup automatically. Need help? <a href="https://wa.me/61434737022" target="_blank" rel="noopener noreferrer" style="color:#7edbff">WhatsApp Lounge TV</a>.</p>
     </div>
 
     <div id="waitingArea" class="hidden">
       <div class="statusbox">
         <h2>Setting up your Lounge access</h2>
-        <p class="sub" style="margin:0">Your subscription has been confirmed. We are preparing your BEST service. Keep your TV on the activation screen. Return here if it does not connect after we confirm setup.</p>
+        <p class="sub" style="margin:0">Your TV is linked to your account. Keep Lounge TV open on its activation screen while your trial request is reviewed or your subscription is being prepared.</p>
         <div class="spinner"></div>
       </div>
     </div>
@@ -168,7 +168,7 @@ async function claim(session,retry=false){
     else setMsg("No approved subscription or trial was found. Request a free trial above, or check your existing request.", "bad");
     return "payment"
   }
-  if(r.status===202||d.status==="awaiting_setup"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.remove("hidden");setMsg("Your TV will activate automatically.","ok");return "waiting"}
+  if(r.status===202||d.status==="awaiting_setup"||d.status==="awaiting_approval"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.remove("hidden");setMsg(d.status==="awaiting_approval"?"Your trial is pending. This TV code is linked to your account and can activate automatically after approval. Keep Lounge TV open on your TV.":"Your TV will activate automatically when your service is ready.","ok");return "waiting"}
   if(!r.ok)throw new Error(d.error||"Could not activate TV");
   if(d.status==="claimed"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.add("hidden");setMsg("Your TV is connected. You can return to Lounge TV.","ok");return "claimed"}
   return d.status||"unknown";
