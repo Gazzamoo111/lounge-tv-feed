@@ -1,10 +1,7 @@
-name: Update Lounge Feeds
+name: Rebuild Legacy Lounge Feed (manual)
 
 on:
   workflow_dispatch:
-
-  schedule:
-    - cron: "17 */4 * * *"
 
 permissions:
   contents: write

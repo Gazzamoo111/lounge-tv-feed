@@ -70,7 +70,12 @@ V4 Additive Priority, and protected RowHeight QA source bundles confirms:
 - `config/master_v5.json` controls the legacy GitHub catalogue selection.
 - `scripts/update_feeds.py` generates `docs/lounge-clean.m3u` and
   `docs/epg6-live.xml` from upstream sources and that configuration.
-- `.github/workflows/update-feeds.yml` runs every four hours.
+- `.github/workflows/update-feeds.yml` is a manual-only legacy recovery job.
+  Its four-hour schedule was retired after the former Ganja Drive source began
+  returning a 472-byte error document. The account-specific BEST catalogue is
+  loaded by Lounge TV and must not be rebuilt from this legacy source.
+- `.github/workflows/refresh-fast-epg.yml` remains the active hourly EPG path;
+  it refreshes the guide against the last-known-good compatibility playlist.
 - `docs/lounge-secure.m3u` is an older internal/backup representation,
   not the new BEST catalogue database.
 
