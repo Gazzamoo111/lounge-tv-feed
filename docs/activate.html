@@ -44,6 +44,7 @@ button{
   box-shadow:0 10px 24px rgba(47,107,255,.20)
 }
 .tabs button{margin:0;height:42px;min-height:42px;box-shadow:none}.secondary{background:transparent;color:#9da9ba;border:1px solid transparent}
+a.linkbtn{display:flex;align-items:center;justify-content:center;min-height:50px;margin-top:12px;padding:12px 16px;border-radius:12px;background:linear-gradient(135deg,#00d9ff 0%,#3473ff 48%,#7156ff 100%);color:#fff;text-decoration:none;font-size:14px;font-weight:900;text-align:center}a.linkbtn.outline{background:transparent;border:1px solid rgba(255,255,255,.25);color:#c7d4e6}
 button:disabled{opacity:.5}
 label{display:block;color:#c5cfdd;font-weight:800;font-size:12px;margin:15px 0 7px}
 input{
@@ -68,7 +69,7 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
   <div class="brand"><img class="brand-logo" src="./assets/lounge-tv-logo-full.webp" alt="Lounge TV"></div>
   <div class="card">
     <div class="eyebrow">Device activation</div><h1>Connect your Lounge TV</h1>
-    <p class="lead">Sign in or create your Lounge account to connect your TV. If you do not yet have a subscription, view the available prepaid plans and contact us for the next step.</p>
+    <p class="lead">Already approved? Sign in below to connect your TV. New to Lounge TV? Register and request your trial on our website first, then scan a fresh TV QR code after approval.</p>
     <div class="code" id="code">------</div>
 
     <div id="authArea">
@@ -79,19 +80,22 @@ input:focus{border-color:#577fff;box-shadow:0 0 0 3px rgba(59,103,255,.12)}
         <button id="signinBtn">SIGN IN & CONTINUE</button>
       </div>
       <div id="signup" class="hidden">
-        <label>Name</label><input id="name" autocomplete="name">
-        <label>Email</label><input id="newEmail" type="email" autocomplete="email">
-        <label>Password</label><input id="newPassword" type="password" autocomplete="new-password">
-        <button id="signupBtn">CREATE ACCOUNT</button>
+        <p class="sub">New customers register securely through the official Lounge TV website. Your account, device choice and free-trial request are handled together, with one email confirmation.</p>
+        <a class="linkbtn" href="https://loungetv.lovable.app/free-trial">CREATE ACCOUNT &amp; REQUEST FREE TRIAL</a>
+        <a class="linkbtn outline" href="https://loungetv.lovable.app/pricing">VIEW PREPAID PLANS</a>
+        <p class="note">Once our team approves your request, return to the TV and scan its latest QR code. Do not create a second account.</p>
       </div>
     </div>
 
     <div id="plansArea" class="hidden">
-      <h2>Choose your Lounge plan</h2>
-      <p class="sub">These are our prepaid plans. Payments will open once account provisioning is ready. Please contact Lounge TV through WhatsApp for availability. When sales open, payments will be processed securely through ZONE and verified manually before activation.</p>
+      <h2>Your Lounge access is not active yet</h2>
+      <p class="sub">If you have already requested a trial, check its status below. If this is your first visit, register and request your trial on the official Lounge TV website.</p>
+      <a class="linkbtn" href="https://loungetv.lovable.app/free-trial">REQUEST A FREE TRIAL</a>
+      <a class="linkbtn outline" href="https://loungetv.lovable.app/my-request">CHECK MY REQUEST</a>
+      <a class="linkbtn outline" href="https://loungetv.lovable.app/pricing">VIEW PREPAID PLANS</a>
       <div class="plans" id="plans"></div>
-      <button id="checkAccess" class="secondary">I HAVE PAID - CHECK ACTIVATION STATUS</button>
-      <p class="note">Payments are prepaid and do not renew automatically. If your payment is not yet confirmed, please contact Lounge TV through <a href="https://wa.me/61434737022?text=Hey%20there%2C%20I%20have%20paid%20for%20Lounge%20TV.%20Please%20verify%20my%20payment%20for%20activation." target="_blank" rel="noopener noreferrer" style="color:#7edbff">WhatsApp</a>.</p>
+      <button id="checkAccess" class="secondary">CHECK ACCESS AGAIN</button>
+      <p class="note">After approval, open Lounge TV on your television and scan a fresh QR code to connect. Need help? <a href="https://wa.me/61434737022" target="_blank" rel="noopener noreferrer" style="color:#7edbff">WhatsApp Lounge TV</a>.</p>
     </div>
 
     <div id="waitingArea" class="hidden">
@@ -123,15 +127,13 @@ const plansArea=document.getElementById("plansArea");
 const waitingArea=document.getElementById("waitingArea");
 const emailInput=document.getElementById("email");
 const passwordInput=document.getElementById("password");
-const nameInput=document.getElementById("name");
-const newEmailInput=document.getElementById("newEmail");
-const newPasswordInput=document.getElementById("newPassword");
 
 function setMsg(text,type=""){msg.className="msg"+(type?" "+type:"");msg.textContent=text||""}
 function money(cents,currency){try{return new Intl.NumberFormat("en-NZ",{style:"currency",currency:currency||"NZD",maximumFractionDigits:0}).format(cents/100)}catch{return "$"+(cents/100).toFixed(0)}}
 function showPlans(session){
   authArea.classList.add("hidden");waitingArea.classList.add("hidden");plansArea.classList.remove("hidden");
   const el=document.getElementById("plans");el.innerHTML="";
+  if(!PAYMENTS_OPEN)return;
   PLANS.forEach(p=>{
     const row=document.createElement("div");row.className="plan";
     const info=document.createElement("div");
@@ -156,7 +158,16 @@ async function claim(session,retry=false){
   setMsg(retry?"Confirming your Lounge subscription…":"Checking your Lounge account…");
   const r=await fetch(SUPABASE_URL+"/functions/v1/claim-device",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+session.access_token,"apikey":KEY},body:JSON.stringify({code,device_name:"Lounge TV"})});
   const d=await r.json().catch(()=>({}));
-  if(r.status===402){showPlans(session);setMsg("No confirmed subscription yet. If you have already paid, contact Lounge TV through WhatsApp so we can verify your Emerge payment.","bad");return "payment"}
+  if(r.status===402){
+    showPlans(session);
+    const {data:trial}=await supabase.from("lounge_intake_requests")
+      .select("reference,status").eq("user_id",session.user.id).eq("request_type","trial")
+      .in("status",["pending","approved"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if(trial?.status==="pending") setMsg("Your trial "+trial.reference+" is awaiting approval. Please do not submit a second request. After approval, return to the TV and scan a fresh QR code.","ok");
+    else if(trial?.status==="approved") setMsg("Your trial "+trial.reference+" is approved but no active service was detected. Contact Lounge TV on WhatsApp with your reference.","bad");
+    else setMsg("No approved subscription or trial was found. Request a free trial above, or check your existing request.", "bad");
+    return "payment"
+  }
   if(r.status===202||d.status==="awaiting_setup"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.remove("hidden");setMsg("Your TV will activate automatically.","ok");return "waiting"}
   if(!r.ok)throw new Error(d.error||"Could not activate TV");
   if(d.status==="claimed"){authArea.classList.add("hidden");plansArea.classList.add("hidden");waitingArea.classList.add("hidden");setMsg("Your TV is connected. You can return to Lounge TV.","ok");return "claimed"}
@@ -170,7 +181,6 @@ async function afterAuth(session){
 document.getElementById("signinTab").onclick=()=>{document.getElementById("signin").classList.remove("hidden");document.getElementById("signup").classList.add("hidden")};
 document.getElementById("signupTab").onclick=()=>{document.getElementById("signup").classList.remove("hidden");document.getElementById("signin").classList.add("hidden")};
 document.getElementById("signinBtn").onclick=async()=>{try{setMsg("Signing in…");const {data,error}=await supabase.auth.signInWithPassword({email:emailInput.value.trim(),password:passwordInput.value});if(error)throw error;await afterAuth(data.session)}catch(e){setMsg(e.message||"Sign in failed","bad")}};
-document.getElementById("signupBtn").onclick=async()=>{try{setMsg("Creating your account…");const nm=nameInput.value.trim();const parts=nm.split(/\s+/).filter(Boolean);const first=parts.shift()||"";const last=parts.join(" ");const {data,error}=await supabase.auth.signUp({email:newEmailInput.value.trim(),password:newPasswordInput.value,options:{data:{first_name:first,last_name:last,display_name:nm}}});if(error)throw error;if(!data.session){setMsg("Account created. Check your email, confirm it, then return here and sign in.","ok");return}await afterAuth(data.session)}catch(e){setMsg(e.message||"Could not create account","bad")}};
 document.getElementById("checkAccess").onclick=async()=>{
   const {data:{session}}=await supabase.auth.getSession();
   if(!session){setMsg("Please sign in again to check your activation.","bad");return}
