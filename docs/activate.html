@@ -186,8 +186,34 @@ document.getElementById("checkAccess").onclick=async()=>{
   if(!session){setMsg("Please sign in again to check your activation.","bad");return}
   try{await claim(session)}catch(e){setMsg(e.message||"Could not check activation status.","bad")}
 };
+// Never silently claim a TV for an old phone session: ask the customer which account to use.
 const {data:{session}}=await supabase.auth.getSession();
-if(session){try{await afterAuth(session)}catch(e){setMsg(e.message||"Could not continue","bad")}}
+if(session){
+  const confirmPanel=document.createElement("div");
+  confirmPanel.className="statusbox";
+  const heading=document.createElement("h2");
+  heading.textContent="Confirm your Lounge account";
+  const expl=document.createElement("p");
+  expl.className="sub";
+  expl.textContent="You're signed in as "+(session.user?.email||"a Lounge TV account")+". Only continue if this is the account you want to use on your television.";
+  const continueBtn=document.createElement("button");
+  continueBtn.textContent="CONTINUE WITH THIS ACCOUNT";
+  continueBtn.onclick=async()=>{
+    continueBtn.disabled=true;
+    try{confirmPanel.remove();await afterAuth(session)}
+    catch(e){setMsg(e.message||"Could not continue","bad");continueBtn.disabled=false;authArea.prepend(confirmPanel)}
+  };
+  const switchBtn=document.createElement("button");
+  switchBtn.className="secondary";
+  switchBtn.textContent="USE A DIFFERENT ACCOUNT";
+  switchBtn.onclick=async()=>{
+    switchBtn.disabled=true;
+    try{await supabase.auth.signOut();confirmPanel.remove();setMsg("Sign in with the Lounge TV account you want on this television.");}
+    catch(e){switchBtn.disabled=false;setMsg("Could not sign out. Please try again.","bad")}
+  };
+  confirmPanel.append(heading,expl,continueBtn,switchBtn);
+  authArea.prepend(confirmPanel);
+}
 
 </script>
 </body>
