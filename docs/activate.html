@@ -208,11 +208,14 @@ if(session){
   switchBtn.textContent="USE A DIFFERENT ACCOUNT";
   switchBtn.onclick=async()=>{
     switchBtn.disabled=true;
-    try{await supabase.auth.signOut();confirmPanel.remove();setMsg("Sign in with the Lounge TV account you want on this television.");}
+    try{await supabase.auth.signOut();confirmPanel.remove();authArea.querySelector(".tabs")?.classList.remove("hidden");document.getElementById("signin")?.classList.remove("hidden");setMsg("Sign in with the Lounge TV account you want on this television.");}
     catch(e){switchBtn.disabled=false;setMsg("Could not sign out. Please try again.","bad")}
   };
   confirmPanel.append(heading,expl,continueBtn,switchBtn);
   authArea.prepend(confirmPanel);
+  authArea.querySelector(".tabs")?.classList.add("hidden");
+  document.getElementById("signin")?.classList.add("hidden");
+  document.getElementById("signup")?.classList.add("hidden");
 }
 
 </script>
