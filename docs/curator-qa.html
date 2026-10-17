@@ -29,10 +29,11 @@ p,.muted,small{color:#a9bdd4}.hide{display:none!important}.row{display:flex;alig
 <div id="app" class="hide">
 <section><h2>Catalogue status</h2><div id="metrics" class="stats"></div>
 <p>The initial rules exclude news, non-English packages, adult, religious and most BEST NZ television. Sky Sport NZ remains separate. You can override any decision.</p></section>
-<section><h2>1. Import playback sources</h2>
- <p>Select your private BEST M3U or the successful <b>LoungeTV-Test.m3u</b>. Stream credentials stay inside your private Lounge TV staging database. Never put the M3U in a public GitHub repository.</p>
- <div class="row"><input type="file" id="upload" accept=".m3u,.m3u8,text/plain"><button id="import">Import M3U</button><button class="secondary" id="freeview">Refresh TVNZ from Freeview</button><button class="secondary" id="dedupe">Hide duplicate feeds</button></div>
- <small>You can import more channels later. Previously saved hide/backup choices are preserved.</small>
+<section><h2>1. Sources</h2>
+ <p><b>BEST is connected to the complete catalogue automatically.</b> No BEST M3U file is required. Its channel IDs produce private stream links from the existing secured BEST test account.</p>
+ <div class="row"><button class="secondary" id="freeview">Refresh TVNZ from NZ Freeview</button><button class="secondary" id="dedupe">Hide duplicate feeds</button></div>
+ <small>NZ Freeview is imported separately. Keep Sky Sport NZ from BEST.</small>
+ <div class="hide"><input type="file" id="upload" accept=".m3u,.m3u8,text/plain"><button id="import">Import M3U</button></div>
 </section>
 <section><h2>2. Categories</h2><p>Switch an entire category on or off. Click its name to view individual channels.</p>
  <div class="toolbar"><input id="groupsearch" placeholder="Find category..."></div><div id="groups"></div>
@@ -40,12 +41,12 @@ p,.muted,small{color:#a9bdd4}.hide{display:none!important}.row{display:flex;alig
 <section><h2>3. Channels</h2>
  <div class="toolbar"><input id="search" placeholder="Search channel or ID">
  <select id="state"><option value="">All statuses</option><option value="visible">Visible</option><option value="backup">Hidden backup</option><option value="excluded">Excluded</option></select>
- <label class="row"><input type="checkbox" id="loaded" checked>Imported streams only</label>
+ <label class="row"><input type="checkbox" id="loaded">Currently available sources only</label>
  <button class="secondary" id="find">Search</button></div>
  <small id="pager"></small><div id="results"></div><div class="row"><button class="secondary" id="prev">Previous</button><button class="secondary" id="next">Next</button></div>
 </section>
 <section><h2>4. Private OwnTV playlist URL</h2>
- <p>Generate a protected URL after importing your streams. Keep it private: stream addresses can reveal BEST credentials. This staging URL uses the single BEST account you imported and is not for customer distribution.</p>
+ <p>Generate the protected URL after choosing your categories. This staging URL derives playback links using the secured BEST Launch Test account and Freeview. Treat the URL as private: the underlying stream links contain BEST credentials. Not for customer distribution.</p>
  <div class="row"><button id="generate">Generate / replace private URL</button><button class="danger" id="disable">Disable URL</button></div>
  <p id="urlbox"></p>
 </section></div><p id="status"></p>
@@ -58,7 +59,7 @@ var session=null,groups=[],group="",offset=0,total=0,limit=40;
 var $=id=>document.getElementById(id);
 function msg(v){$("status").textContent=String(v||"")}
 function el(tag,text){var e=document.createElement(tag);if(text!==undefined)e.textContent=String(text);return e}
-function renderStatus(r){$("metrics").textContent="";var values=[["Visible",r.counts.visible],["Hidden backups",r.counts.backup],["Excluded",r.counts.excluded],["Ready to stream",r.ready]];
+function renderStatus(r){$("metrics").textContent="";var values=[["Visible",r.counts.visible],["Hidden backups",r.counts.backup],["Excluded",r.counts.excluded],["Available stream IDs",r.ready]];
  values.forEach(p=>{var box=el("div");box.className="metric";var b=el("b",p[1]);box.append(b,el("small",p[0]));$("metrics").append(box)});
 }
 async function call(action,args){
