@@ -61,6 +61,16 @@ async function requireAdmin(req:Request) {
   return data.user.id;
 }
 const sourceCategory=(name:string,group:string)=>/sky\s*sports?/i.test(name)&&/\bnz\b|new zealand/i.test(group+" "+name)?"Sky Sport NZ":group||"Other";
+function initialExclusion(name:string, group:string, source:string) {
+  if(source!=="best")return null;
+  const both=(name+" "+group).toLowerCase();
+  const foreign=/(^|[\s|:])(hindi|tamil|telugu|punjabi|urdu|arabic|spanish|portuguese|french|russian|german|italian|turkish|korean|chinese|mandarin|japanese|vietnamese|bengali|malayalam|latino)([\s|:]|$)/i;
+  if(/\b(news|adult|xxx|porn|religious|religion|church|shopping|infomercial)\b/i.test(both))return "Excluded content";
+  if(foreign.test(both)||/^(IN|ES|FR|DE|PT|BR|RU|TR|AR|IT|CN|JP|KR)\s*[|:]/i.test(group))return "Non-English package";
+  if((/^\s*(NZ|NEW ZEALAND)\s*[|:]/i.test(group)||/^\s*NZ\s*[|:]/i.test(name))
+      &&!/sky\s*sports?/i.test(name))return "BEST NZ replaced by Freeview";
+  return null;
+}
 async function api(req:Request) {
   const actor=await requireAdmin(req);
   if(!actor)return json({error:"Admin sign-in required"},401);
@@ -137,12 +147,13 @@ async function api(req:Request) {
         const group=safe(e.group,240)||old?.original_group||"Other";
         const targetGroup=old?.display_group&&!old.display_group.startsWith("BEST / ")?old.display_group:sourceCategory(name,group);
         const isFreeview=source==="freeview";
-        const state=old?.status||(isFreeview?"visible":(/(?:^|[ |])news\b|adult|religious|shopping|international|arabic|hindi|spanish|french|russian/i.test(name+" "+group)?"excluded":/^\s*NZ[ |]/i.test(name+" "+group)&&!/sky\s*sports?/i.test(name)?"excluded":"visible"));
+        const excluded=initialExclusion(name,group,source);
+        const state=old?.manual_override?old.status:(excluded?"excluded":(old?.status||"visible"));
         rows.push({
           id,source,provider_stream_id:source==="best"?Number(id.slice(5)):null,
           original_name:old?.original_name||name,original_group:old?.original_group&&!old.original_group.startsWith("BEST / ")?old.original_group:group,
           display_group:targetGroup,display_name:old?.display_name||null,
-          status:state,manual_override:old?.manual_override||false,default_reason:old?.default_reason||null,
+          status:state,manual_override:old?.manual_override||false,default_reason:old?.manual_override?(old?.default_reason||null):(excluded||old?.default_reason||null),
           present:true,sort_order:old?.sort_order||1000,
           tvg_id:old?.tvg_id||safe(e.tvg_id,150)||null,artwork_url:old?.artwork_url||null,
           extinf_line:safe(e.extinf_line,2000),extra_lines:safe(e.extra_lines,4000),stream_url:url,
