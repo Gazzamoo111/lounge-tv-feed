@@ -215,7 +215,7 @@ async function api(req:Request) {
 }
 Deno.serve(async (req:Request)=>{
   const url=new URL(req.url);
-  if(req.method==="OPTIONS")return new Response("",{status:204,headers:cors});
+  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});
   if(!URL_BASE||!SERVICE_KEY)return json({error:"Configuration unavailable"},503);
   if(req.method==="GET"&&url.searchParams.get("playlist")==="1")return playlist(req,url);
   if(req.method==="GET"){
