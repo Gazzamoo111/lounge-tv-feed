@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en-NZ"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lounge TV Catalogue Manager (staging)</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:#0b1220;color:#eef4fc}
+*{box-sizing:border-box}body{margin:0}main,header{max-width:1120px;margin:auto;padding:18px}header{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #33465b}
+section{margin:20px 0;padding:20px;background:#132035;border:1px solid #30465b;border-radius:12px}
+input,select,button{font:inherit;border-radius:7px;min-height:39px;padding:8px 10px}input,select{border:1px solid #425a72;background:#0a1628;color:#eef4fc}
+button{border:0;background:#bfdfff;color:#102034;font-weight:650;cursor:pointer}button.secondary{background:#26394d;color:#e8f3fe;border:1px solid #456078}
+button.danger{background:#6c2d36;color:#fff}button:disabled{opacity:.4}h1{font-size:23px;margin:0}h2{font-size:18px;margin-top:0}
+p,.muted,small{color:#a9bdd4}.hide{display:none!important}.row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.row>*{min-width:0}label{font-size:12px;color:#acc0d9}.wrap{flex-wrap:wrap}.field{display:flex;flex-direction:column;gap:5px}
+#status{white-space:pre-wrap;color:#abd1f5;font-size:13px}.stats{display:flex;gap:8px;flex-wrap:wrap}.metric{background:#1d3247;border-radius:8px;padding:10px;min-width:110px}
+.metric b{font-size:21px;display:block}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+#groups{max-height:210px;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:7px}
+.group{padding:8px;background:#1c2d41;border-radius:7px;display:flex;justify-content:space-between;align-items:center;gap:5px}
+.group span{font-size:12px;overflow-wrap:anywhere}.group button{min-height:28px;padding:4px 7px;font-size:12px}
+.card{padding:12px;border-top:1px solid #354d62;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.card .name{font-size:14px;font-weight:650}.card small{display:block;font-size:11px;overflow-wrap:anywhere}
+.card select{min-height:34px;font-size:12px}#loading{padding:10px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:700px){.grid2{grid-template-columns:1fr}section{padding:13px;margin:11px 0}header{padding:12px}.card{align-items:flex-start;flex-direction:column}}
+</style></head><body>
+<header><div><h1>Lounge TV Catalogue</h1><small>Private staging · No customer changes</small></div><button class="secondary" id="logout" hidden>Sign out</button></header>
+<main>
+<section id="loginsection"><h2>Admin sign in</h2><div class="row">
+ <div class="field"><label>Email</label><input id="email" type="email" autocomplete="username"></div>
+ <div class="field"><label>Password</label><input id="password" type="password" autocomplete="current-password"></div>
+ <button id="login">Sign in</button></div><p>Use your existing Lounge TV administrator login.</p></section>
+<div id="app" class="hide">
+<section><h2>Catalogue status</h2><div id="metrics" class="stats"></div>
+<p>The initial rules exclude news, non-English packages, adult, religious and most BEST NZ television. Sky Sport NZ remains separate. You can override any decision.</p></section>
+<section><h2>1. Import playback sources</h2>
+ <p>Select your private BEST M3U or the successful <b>LoungeTV-Test.m3u</b>. Stream credentials stay inside your private Lounge TV staging database. Never put the M3U in a public GitHub repository.</p>
+ <div class="row"><input type="file" id="upload" accept=".m3u,.m3u8,text/plain"><button id="import">Import M3U</button><button class="secondary" id="freeview">Refresh TVNZ from Freeview</button><button class="secondary" id="dedupe">Hide duplicate feeds</button></div>
+ <small>You can import more channels later. Previously saved hide/backup choices are preserved.</small>
+</section>
+<section><h2>2. Categories</h2><p>Switch an entire category on or off. Click its name to view individual channels.</p>
+ <div class="toolbar"><input id="groupsearch" placeholder="Find category..."></div><div id="groups"></div>
+</section>
+<section><h2>3. Channels</h2>
+ <div class="toolbar"><input id="search" placeholder="Search channel or ID">
+ <select id="state"><option value="">All statuses</option><option value="visible">Visible</option><option value="backup">Hidden backup</option><option value="excluded">Excluded</option></select>
+ <label class="row"><input type="checkbox" id="loaded" checked>Imported streams only</label>
+ <button class="secondary" id="find">Search</button></div>
+ <small id="pager"></small><div id="results"></div><div class="row"><button class="secondary" id="prev">Previous</button><button class="secondary" id="next">Next</button></div>
+</section>
+<section><h2>4. Private OwnTV playlist URL</h2>
+ <p>Generate a protected URL after importing your streams. Keep it private: stream addresses can reveal BEST credentials. This staging URL uses the single BEST account you imported and is not for customer distribution.</p>
+ <div class="row"><button id="generate">Generate / replace private URL</button><button class="danger" id="disable">Disable URL</button></div>
+ <p id="urlbox"></p>
+</section></div><p id="status"></p>
+</main>
+<script>
+(function(){
+"use strict";
+var base="https://liqocisegeqzbyuqloql.supabase.co",key="sb_publishable_hAnd78k7ZrCH7okAM-yla0_Kosu5DnA",endpoint=base+"/functions/v1/lounge-curator-qa";
+var session=null,groups=[],group="",offset=0,total=0,limit=40;
+var $=id=>document.getElementById(id);
+function msg(v){$("status").textContent=String(v||"")}
+function el(tag,text){var e=document.createElement(tag);if(text!==undefined)e.textContent=String(text);return e}
+function renderStatus(r){$("metrics").textContent="";var values=[["Visible",r.counts.visible],["Hidden backups",r.counts.backup],["Excluded",r.counts.excluded],["Ready to stream",r.ready]];
+ values.forEach(p=>{var box=el("div");box.className="metric";var b=el("b",p[1]);box.append(b,el("small",p[0]));$("metrics").append(box)});
+}
+async function call(action,args){
+ if(!session)throw Error("Sign in first.");
+ var r=await fetch(endpoint,{method:"POST",headers:{"Authorization":"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action:action},args||{}))});
+ var d=await r.json().catch(()=>({error:"Request failed"}));
+ if(!r.ok)throw Error(d.error||"Request failed ("+r.status+")");return d;
+}
+async function login(){
+ try{msg("Signing in...");var r=await fetch(base+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":key,"Content-Type":"application/json"},body:JSON.stringify({email:$("email").value.trim(),password:$("password").value})});
+ var d=await r.json();if(!r.ok||!d.access_token)throw Error("Invalid login");session=d;$("password").value="";
+ var stats=await call("status");$("loginsection").classList.add("hide");$("app").classList.remove("hide");$("logout").hidden=false;renderStatus(stats);
+ await loadGroups();await loadList();msg("Signed in. Staging only.");
+ }catch(e){session=null;msg(e.message||e)}
+}
+$("login").onclick=login;$("password").onkeydown=e=>{if(e.key==="Enter")login()};
+$("logout").onclick=()=>{session=null;$("app").classList.add("hide");$("loginsection").classList.remove("hide");$("logout").hidden=true;msg("Signed out")};
+async function refreshStats(){renderStatus(await call("status"))}
+async function loadGroups(){groups=(await call("groups")).groups;renderGroups()}
+function renderGroups(){
+ var match=$("groupsearch").value.toLowerCase();
+ $("groups").textContent="";
+ groups.filter(g=>g.group_name.toLowerCase().includes(match)).forEach(g=>{
+  var box=el("div");box.className="group";
+  var select=el("button",g.custom_name||g.group_name);select.className="secondary";select.onclick=()=>{group=g.group_name;offset=0;loadList();};
+  var on=el("input");on.type="checkbox";on.checked=g.enabled;on.title="Show this category";on.onchange=async()=>{
+   try{await call("set_group",{group:g.group_name,enabled:on.checked,custom_name:g.custom_name||""});g.enabled=on.checked;msg("Category saved: "+g.group_name)}catch(e){on.checked=!on.checked;msg(e.message)}};
+  box.append(select,on);$("groups").append(box);
+ });
+}
+$("groupsearch").oninput=renderGroups;
+async function loadList(){
+ msg("Loading channels...");
+ try{
+ var d=await call("list",{search:$("search").value,group:group,status:$("state").value,ready:$("loaded").checked,offset:offset,limit:limit});
+ total=d.count;$("pager").textContent=total+" channels"+(group?" · "+group:"")+" · "+(offset+1)+"-"+Math.min(total,offset+limit);
+ $("results").textContent="";
+ d.items.forEach(c=>{
+  var row=el("div");row.className="card";
+  var details=el("div");details.className="name";details.append(el("div",c.display_name||c.original_name));
+  details.append(el("small",(c.display_group||c.original_group)+" · "+c.id+(c.has_url?"":" · NO STREAM IMPORTED")));
+  var sel=el("select");
+  [["visible","Visible"],["backup","Hidden backup"],["excluded","Excluded"]].forEach(p=>{var o=el("option",p[1]);o.value=p[0];if(c.status===p[0])o.selected=true;sel.append(o)});
+  sel.onchange=async()=>{try{await call("set_channel",{id:c.id,status:sel.value});msg("Saved: "+(c.display_name||c.original_name));await refreshStats()}catch(e){msg(e.message);sel.value=c.status}};
+  row.append(details,sel);$("results").append(row);
+ });
+ $("prev").disabled=offset<=0;$("next").disabled=offset+limit>=total;msg("");
+ }catch(e){msg(e.message)}
+}
+$("find").onclick=()=>{offset=0;group="";loadList()};
+$("search").onkeydown=e=>{if(e.key==="Enter")$("find").click()};
+$("state").onchange=()=>{offset=0;loadList()};$("loaded").onchange=()=>{offset=0;loadList()};
+$("prev").onclick=()=>{offset=Math.max(0,offset-limit);loadList()};$("next").onclick=()=>{offset+=limit;loadList()};
+function entries(txt){
+ var result=[],info="",meta=[],a="",group="";
+ txt.split(/\r?\n/).forEach(raw=>{
+  var line=raw.trim();if(line.startsWith("#EXTINF:")){info=line;meta=[];return}
+  if(info&&line.startsWith("#")){meta.push(line);return}
+  if(!info||!/^https?:\/\//i.test(line))return;
+  var name=info.slice(info.lastIndexOf(",")+1).trim();
+  var gm=info.match(/group-title="([^"]*)"/i),tm=info.match(/(?:channel-id|tvg-id)="([^"]*)"/i);
+  var g=gm?gm[1]:"Other",t=tm?tm[1]:"";
+  var last=line.match(/\/(\d+)(?:\.(?:ts|m3u8|mpd))?(?:\?.*)?$/i);
+  var free=/(?:mjh-tvnz-(?:1|2|duke))/.test(t);
+  var id=free?"freeview:"+t:(last?"best:"+last[1]:"");
+  if(id)result.push({id:id,name:name,group:g,tvg_id:t,extinf_line:info,extra_lines:meta.join("\n"),stream_url:line});
+  info="";meta=[];
+ });
+ return result;
+}
+$("import").onclick=async()=>{
+ var f=$("upload").files[0];if(!f){msg("Choose your M3U file first");return}
+ var btn=$("import");btn.disabled=true;
+ try{msg("Reading "+f.name+"...");var arr=entries(await f.text());if(!arr.length)throw Error("No compatible Live streams found");
+ var total=0;
+ for(var i=0;i<arr.length;i+=150){
+  var batch=arr.slice(i,i+150);var d=await call("import",{entries:batch});total+=d.imported||0;
+  msg("Imported "+total+" of "+arr.length+" entries...");
+ }
+ var dups=await call("dedupe");await refreshStats();await loadGroups();offset=0;await loadList();msg("Finished: imported "+total+" streams; "+(dups.hidden_as_backup||0)+" duplicate feeds hidden as backups.");
+ }catch(e){msg("Import stopped: "+e.message)}finally{btn.disabled=false}
+};
+$("dedupe").onclick=async()=>{try{msg("Finding duplicate feeds...");var d=await call("dedupe");msg((d.hidden_as_backup||0)+" alternatives retained as hidden backups");await refreshStats();await loadList()}catch(e){msg(e.message)}};
+$("freeview").onclick=async()=>{try{msg("Checking Freeview...");var d=await call("import_freeview");msg("Imported "+d.imported+" TVNZ streams");await refreshStats();await loadGroups();await loadList()}catch(e){msg(e.message)}};
+$("generate").onclick=async()=>{
+ if(!confirm("Create a new private playlist link? Any previous link will stop working."))return;
+ try{var d=await call("generate_url");$("urlbox").textContent="";
+ var input=el("input");input.value=d.url;input.readOnly=true;input.style.width="100%";
+ var copy=el("button","Copy link");copy.onclick=()=>navigator.clipboard.writeText(d.url).then(()=>msg("Copied")).catch(()=>{input.select();msg("Select and copy the link")});
+ $("urlbox").append(input,copy);msg("PRIVATE. Do not share with customers.")}catch(e){msg(e.message)}
+};
+$("disable").onclick=async()=>{if(!confirm("Disable the current playlist URL?"))return;try{await call("disable_url");$("urlbox").textContent="";msg("Playlist URL disabled")}catch(e){msg(e.message)}};
+})();
+</script></body></html>
