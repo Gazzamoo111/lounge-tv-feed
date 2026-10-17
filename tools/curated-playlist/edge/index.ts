@@ -217,11 +217,11 @@ async function api(req:Request) {
         if(line.startsWith("#")){if(meta)extra.push(line);continue;}
         if(!meta||!validUrl(line))continue;
         const tvg=(meta.match(/(?:channel-id|tvg-id)="([^"]+)"/i)||[])[1]||"";
-        if(!["mjh-tvnz-1","mjh-tvnz-2","mjh-tvnz-duke"].includes(tvg))continue;
+        if(!["mjh-tvnz-1","mjh-tvnz-2","mjh-tvnz-duke","mjh-three"].includes(tvg))continue;
         entries.push({id:"freeview:"+tvg,name:meta.slice(meta.lastIndexOf(",")+1),original_group:"NZ Freeview",display_group:"NZ Freeview",source:"freeview",status:"visible",manual_override:false,present:true,extra_lines:extra.join("\n"),extinf_line:meta,stream_url:line,tvg_id:tvg});
         meta="";
       }
-      if(entries.length!==3)return json({error:"Expected 3 TVNZ channels but source provided "+entries.length},502);
+      if(entries.length!==4)return json({error:"Expected TVNZ 1, TVNZ 2, DUKE and Three but found "+entries.length},502);
       const {error}=await db.from("lounge_curator_channels").upsert(entries,{onConflict:"id"});
       if(error)throw error;
       await db.from("lounge_curator_groups").upsert({group_name:"NZ Freeview"},{onConflict:"group_name",ignoreDuplicates:true});
