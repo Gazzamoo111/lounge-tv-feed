@@ -135,12 +135,12 @@ async function api(req:Request) {
         const source=id.startsWith("freeview:")?"freeview":"best";
         const name=safe(e.name,180)||old?.original_name||id;
         const group=safe(e.group,240)||old?.original_group||"Other";
-        const targetGroup=old?.display_group||sourceCategory(name,group);
+        const targetGroup=old?.display_group&&!old.display_group.startsWith("BEST / ")?old.display_group:sourceCategory(name,group);
         const isFreeview=source==="freeview";
         const state=old?.status||(isFreeview?"visible":(/(?:^|[ |])news\b|adult|religious|shopping|international|arabic|hindi|spanish|french|russian/i.test(name+" "+group)?"excluded":/^\s*NZ[ |]/i.test(name+" "+group)&&!/sky\s*sports?/i.test(name)?"excluded":"visible"));
         rows.push({
           id,source,provider_stream_id:source==="best"?Number(id.slice(5)):null,
-          original_name:old?.original_name||name,original_group:old?.original_group||group,
+          original_name:old?.original_name||name,original_group:old?.original_group&&!old.original_group.startsWith("BEST / ")?old.original_group:group,
           display_group:targetGroup,display_name:old?.display_name||null,
           status:state,manual_override:old?.manual_override||false,default_reason:old?.default_reason||null,
           present:true,sort_order:old?.sort_order||1000,
@@ -156,6 +156,12 @@ async function api(req:Request) {
       const {error:ge}=await db.from("lounge_curator_groups").upsert(groups.map(g=>({group_name:g})),{onConflict:"group_name",ignoreDuplicates:true});
       if(ge)throw ge;
       return json({imported:rows.length});
+    }
+
+    if(action==="dedupe"){
+      const {data,error}=await db.rpc("lounge_curator_hide_duplicates");
+      if(error)throw error;
+      return json(data||{hidden_as_backup:0});
     }
     if(action==="import_freeview"){
       const response=await fetch("https://i.mjh.nz/nz/kodi-tv.m3u8",{signal:AbortSignal.timeout(12000)});
@@ -179,6 +185,9 @@ async function api(req:Request) {
       return json({imported:entries.length});
     }
     if(action==="generate_url") {
+      const {count:ready,error:ce}=await db.from("lounge_curator_channels").select("id",{head:true,count:"exact"}).eq("status","visible").not("stream_url","is",null);
+      if(ce)throw ce;
+      if(!ready)return json({error:"Import working BEST or Freeview streams before generating the URL"},400);
       const bytes=crypto.getRandomValues(new Uint8Array(32));
       const token=Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join("");
       const {error}=await db.from("lounge_curator_settings").update({playlist_token_hash:await sha(token),published:true,generated_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",1);
