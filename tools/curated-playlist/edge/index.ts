@@ -19,6 +19,33 @@ function modifyExtinf(line:string, name:string, group:string) {
   else out=out.replace(/^#EXTINF:(-?\d+)/,'#EXTINF:$1 group-title="'+group.replace(/"/g,"'")+'"');
   return out;
 }
+
+async function bestCredentials() {
+  // Test account only. Never return its credentials through JSON admin endpoints.
+  const {data:account,error:ae}=await db.from("provider_accounts").select("id,status").eq("label","BEST Launch Test").limit(1).maybeSingle();
+  if(ae||!account)return null;
+  const {data,error}=await db.rpc("get_provider_credentials_for_account",{p_provider_account_id:account.id});
+  if(error||!Array.isArray(data)||!data.length)return null;
+  const c=data[0] as {server_url:string,provider_username:string,provider_password:string};
+  if(!validUrl(c.server_url)||!c.provider_username||!c.provider_password)return null;
+  return {
+    host:c.server_url.replace(/\/+(get\.php|player_api\.php)?$/i,"").replace(/\/+$/,""),
+    username:c.provider_username,
+    password:c.provider_password
+  };
+}
+function bestStreamUrl(c:{host:string,username:string,password:string}, id:number|string){
+  if(!/^\d+$/.test(String(id)))return "";
+  return c.host+"/live/"+encodeURIComponent(c.username)+"/"+encodeURIComponent(c.password)+"/"+id+".ts";
+}
+function derivedExtinf(c:any,group:string) {
+  const attrs=[
+    c.tvg_id?'tvg-id="'+String(c.tvg_id).replace(/"/g,"'")+'"':"",
+    c.artwork_url?'tvg-logo="'+String(c.artwork_url).replace(/"/g,"'")+'"':"",
+    'group-title="'+group.replace(/"/g,"'")+'"'
+  ].filter(Boolean).join(" ");
+  return "#EXTINF:-1 "+attrs+","+(c.display_name||c.original_name);
+}
 async function playlist(req:Request, url:URL) {
   const token=url.searchParams.get("token")||"";
   if(token.length<40||token.length>100)return new Response("Not found",{status:404});
@@ -28,22 +55,26 @@ async function playlist(req:Request, url:URL) {
   const {data:groups,error:ge}=await db.from("lounge_curator_groups").select("group_name,enabled,custom_name").limit(2000);
   if(ge)return new Response("Unavailable",{status:503});
   const settings=new Map((groups||[]).map((g:any)=>[g.group_name,g]));
+  const best=await bestCredentials();
   const output=['#EXTM3U x-tvg-url="https://i.mjh.nz/nz/epg.xml.gz"'];
   for(let offset=0;offset<50000;offset+=750) {
     const {data,error}=await db.from("lounge_curator_channels")
-      .select("original_name,original_group,display_name,display_group,extinf_line,extra_lines,stream_url")
-      .eq("status","visible").not("stream_url","is",null)
+      .select("source,provider_stream_id,present,original_name,original_group,display_name,display_group,extinf_line,extra_lines,stream_url,tvg_id,artwork_url")
+      .eq("status","visible").eq("present",true)
       .order("sort_order",{ascending:true}).order("id",{ascending:true})
       .range(offset,offset+749);
     if(error)return new Response("Unavailable",{status:503});
     for(const c of data||[]) {
-      if(!c.stream_url||!validUrl(c.stream_url))continue;
+      const stream=c.stream_url||(best&&c.source==="best"&&c.provider_stream_id?bestStreamUrl(best,c.provider_stream_id):"");
+      if(!stream||!validUrl(stream))continue;
       const group=c.display_group||c.original_group||"Other";
       const config:any=settings.get(group);
       if(config?.enabled===false)continue;
-      output.push(modifyExtinf(c.extinf_line||"#EXTINF:-1",c.display_name||c.original_name,config?.custom_name||group));
+      const visibleGroup=config?.custom_name||group;
+      const info=c.extinf_line?modifyExtinf(c.extinf_line,c.display_name||c.original_name,visibleGroup):derivedExtinf(c,visibleGroup);
+      output.push(info);
       if(c.extra_lines)for(const line of c.extra_lines.split("\n"))if(/^#(?:KODIPROP|EXTVLCOPT|EXTGRP|EXTHTTP|EXT-X-)/.test(line))output.push(line);
-      output.push(c.stream_url);
+      output.push(stream);
     }
     if(!data||data.length<750)break;
   }
@@ -84,9 +115,10 @@ async function api(req:Request) {
         const {count,error}=await db.from("lounge_curator_channels").select("id",{head:true,count:"exact"}).eq("status",s);
         if(error)throw error;counts[s]=count||0;
       }
-      const {count:ready}=await db.from("lounge_curator_channels").select("id",{head:true,count:"exact"}).not("stream_url","is",null).eq("status","visible");
+      const {count:ready}=await db.from("lounge_curator_channels").select("id",{head:true,count:"exact"}).eq("status","visible").eq("present",true).or("source.eq.best,stream_url.not.is.null");
+      const accountConnected=Boolean(await bestCredentials());
       const {data:config}=await db.from("lounge_curator_settings").select("published,generated_at").eq("id",1).single();
-      return json({counts,ready:ready||0,published:Boolean(config?.published),generated_at:config?.generated_at||null});
+      return json({counts,ready:accountConnected?(ready||0):0,best_connected:accountConnected,published:Boolean(config?.published),generated_at:config?.generated_at||null});
     }
     if(action==="groups") {
       const {data,error}=await db.from("lounge_curator_groups").select("group_name,enabled,custom_name,sort_order")
@@ -101,11 +133,11 @@ async function api(req:Request) {
        .order("sort_order").order("original_name").range(offset,offset+limit-1);
       if(body.group)q=q.eq("display_group",safe(body.group,240));
       if(["visible","backup","excluded"].includes(body.status))q=q.eq("status",body.status);
-      if(body.ready===true)q=q.not("stream_url","is",null);
+      if(body.ready===true)q=q.or("source.eq.best,stream_url.not.is.null");
       const needle=safe(body.search,90).replace(/[%,().]/g,"");
       if(needle)q=q.or("original_name.ilike.%"+needle+"%,display_name.ilike.%"+needle+"%");
       const {data,error,count}=await q;if(error)throw error;
-      return json({items:(data||[]).map(({stream_url,...rest}:any)=>({...rest,has_url:Boolean(stream_url)})),count:count||0});
+      return json({items:(data||[]).map(({stream_url,...rest}:any)=>({...rest,has_url:Boolean(stream_url)||rest.source==="best"})),count:count||0});
     }
     if(action==="set_channel"){
       const id=safe(body.id,110);
@@ -196,9 +228,10 @@ async function api(req:Request) {
       return json({imported:entries.length});
     }
     if(action==="generate_url") {
-      const {count:ready,error:ce}=await db.from("lounge_curator_channels").select("id",{head:true,count:"exact"}).eq("status","visible").not("stream_url","is",null);
+      const connected=Boolean(await bestCredentials());
+      const {count:ready,error:ce}=await db.from("lounge_curator_channels").select("id",{head:true,count:"exact"}).eq("status","visible").eq("present",true).or(connected?"source.eq.best,stream_url.not.is.null":"stream_url.not.is.null");
       if(ce)throw ce;
-      if(!ready)return json({error:"Import working BEST or Freeview streams before generating the URL"},400);
+      if(!ready)return json({error:"No playable entries available. Verify BEST connectivity or refresh Freeview."},400);
       const bytes=crypto.getRandomValues(new Uint8Array(32));
       const token=Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join("");
       const {error}=await db.from("lounge_curator_settings").update({playlist_token_hash:await sha(token),published:true,generated_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",1);
