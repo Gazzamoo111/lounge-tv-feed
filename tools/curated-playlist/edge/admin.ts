@@ -1,5 +1,5 @@
 
-export const adminHtml=String.raw<!doctype html>
+export const adminHtml=String.raw`<!doctype html>
 <html lang="en-NZ"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lounge TV Catalogue Manager (staging)</title>
 <style>
@@ -152,4 +152,4 @@ $("generate").onclick=async()=>{
 };
 $("disable").onclick=async()=>{if(!confirm("Disable the current playlist URL?"))return;try{await call("disable_url");$("urlbox").textContent="";msg("Playlist URL disabled")}catch(e){msg(e.message)}};
 })();
-</script></body></html>;
+</script></body></html>`;
