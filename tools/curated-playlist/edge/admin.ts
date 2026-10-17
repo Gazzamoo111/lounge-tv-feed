@@ -32,7 +32,7 @@ p,.muted,small{color:#a9bdd4}.hide{display:none!important}.row{display:flex;alig
 <p>The initial rules exclude news, non-English packages, adult, religious and most BEST NZ television. Sky Sport NZ remains separate. You can override any decision.</p></section>
 <section><h2>1. Import playback sources</h2>
  <p>Select your private BEST M3U or the successful <b>LoungeTV-Test.m3u</b>. Stream credentials stay inside your private Lounge TV staging database. Never put the M3U in a public GitHub repository.</p>
- <div class="row"><input type="file" id="upload" accept=".m3u,.m3u8,text/plain"><button id="import">Import M3U</button><button class="secondary" id="freeview">Refresh TVNZ from Freeview</button></div>
+ <div class="row"><input type="file" id="upload" accept=".m3u,.m3u8,text/plain"><button id="import">Import M3U</button><button class="secondary" id="freeview">Refresh TVNZ from Freeview</button><button class="secondary" id="dedupe">Hide duplicate feeds</button></div>
  <small>You can import more channels later. Previously saved hide/backup choices are preserved.</small>
 </section>
 <section><h2>2. Categories</h2><p>Switch an entire category on or off. Click its name to view individual channels.</p>
@@ -139,9 +139,10 @@ $("import").onclick=async()=>{
   var batch=arr.slice(i,i+150);var d=await call("import",{entries:batch});total+=d.imported||0;
   msg("Imported "+total+" of "+arr.length+" entries...");
  }
- await refreshStats();await loadGroups();offset=0;await loadList();msg("Finished: imported "+total+" streams. Your URL can now be generated.");
+ var dups=await call("dedupe");await refreshStats();await loadGroups();offset=0;await loadList();msg("Finished: imported "+total+" streams; "+(dups.hidden_as_backup||0)+" duplicate feeds hidden as backups.");
  }catch(e){msg("Import stopped: "+e.message)}finally{btn.disabled=false}
 };
+$("dedupe").onclick=async()=>{try{msg("Finding duplicate feeds...");var d=await call("dedupe");msg((d.hidden_as_backup||0)+" alternatives retained as hidden backups");await refreshStats();await loadList()}catch(e){msg(e.message)}};
 $("freeview").onclick=async()=>{try{msg("Checking Freeview...");var d=await call("import_freeview");msg("Imported "+d.imported+" TVNZ streams");await refreshStats();await loadGroups();await loadList()}catch(e){msg(e.message)}};
 $("generate").onclick=async()=>{
  if(!confirm("Create a new private playlist link? Any previous link will stop working."))return;
