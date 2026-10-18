@@ -207,25 +207,61 @@ async function api(req:Request) {
       return json(data||{hidden_as_backup:0});
     }
     if(action==="import_freeview"){
+      const wanted=new Set(["mjh-tvnz-1","mjh-tvnz-2","mjh-tvnz-duke","mjh-three"]);
       const response=await fetch("https://i.mjh.nz/nz/kodi-tv.m3u8",{signal:AbortSignal.timeout(12000)});
-      if(!response.ok)throw Error("Freeview source unavailable");
-      const raw=await response.text();const lines=raw.split(/\r?\n/);
-      const entries:any[]=[];let meta="";let extra:string[]=[];
-      for(const v of lines){
-        const line=v.trim();
-        if(line.startsWith("#EXTINF:")){meta=line;extra=[];continue;}
-        if(line.startsWith("#")){if(meta)extra.push(line);continue;}
-        if(!meta||!validUrl(line))continue;
-        const tvg=(meta.match(/(?:channel-id|tvg-id)="([^"]+)"/i)||[])[1]||"";
-        if(!["mjh-tvnz-1","mjh-tvnz-2","mjh-tvnz-duke","mjh-three"].includes(tvg))continue;
-        entries.push({id:"freeview:"+tvg,name:meta.slice(meta.lastIndexOf(",")+1),original_group:"NZ Freeview",display_group:"NZ Freeview",source:"freeview",status:"visible",manual_override:false,present:true,extra_lines:extra.join("\n"),extinf_line:meta,stream_url:line,tvg_id:tvg});
-        meta="";
+      if(!response.ok)return json({error:"NZ Freeview source returned HTTP "+response.status},502);
+      const lines=(await response.text()).split(/\r?\n/);
+      const selected=new Map<string,{name:string,extinf_line:string,extra_lines:string,stream_url:string}>();
+      let extinf="";let extra:string[]=[];
+      for(const raw of lines){
+        const line=raw.trim();
+        if(line.startsWith("#EXTINF:")){extinf=line;extra=[];continue;}
+        if(!extinf)continue;
+        if(line.startsWith("#")){extra.push(line);continue;}
+        if(!validUrl(line)){extinf="";extra=[];continue;}
+        const tvg=(extinf.match(/(?:channel-id|tvg-id)="([^"]+)"/i)||[])[1]||"";
+        if(wanted.has(tvg))selected.set(tvg,{
+          name:extinf.slice(extinf.lastIndexOf(",")+1).trim(),
+          extinf_line:extinf,
+          extra_lines:extra.join("\n"),
+          stream_url:line
+        });
+        extinf="";extra=[];
       }
-      if(entries.length!==4)return json({error:"Expected TVNZ 1, TVNZ 2, DUKE and Three but found "+entries.length},502);
+      const missing=[...wanted].filter(id=>!selected.has(id));
+      if(missing.length)return json({error:"NZ Freeview is missing required channels: "+missing.join(", ")},502);
+      const ids=[...wanted].map(id=>"freeview:"+id);
+      const {data:existing,error:lookupError}=await db.from("lounge_curator_channels")
+        .select("id,original_name,original_group,display_group,display_name,status,manual_override,sort_order")
+        .in("id",ids);
+      if(lookupError)throw lookupError;
+      const previous=new Map((existing||[]).map((c:any)=>[c.id,c]));
+      const now=new Date().toISOString();
+      const entries=[...selected.entries()].map(([tvg,c])=>{
+        const id="freeview:"+tvg,old:any=previous.get(id);
+        return {
+          id,source:"freeview",
+          original_name:old?.original_name||c.name,
+          original_group:old?.original_group||"NZ Freeview",
+          display_group:old?.display_group||"NZ Freeview",
+          display_name:old?.display_name||null,
+          status:old?.manual_override?old.status:"visible",
+          manual_override:Boolean(old?.manual_override),
+          sort_order:old?.sort_order??1000,
+          present:true,
+          extinf_line:c.extinf_line,
+          extra_lines:c.extra_lines,
+          stream_url:c.stream_url,
+          tvg_id:tvg,
+          updated_at:now
+        };
+      });
       const {error}=await db.from("lounge_curator_channels").upsert(entries,{onConflict:"id"});
       if(error)throw error;
-      await db.from("lounge_curator_groups").upsert({group_name:"NZ Freeview"},{onConflict:"group_name",ignoreDuplicates:true});
-      return json({imported:entries.length});
+      const {error:groupError}=await db.from("lounge_curator_groups")
+        .upsert({group_name:"NZ Freeview"},{onConflict:"group_name",ignoreDuplicates:true});
+      if(groupError)throw groupError;
+      return json({imported:entries.length,channels:entries.map(c=>c.original_name)});
     }
     if(action==="generate_url") {
       const connected=Boolean(await bestCredentials());
