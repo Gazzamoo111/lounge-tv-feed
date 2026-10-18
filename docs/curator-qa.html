@@ -32,6 +32,7 @@ p,.muted,small{color:#a9bdd4}.hide{display:none!important}.row{display:flex;alig
 <section><h2>1. Sources</h2>
  <p><b>BEST is connected to the complete catalogue automatically.</b> No BEST M3U file is required. Its channel IDs produce private stream links from the existing secured BEST test account.</p>
  <div class="row"><button class="secondary" id="freeview">Refresh TVNZ from NZ Freeview</button><button class="secondary" id="dedupe">Hide duplicate feeds</button></div>
+ <p id="freeview-notice" role="status" aria-live="polite" style="margin:12px 0;color:#bfe3ff"></p>
  <small>NZ Freeview is imported separately. Keep Sky Sport NZ from BEST.</small>
  <div class="hide"><input type="file" id="upload" accept=".m3u,.m3u8,text/plain"><button id="import">Import M3U</button></div>
 </section>
@@ -143,7 +144,7 @@ $("import").onclick=async()=>{
  }catch(e){msg("Import stopped: "+e.message)}finally{btn.disabled=false}
 };
 $("dedupe").onclick=async()=>{try{msg("Finding duplicate feeds...");var d=await call("dedupe");msg((d.hidden_as_backup||0)+" alternatives retained as hidden backups");await refreshStats();await loadList()}catch(e){msg(e.message)}};
-$("freeview").onclick=async()=>{try{msg("Checking Freeview...");var d=await call("import_freeview");msg("Imported "+d.imported+" TVNZ streams");await refreshStats();await loadGroups();await loadList()}catch(e){msg(e.message)}};
+$("freeview").onclick=async()=>{var button=$("freeview"),notice=$("freeview-notice");button.disabled=true;notice.textContent="Connecting to NZ Freeview...";try{var d=await call("import_freeview");notice.textContent="Imported "+d.imported+" channels: "+(d.channels||[]).join(", ")+". You can find them under NZ Freeview.";await Promise.all([refreshStats(),loadGroups()]);offset=0;await loadList()}catch(e){notice.textContent="Freeview import failed: "+(e.message||String(e));msg(e.message||e)}finally{button.disabled=false}};
 $("generate").onclick=async()=>{
  if(!confirm("Create a new private playlist link? Any previous link will stop working."))return;
  try{var d=await call("generate_url");$("urlbox").textContent="";
