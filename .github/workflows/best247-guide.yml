@@ -1,0 +1,45 @@
+name: BEST 24-7 guide refresh
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "35 17 * * *"
+  push:
+    paths:
+      - "config/best247_channel_index.json"
+      - "scripts/build_best247_guide.py"
+      - ".github/workflows/best247-guide.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: best247-epg
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build 24/7 guide and enrich TV show descriptions
+        run: python3 scripts/build_best247_guide.py --enrich-limit 300
+      - name: Commit generated data only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/best-247-guide.xml config/best247_synopses.json
+          if git diff --cached --quiet; then
+            echo "No guide changes"
+          else
+            git commit -m "Refresh BEST 24/7 EPG titles and synopses"
+            git push
+          fi
