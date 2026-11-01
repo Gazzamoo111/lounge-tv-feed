@@ -16,6 +16,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: lounge-fast-epg
+  cancel-in-progress: true
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
@@ -35,6 +39,7 @@ jobs:
           python scripts/export_epg_channel_index.py
 
       - name: Refresh premium artwork cache
+        if: github.event_name != 'schedule'
         env:
           TMDB_BEARER_TOKEN: ${{ secrets.TMDB_BEARER_TOKEN }}
         run: |
