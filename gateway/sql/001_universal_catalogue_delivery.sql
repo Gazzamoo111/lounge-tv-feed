@@ -80,11 +80,7 @@ create table if not exists public.lounge_catalogue_episode_items (
   container_extension text,
   snapshot jsonb not null default '{}'::jsonb,
   primary key (release_id, episode_item_id),
-  unique (release_id, canonical_episode_id),
-  foreign key (release_id, content_kind, series_item_id)
-    references public.lounge_catalogue_items(release_id, content_kind, item_id)
-    on delete cascade
-    deferrable initially deferred
+  unique (release_id, canonical_episode_id)
 );
 
 -- The FK above is constrained to series via this check trigger because a composite
