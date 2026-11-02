@@ -331,7 +331,20 @@ as $
   select
     i.item_id,
     i.canonical_id,
-    i.name,
+    case
+      when i.content_kind='live' then coalesce((
+        select a.event_name
+        from lounge_core.live_event_assignments a
+        where a.live_channel_id=i.canonical_id
+          and a.provider_stream_id is not null
+          and a.status not in ('standby','inactive','ended')
+          and (a.starts_at is null or a.starts_at <= now())
+          and (a.ends_at is null or a.ends_at >= now())
+        order by a.updated_at desc
+        limit 1
+      ), i.name)
+      else i.name
+    end as name,
     i.icon_url,
     i.backdrop_url,
     i.epg_id,
@@ -592,27 +605,50 @@ begin
   where pas.provider_account_id=v_provider_account_id;
 
   if p_content_kind='live' then
+    -- Dynamic event assignments override the standing source only while active.
     select
       'live',
-      ls.provider_stream_id::text,
-      coalesce(nullif(ls.source_format,''),'ts'),
+      a.provider_stream_id::text,
+      'ts',
       s.decrypted_secret::text,
       u.decrypted_secret::text,
       p.decrypted_secret::text
     into route_kind,source_ref,source_format,server_url,provider_username,provider_password
-    from lounge_core.live_sources ls
+    from lounge_core.live_event_assignments a
     join vault.decrypted_secrets s on s.id=v_server_secret
     join vault.decrypted_secrets u on u.id=v_username_secret
     join vault.decrypted_secrets p on p.id=v_password_secret
-    where ls.live_channel_id=v_canonical_id
-      and ls.provider_id=v_provider_id
-      and ls.status not in ('dead','rejected')
-    order by
-      case ls.source_role when 'primary' then 0 when 'alternate' then 1 else 2 end,
-      case ls.status when 'verified' then 0 when 'candidate' then 1 else 2 end,
-      ls.health_score desc,
-      ls.quality_score desc
+    where a.live_channel_id=v_canonical_id
+      and a.provider_stream_id is not null
+      and a.status not in ('standby','inactive','ended')
+      and (a.starts_at is null or a.starts_at <= now())
+      and (a.ends_at is null or a.ends_at >= now())
+    order by a.updated_at desc
     limit 1;
+
+    if source_ref is null then
+      select
+        'live',
+        ls.provider_stream_id::text,
+        coalesce(nullif(ls.source_format,''),'ts'),
+        s.decrypted_secret::text,
+        u.decrypted_secret::text,
+        p.decrypted_secret::text
+      into route_kind,source_ref,source_format,server_url,provider_username,provider_password
+      from lounge_core.live_sources ls
+      join vault.decrypted_secrets s on s.id=v_server_secret
+      join vault.decrypted_secrets u on u.id=v_username_secret
+      join vault.decrypted_secrets p on p.id=v_password_secret
+      where ls.live_channel_id=v_canonical_id
+        and ls.provider_id=v_provider_id
+        and ls.status not in ('dead','rejected')
+      order by
+        case ls.source_role when 'primary' then 0 when 'alternate' then 1 else 2 end,
+        case ls.status when 'verified' then 0 when 'candidate' then 1 else 2 end,
+        ls.health_score desc,
+        ls.quality_score desc
+      limit 1;
+    end if;
   elsif p_content_kind='movie' then
     select
       'movie',
