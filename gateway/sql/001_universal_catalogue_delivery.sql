@@ -280,6 +280,113 @@ as $$
   from expected e cross join actual a;
 $$;
 
+create or replace function public.lounge_delivery_list_categories(
+  p_release_id uuid,
+  p_content_kind text
+)
+returns table(
+  category_id integer,
+  category_key text,
+  category_name text,
+  view_group text,
+  sort_order integer
+)
+language sql
+security definer
+set search_path = ''
+as $
+  select c.category_id,c.category_key,c.display_name,c.view_group,c.sort_order
+  from public.lounge_catalogue_categories c
+  where c.release_id=p_release_id
+    and c.content_kind=p_content_kind
+  order by c.sort_order,c.display_name;
+$;
+
+create or replace function public.lounge_delivery_list_items(
+  p_release_id uuid,
+  p_content_kind text,
+  p_category_id integer default null,
+  p_limit integer default 500,
+  p_offset integer default 0
+)
+returns table(
+  item_id bigint,
+  canonical_id uuid,
+  name text,
+  icon_url text,
+  backdrop_url text,
+  epg_id text,
+  container_extension text,
+  release_year smallint,
+  rating numeric,
+  plot text,
+  sort_order integer,
+  snapshot jsonb,
+  category_id integer
+)
+language sql
+security definer
+set search_path = ''
+as $
+  select
+    i.item_id,
+    i.canonical_id,
+    i.name,
+    i.icon_url,
+    i.backdrop_url,
+    i.epg_id,
+    i.container_extension,
+    i.release_year,
+    i.rating,
+    i.plot,
+    i.sort_order,
+    i.snapshot,
+    coalesce(
+      p_category_id,
+      (
+        select ic.category_id
+        from public.lounge_catalogue_item_categories ic
+        join public.lounge_catalogue_categories c
+          on c.release_id=ic.release_id
+         and c.content_kind=ic.content_kind
+         and c.category_id=ic.category_id
+        where ic.release_id=i.release_id
+          and ic.content_kind=i.content_kind
+          and ic.item_id=i.item_id
+        order by c.sort_order,ic.rank desc
+        limit 1
+      )
+    ) as category_id
+  from public.lounge_catalogue_items i
+  where i.release_id=p_release_id
+    and i.content_kind=p_content_kind
+    and (
+      p_category_id is null
+      or exists (
+        select 1
+        from public.lounge_catalogue_item_categories ic
+        where ic.release_id=i.release_id
+          and ic.content_kind=i.content_kind
+          and ic.item_id=i.item_id
+          and ic.category_id=p_category_id
+      )
+    )
+  order by
+    case when p_category_id is null then i.sort_order else (
+      select ic.rank
+      from public.lounge_catalogue_item_categories ic
+      where ic.release_id=i.release_id
+        and ic.content_kind=i.content_kind
+        and ic.item_id=i.item_id
+        and ic.category_id=p_category_id
+      limit 1
+    ) end desc nulls last,
+    i.sort_order,
+    i.name
+  limit greatest(1,least(coalesce(p_limit,500),5000))
+  offset greatest(0,coalesce(p_offset,0));
+$;
+
 create or replace function public.lounge_delivery_series_info(
   p_release_id uuid,
   p_series_item_id bigint
@@ -568,6 +675,10 @@ revoke execute on function public.lounge_delivery_authenticate(text,text,text)
   from public, anon, authenticated;
 revoke execute on function public.lounge_delivery_validate_release(uuid)
   from public, anon, authenticated;
+revoke execute on function public.lounge_delivery_list_categories(uuid,text)
+  from public, anon, authenticated;
+revoke execute on function public.lounge_delivery_list_items(uuid,text,integer,integer,integer)
+  from public, anon, authenticated;
 revoke execute on function public.lounge_delivery_series_info(uuid,bigint)
   from public, anon, authenticated;
 revoke execute on function public.lounge_delivery_epg(uuid,bigint,integer)
@@ -578,6 +689,8 @@ revoke execute on function public.lounge_delivery_resolve_source(uuid,uuid,text,
 grant execute on function public.lounge_delivery_set_credential(uuid,text,text) to service_role;
 grant execute on function public.lounge_delivery_authenticate(text,text,text) to service_role;
 grant execute on function public.lounge_delivery_validate_release(uuid) to service_role;
+grant execute on function public.lounge_delivery_list_categories(uuid,text) to service_role;
+grant execute on function public.lounge_delivery_list_items(uuid,text,integer,integer,integer) to service_role;
 grant execute on function public.lounge_delivery_series_info(uuid,bigint) to service_role;
 grant execute on function public.lounge_delivery_epg(uuid,bigint,integer) to service_role;
 grant execute on function public.lounge_delivery_resolve_source(uuid,uuid,text,bigint,text) to service_role;
