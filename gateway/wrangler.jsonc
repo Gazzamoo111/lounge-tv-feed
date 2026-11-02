@@ -1,8 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "lounge-tv-gateway",
+  "name": "lounge-tv-gateway-staging",
   "main": "src/index.js",
   "compatibility_date": "2026-09-30",
   "workers_dev": true,
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  "vars": {
+    "CATALOGUE_RELEASE_KEY": "lounge-universal-staging-v1"
+  }
 }
