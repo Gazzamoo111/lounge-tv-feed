@@ -1,0 +1,9 @@
+{
+  "name": "lounge-tv-universal-gateway",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/index.js",
+    "test": "node --test test/contract.test.mjs"
+  }
+}
