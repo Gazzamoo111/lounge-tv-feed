@@ -37,7 +37,7 @@ test("M3U and XMLTV routes survive without a redirect", async () => {
   for (const path of ["/n/get.php?type=m3u_plus", "/n/xmltv.php?username=qa-user"]) {
     const { forwarded, response } = await call(path);
     assert.equal(response.status, 200);
-    assert.equal(new URL(forwarded.url).pathname, "/functions/v1" + path);
+    assert.equal(new URL(forwarded.url).pathname, "/functions/v1" + new URL("https://connect.loungetv.nz" + path).pathname);
   }
 });
 test("Live playback preserves range headers and 302 redirects", async () => {
