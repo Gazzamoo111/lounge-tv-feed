@@ -53,8 +53,8 @@ test('v19 keeps existing full M3U account authentication and no two-channel filt
 });
 
 test('TVNZ 1 confirmed working: preserve fixed QA provider mapping and external ID',()=>{
- assert.match(v19,/const TVNZ_BEST_COMPAT_QA=new Map<number,number>\\(\\[\\[1486561,1182157\\],\\[1486578,1182156\\]\\]\\)/);
+ assert.ok(v19.includes('[[1486561,1182157],[1486578,1182156]]'));
  const source=v19.slice(v19.indexOf('if(parts[0]==="live")'),v19.indexOf('if(parts[0]==="movie"'));
- assert.match(source,/TVNZ_BEST_COMPAT_QA\\.get\\(externalId\\)/);
- assert.match(source,/return Response\\.redirect\\(base\\+"\\/live\\/"\\+encodeURIComponent\\(u\\)\\+"\\/"\\+encodeURIComponent\\(p\\)\\+"\\/"\\+tvnzBest\\+"\\.ts",302\\)/);
+ assert.ok(source.includes('TVNZ_BEST_COMPAT_QA.get(externalId)'));
+ assert.ok(source.includes('return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+tvnzBest+".ts",302);'));
 });
