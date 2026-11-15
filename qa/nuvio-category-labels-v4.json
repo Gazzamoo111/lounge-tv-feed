@@ -1,0 +1,23 @@
+{
+  "scope": "QA Edge Function n v4",
+  "policy": "Text-prefix icons only; numeric prefixes enforce priority in alphabetic client sort; stable category_id",
+  "note": "Sports Event Sources are live-event feeds, not stored recordings. Not hidden in stock Nuvio. Channel data and provider stream IDs unchanged.",
+  "categories": {
+    "New Zealand": "01 🇳🇿 New Zealand",
+    "Australia": "02 🇦🇺 Australia",
+    "Sports Networks": "03 🏆 Sports Networks",
+    "UK TV": "04 🇬🇧 UK TV",
+    "US TV": "05 🇺🇸 US TV",
+    "Entertainment & Streaming": "06 📺 Entertainment & Streaming",
+    "Movie Channels": "07 🎬 Movie Channels",
+    "Kids & Family": "08 🧸 Kids & Family",
+    "Documentaries & Lifestyle": "09 🌿 Documentaries & Lifestyle",
+    "News": "10 📰 News",
+    "24/7 Movies & Series": "11 🍿 24/7 Movies & Series",
+    "24/7 Kids & Cartoons": "12 🎨 24/7 Kids & Cartoons",
+    "24/7 OnePlay": "13 ▶️ 24/7 OnePlay",
+    "Music": "14 🎵 Music",
+    "International TV": "15 🌍 International TV",
+    "Live Events": "99 🗄️ Sports Event Sources"
+  }
+}
