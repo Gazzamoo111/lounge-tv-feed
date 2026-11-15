@@ -8,6 +8,7 @@ on:
       - 'qa/channel-priority.mjs'
       - 'qa/channel-priority.test.mjs'
       - 'qa/xtream-ordering.test.mjs'
+      - 'qa/priority-uk-us-sports.test.mjs'
       - 'qa/n-v10-index.ts'
       - '.github/workflows/qa-nuvio-order.yml'
   workflow_dispatch:
@@ -21,4 +22,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run ranking and PPV regression tests
-        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs
+        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs qa/priority-uk-us-sports.test.mjs
