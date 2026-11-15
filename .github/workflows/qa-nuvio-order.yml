@@ -18,6 +18,7 @@ on:
       - 'qa/n-v15-index.ts'
       - 'qa/n-v16-index.ts'
       - 'qa/n-v17-index.ts'
+      - 'qa/nz-routing.mjs'
       - 'qa/qa-epg-alias.mjs'
       - 'qa/qa-epg-alias.test.mjs'
       - 'qa/qa-tvnz-duke-playback.test.mjs'
