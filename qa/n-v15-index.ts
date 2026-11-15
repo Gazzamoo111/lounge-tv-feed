@@ -5,6 +5,7 @@ import { nuvio247Group } from "./qa-247-groups.mjs";
 import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
 import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
+import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import postgres from "npm:postgres@3.4.7";
 
 // LOUNGE_SUPAVISOR_TRANSACTION_POOL
@@ -1298,6 +1299,8 @@ async function nuvioFullRows():Promise<any[]>{
    if(group!=="Live Events"&&n)identities.add(key);
    rows.push(item);
   }
+  // Retain the old NZ HD streams as named manual fallbacks after the FHD trial.
+  rows.push(...qaSkyOriginalHdBackups(rows,curated,inventory));
   // QA-only Australian display consolidation: provider inventory, backups and
   // curated release bindings remain untouched; preserve local network variants.
   const auVisible=qaAuVisibleRows(rows,nuvioGroup);
