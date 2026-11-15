@@ -15,6 +15,9 @@ on:
       - 'qa/qa-247-groups.test.mjs'
       - 'qa/n-v13-index.ts'
       - 'qa/n-v14-index.ts'
+      - 'qa/n-v15-index.ts'
+      - 'qa/qa-sky-fhd-primary.mjs'
+      - 'qa/qa-sky-fhd-primary.test.mjs'
       - 'qa/qa-au-duplicates.mjs'
       - 'qa/qa-au-duplicates.test.mjs'
       - 'qa/qa-stream-groups.mjs'
@@ -31,4 +34,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run ranking and PPV regression tests
-        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs qa/priority-uk-us-sports.test.mjs qa/qa-247-groups.test.mjs qa/qa-stream-groups.test.mjs qa/qa-au-duplicates.test.mjs
+        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs qa/priority-uk-us-sports.test.mjs qa/qa-247-groups.test.mjs qa/qa-stream-groups.test.mjs qa/qa-au-duplicates.test.mjs qa/qa-sky-fhd-primary.test.mjs
