@@ -1,0 +1,7 @@
+name = "lounge-tv-nuvio-qa"
+main = "nuvio-qa-custom-domain.mjs"
+compatibility_date = "2026-11-15"
+
+[[routes]]
+pattern = "n.loungetv.nz"
+custom_domain = true
