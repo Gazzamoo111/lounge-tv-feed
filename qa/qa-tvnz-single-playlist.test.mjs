@@ -56,7 +56,7 @@ test('one M3U includes TVNZ 1/2 and other live channels with unchanged EPG ident
  assert.match(text,/Sports event\nhttps:\/\/n\.loungetv\.nz\/live\/testuser\/testpass\/2001234567\.ts/);
  assert.match(text,/tvg-id="One\.nz"/);
  assert.match(text,/tvg-id="TV2\.nz"/);
- assert.match(text,/x-tvg-url="https:\/\/n\.loungetv\.nz\/xmltv\.php\?username=testuser&amp;password=testpass"/);
+ assert.match(text,/x-tvg-url="https:\/\/n\.loungetv\.nz\/xmltv\.php\?username=testuser&password=testpass"/);
  assert.match(text,/group-title="01 🇳🇿 New Zealand"/);
  assert.match(text,/group-title="99 🗄️ Sports Event Sources"/);
 });
