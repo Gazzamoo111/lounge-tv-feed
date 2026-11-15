@@ -1,0 +1,24 @@
+name: QA Nuvio Xtream ordering
+
+on:
+  push:
+    branches:
+      - qa/nuvio-gateway-20261115
+    paths:
+      - 'qa/channel-priority.mjs'
+      - 'qa/channel-priority.test.mjs'
+      - 'qa/xtream-ordering.test.mjs'
+      - 'qa/n-v10-index.ts'
+      - '.github/workflows/qa-nuvio-order.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-xtream-order:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run ranking and PPV regression tests
+        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs
