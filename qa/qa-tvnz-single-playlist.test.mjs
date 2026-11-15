@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {nzSourceForBinding,nzPlaylistLines} from './nz-routing.mjs';
 
-const qa=readFileSync(new URL('./n-v18-index.ts',import.meta.url),'utf8');
+const qa=readFileSync(new URL('./n-v20-index.ts',import.meta.url),'utf8');
+const acceptedPrevious=readFileSync(new URL('./n-v18-index.ts',import.meta.url),'utf8');
 const prior=readFileSync(new URL('./n-v16-index.ts',import.meta.url),'utf8');
 const start='async function releaseM3u(u:string,p:string,url:URL){';
 const end='let skyNzShortCache:';
@@ -37,6 +38,13 @@ const exemplar=[
   {external_id:2001234567,provider_name:'BEST',provider_stream_id:1234567,
     display_name:'Sports event',group:'Live Events',epg_id:'',source_format:'ts'}
 ];
+
+test('QA v20 removes both incorrect BEST TVNZ routes and restores v18 source exactly',()=>{
+ assert.equal(qa,acceptedPrevious);
+ assert.doesNotMatch(qa,/TVNZ_BEST_COMPAT_QA|1182156|1182157/);
+ assert.match(qa,/if\(nz\) lines\.push\(\.\.\.nzPlaylistLines\(nz\)\)/);
+ assert.match(qa,/if\(nz\.drm\) return json\(\{error:"drm_client_required"/);
+});
 
 test('QA single M3U keeps the rest of the gateway byte-for-byte unchanged',()=>{
  assert.equal(qa.slice(0,m3uStart),prior.slice(0,prior.indexOf(start)));
