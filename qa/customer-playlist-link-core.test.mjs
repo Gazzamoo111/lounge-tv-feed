@@ -50,7 +50,7 @@ test("reject mismatched BEST credentials",()=>{
  assert.throws(()=>rewriteLoungeM3u(fixture.replace("/"+username+"/"+password+"/","/"+username+"/wrong-password/"),options),/Unexpected Lounge stream/);
 });
 test("reject unrecognised DRM licence targets",()=>{
- assert.throws(()=>rewriteLoungeM3u(fixture.replace(rel+"?ch=1","https://attacker.invalid/wv"),options),/Unexpected licence source/);
+ assert.throws(()=>rewriteLoungeM3u(fixture.replace(relay+"?ch=1","https://attacker.invalid/wv"),options),/Unexpected licence source/);
 });
 test("reject missing TVNZ licence, prevent silent unprotected rollout",()=>{
  assert.throws(()=>rewriteLoungeM3u(fixture.replace("#KODIPROP:inputstream.adaptive.license_key="+relay+"?ch=2\n",""),options),/Incomplete protected/);
