@@ -1,0 +1,32 @@
+name: QA Customer Link Endpoint Smoke Test
+on:
+  push:
+    branches: [qa/nuvio-gateway-20261115]
+    paths: ['.github/workflows/qa-customer-playlist-smoke.yml']
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify external endpoints are secure by default
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-customer-playlist-qa"
+          token="$(printf 'A%.0s' {1..43})"
+          check() {
+            local label="$1" method="$2" path="$3" expected="$4"
+            local code
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 25 -X "$method" "$base/$path")
+            echo "$label: HTTP $code (expected $expected)"
+            test "$code" = "$expected"
+          }
+          check health GET health 200
+          check invalid-playlist GET "playlist/$token" 401
+          check invalid-epg GET "epg/$token" 401
+          check invalid-live GET "live/$token/1895.ts" 401
+          check invalid-license POST "license/$token/1" 401
+          check admin-issue-no-auth POST admin/issue 401
+          check admin-revoke-no-auth POST admin/revoke 401
