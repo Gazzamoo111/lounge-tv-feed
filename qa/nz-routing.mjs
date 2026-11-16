@@ -17,7 +17,9 @@ export function nzPlaylistLines(source) {
   const lines = ['#EXTVLCOPT:http-user-agent=otg/1.5.1 (AppleTv Apple TV 4; tvOS16.0; appletv.client) libcurl/7.58.0 OpenSSL/1.0.2o zlib/1.2.11 clib/1.8.56'];
   if (source.drm) lines.push('#KODIPROP:inputstream.adaptive.manifest_type=mpd',
     '#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha',
-    `#KODIPROP:inputstream.adaptive.license_key=${source.license}`);
+    `#KODIPROP:inputstream.adaptive.license_key=${source.slug === 'tvnz-1' || source.slug === 'tvnz-2'
+      ? `https://liqocisegeqzbyuqloql.supabase.co/functions/v1/tvnz-license-qa?ch=${source.slug === 'tvnz-1' ? '1' : '2'}`
+      : source.license}`);
   return [...lines, source.url];
 }
 
