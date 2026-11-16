@@ -26,7 +26,7 @@ jobs:
                 result=$(curl -sS -I --max-time 18 --max-redirs 0 -D "$headers" -o /dev/null -w '%{http_code}' "$url" || echo network_error)
               fi
               printf 'TVNZ %s %s: HTTP %s\n' "$ch" "$method" "$result"
-              python3 -c 'import sys,urllib.parse; u=[urllib.parse.urlparse(x.split(":",1)[1].strip()) for x in open(sys.argv[1]) if x.lower().startswith("location:")]; print("  redirects: "+", ".join(v.netloc+v.path+" query="+str(bool(v.query)) for v in u))' "$headers"
+              python3 -c 'import sys,urllib.parse; u=[urllib.parse.urlparse(x.split(":",1)[1].strip()) for x in open(sys.argv[1]) if x.lower().startswith("location:")]; print("  redirects: "+", ".join(v.netloc+v.path+" keys="+str(sorted(urllib.parse.parse_qs(v.query).keys()))+" fingerprint="+__import__("hashlib").sha256(v.geturl().encode()).hexdigest()[:12] for v in u))' "$headers"
               rm "$headers"
             done
           done
