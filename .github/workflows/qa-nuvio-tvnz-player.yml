@@ -63,7 +63,8 @@ jobs:
         run: |
           set -euo pipefail
           test -s app/build/outputs/apk/full/release/output-metadata.json
-          jq -e '.elements[0].applicationId == "com.nuvio.livetv.test"' app/build/outputs/apk/full/release/output-metadata.json
+          jq -r '{applicationId,variantName,outputs:[.elements[].outputFile]}' app/build/outputs/apk/full/release/output-metadata.json
+          jq -e '.applicationId == "com.nuvio.livetv.test"' app/build/outputs/apk/full/release/output-metadata.json
           find app/build/outputs/apk/full/release -name '*.apk' -size +100k | head -n 1 | grep .
       - name: Upload TVNZ QA build
         uses: actions/upload-artifact@v4
