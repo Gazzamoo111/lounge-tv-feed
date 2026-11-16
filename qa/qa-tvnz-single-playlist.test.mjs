@@ -76,7 +76,7 @@ test('existing Widevine manifest and licence metadata preserved for both channel
    const segment=text.match(new RegExp('TVNZ [12]\\n([\\s\\S]*?)https:\\/\\/i\\.mjh\\.nz/\\.r/'+name+'\\.mpd'));
    assert.ok(segment,'missing Widevine source '+name);
    assert.match(segment[1],/#KODIPROP:inputstream\.adaptive\.license_type=com\.widevine\.alpha/);
-   assert.match(segment[1],new RegExp('#KODIPROP:inputstream\\.adaptive\\.license_key=https:\\/\\/c\\.mjh\\.nz/'+name+'-wv'));
+   assert.match(segment[1],new RegExp('#KODIPROP:inputstream\\.adaptive\\.license_key=https:\\/\\/liqocisegeqzbyuqloql\\.supabase\\.co\\/functions\\/v1\\/tvnz-license-qa\\?ch='+(name==='tvnz-1'?'1':'2')));
  }
 });
 
