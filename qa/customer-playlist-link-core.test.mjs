@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {rewriteLoungeM3u,TOKEN_RE} from "./customer-playlist-link-core.mjs";
+import {rewriteLoungeM3u,TOKEN_RE} from "./customer-playlist-link/link-core.mjs";
 const key="A".repeat(43);
 const publicBase="https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-customer-playlist-qa";
 const coreBase="https://liqocisegeqzbyuqloql.supabase.co/functions/v1/n";
