@@ -1,0 +1,24 @@
+name: QA Customer Playlist Link Security
+on:
+  push:
+    branches: [qa/nuvio-gateway-20261115]
+    paths:
+      - 'qa/customer-playlist-link/**'
+      - 'qa/customer-playlist-link-core.test.mjs'
+      - '.github/workflows/qa-customer-playlist-link.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  security-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run customer M3U security tests
+        run: node --test qa/customer-playlist-link-core.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check QA customer-link gateway (no deployment)
+        run: deno check qa/customer-playlist-link/index.ts
