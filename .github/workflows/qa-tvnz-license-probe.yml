@@ -1,0 +1,39 @@
+name: TVNZ license redirect check (no app build)
+on:
+  push:
+    branches: [qa/nuvio-gateway-20261115]
+    paths: ['.github/workflows/qa-tvnz-license-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Inspect safe redirect metadata only
+        shell: bash
+        run: |
+          set -uo pipefail
+          for ch in 1 2; do
+            for method in HEAD POST; do
+              url="https://c.mjh.nz/tvnz-${ch}-wv"
+              headers=$(mktemp)
+              if [ "$method" = POST ]; then
+                result=$(curl -sS -X POST -H 'Content-Type: application/octet-stream' --data-binary '' \
+                  --max-time 18 --max-redirs 0 -D "$headers" -o /dev/null -w '%{http_code}' "$url" || echo network_error)
+              else
+                result=$(curl -sS -I --max-time 18 --max-redirs 0 -D "$headers" -o /dev/null -w '%{http_code}' "$url" || echo network_error)
+              fi
+              printf 'TVNZ %s %s: HTTP %s\n' "$ch" "$method" "$result"
+              python3 - "$headers" <<'PY'
+import sys, urllib.parse
+lines=open(sys.argv[1],encoding='latin1').readlines()
+for l in lines:
+    if l.lower().startswith('location:'):
+        u=urllib.parse.urlparse(l.split(':',1)[1].strip())
+        print(f'  redirect host: {u.netloc} path: {u.path} query_present: {bool(u.query)}')
+PY
+              rm "$headers"
+            done
+          done
