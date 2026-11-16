@@ -1,0 +1,38 @@
+name: QA TVNZ licence relay check
+on:
+  push:
+    branches: [qa/nuvio-gateway-20261115]
+    paths: ['.github/workflows/qa-tvnz-license-relay-probe.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify QA license relay endpoint (no DRM keys)
+        env:
+          BASE: https://liqocisegeqzbyuqloql.supabase.co/functions/v1/tvnz-license-qa
+        run: |
+          set -euo pipefail
+          for ch in 1 2; do
+            hdr=$(mktemp); body=$(mktemp)
+            code=$(curl --max-time 20 --retry 2 -sS -X POST \
+              -H 'Content-Type: application/octet-stream' \
+              --data-binary 'QA_INVALID_WIDEVINE_CHALLENGE' \
+              -D "$hdr" -o "$body" -w '%{http_code}' "$BASE?ch=$ch")
+            stage=$(grep -i '^x-lounge-tvnz-stage:' "$hdr" | head -1 | tr -d '\r' | cut -d' ' -f2- || true)
+            echo "TVNZ $ch license relay: HTTP $code / stage $stage"
+            # Source may reject a fake challenge. That is expected. No 307 may escape.
+            test "$code" != "307"
+            test "$code" != "200"
+            test "$stage" = "denied"
+            rm "$hdr" "$body"
+          done
+          empty=$(curl --max-time 15 -sS -o /dev/null -w '%{http_code}' -X POST "$BASE?ch=1")
+          echo "Empty challenge is HTTP $empty (expected 400)"
+          test "$empty" = "400"
+          unknown=$(curl --max-time 15 -sS -o /dev/null -w '%{http_code}' -X POST --data-binary test "$BASE?ch=3")
+          echo "Unknown channel HTTP $unknown (expected 404)"
+          test "$unknown" = "404"
