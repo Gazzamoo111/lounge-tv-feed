@@ -48,8 +48,16 @@ jobs:
           CI_USE_DEBUG_SIGNING: 'true'
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleFullRelease --parallel --build-cache -PlivetvTestBuild=true \
-            -x lintVitalAnalyzeFullRelease -x lintVitalReportFullRelease -x lintVitalFullRelease
+          # Maven Central occasionally rate-limits newly provisioned Actions runners.
+          # Reuse Gradle's cache and retry boundedly, without simultaneous downloads.
+          for attempt in 1 2 3; do
+            if ./gradlew :app:assembleFullRelease --no-parallel --build-cache -PlivetvTestBuild=true \
+              -x lintVitalAnalyzeFullRelease -x lintVitalReportFullRelease -x lintVitalFullRelease; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then exit 1; fi
+            sleep $((attempt*45))
+          done
       - name: Verify APK and test application ID
         working-directory: nuvio
         run: |
