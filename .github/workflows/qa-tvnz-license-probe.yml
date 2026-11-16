@@ -27,13 +27,13 @@ jobs:
               fi
               printf 'TVNZ %s %s: HTTP %s\n' "$ch" "$method" "$result"
               python3 - "$headers" <<'PY'
-import sys, urllib.parse
-lines=open(sys.argv[1],encoding='latin1').readlines()
-for l in lines:
-    if l.lower().startswith('location:'):
-        u=urllib.parse.urlparse(l.split(':',1)[1].strip())
-        print(f'  redirect host: {u.netloc} path: {u.path} query_present: {bool(u.query)}')
-PY
+              import sys, urllib.parse
+              lines=open(sys.argv[1],encoding='latin1').readlines()
+              for l in lines:
+                  if l.lower().startswith('location:'):
+                      u=urllib.parse.urlparse(l.split(':',1)[1].strip())
+                      print(f'  redirect host: {u.netloc} path: {u.path} query_present: {bool(u.query)}')
+              PY
               rm "$headers"
             done
           done
