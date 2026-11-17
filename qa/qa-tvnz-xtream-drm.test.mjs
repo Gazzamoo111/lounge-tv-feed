@@ -47,7 +47,7 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    .replaceAll('nuvio:full:qa:v9-sports-overflow','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v10-au-integrity','nuvio:full:qa:v6-epg')
    .replace('import { qaAuWrongGuide } from "./qa-au-integrity.mjs";\n','')
-   .replace('import { qaAuBestDirectUrl } from "./qa-au-direct-playback.mjs";\\n','')
+   .replace('import { qaAuBestDirectUrl } from "./qa-au-direct-playback.mjs";\n','')
    .replace(`    // QA: restore Australia's original BEST direct playback, bypassing the
     // HTTPS -> HTTP redirect known to fail on some Android media stacks.
     const auDirect=qaAuBestDirectUrl(r,nuvioGroup(r),BEST_BASE,u,p);
