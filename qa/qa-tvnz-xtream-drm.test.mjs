@@ -44,6 +44,8 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    .replace('const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;',originalMap)
    .replaceAll('nuvio:full:qa:v7-customer-labels','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v8-ranked-guide','nuvio:full:qa:v6-epg')
+   .replaceAll('nuvio:full:qa:v9-sports-overflow','nuvio:full:qa:v6-epg')
+   .replace('const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));','const gstream=nuvioStreamingGroup(t,v);')
    .replace('shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});',
             'shortEpgCache.set(key,{until:Date.now()+10*60*1000,list});')
    .replace('  if(!list)return null;\n  const now=Math.floor(Date.now()/1000);',
@@ -62,6 +64,7 @@ test("Xtream adds the new fields to the existing full channel response only",()=
  assert.match(v27Ranking,/currentGuideIds/);
  assert.match(v27Ranking,/nuvioChannelPriority\(groupA,a,currentGuideIds.has/);
  assert.equal(equivalent.replace(v27Ranking,originalRanking),core);
+ assert.ok(now.includes('const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));'));
  assert.match(now,/if\(action==="get_live_streams"\)/);
  assert.match(now,/\.\.\.qaTvnzXtreamDrmFields\(r\)/);
  assert.doesNotMatch(now,/TVNZ_BEST_COMPAT_QA/);

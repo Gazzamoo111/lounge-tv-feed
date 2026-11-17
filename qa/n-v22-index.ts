@@ -1243,7 +1243,7 @@ function nuvioGroup(r:any):string{
  const t=String(r.category||"").toLowerCase(),v=String(r.subcategory||"").toUpperCase();
  const g247=nuvio247Group(t,v);
  if(g247)return g247;
- const gstream=nuvioStreamingGroup(t,v);
+ const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));
  if(gstream)return gstream;
  if(t==="raw"){
   if(/PPV|EVENT|REPLAY|ESPN\+|ESPN PLUS|ESPN PLAY|PACKAGE|FLO NETWORK|WORLD LIVE SPORTS|NCAA|CHAMPIONSHIP|FA PLAYER|LEAGUE ONE|LEAGUE TWO|NATIONAL LEAGUE|SKY SPORT\+|RED BUTTON|TENNIS CHANNEL PLUS|CUP GAMES|UEFA/.test(v))return "Live Events";
@@ -1281,7 +1281,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:full:qa:v8-ranked-guide",cache=catalogueCache.get(k);
+ const k="nuvio:full:qa:v9-sports-overflow",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;

@@ -49,3 +49,42 @@ test('v13 modifies categorization without touching Xtream streams or EPG passthr
  assert.match(v13,/const g247=nuvio247Group\(t,v\);/);
  assert.match(v13,/const sa=nuvioChannelPriority\(nuvioGroup\(a\),a\)/);
 });
+
+test('v28: dated NBA/NFL fixture rows and WNBA event windows route to final 99',()=>{
+ const fixtures=[
+  ['NBA • Philadelphia 76ers @ Brooklyn Nets','Live Events'],
+  ['NBA • Houston Rockets @ Miami Heat','Live Events'],
+  ['NFL • Los Angeles Chargers @ Baltimore Ravens','Live Events'],
+  ['WNBA ON ION 1','Live Events'],
+  ['WNBA ON ION 3','Live Events']
+ ];
+ for(const [name,expected] of fixtures)
+  assert.equal(group('Sports','NBA & NFL',name),expected,name);
+ for(const name of [
+  'NBA TV','NBA FAST CHANNEL','NFL NETWORK','NFL REDZONE',
+  'NFL REDZONE (LOWER) (F)','SPECTRUM SPORTSNET','SPORTSNET LA LAKERS'
+ ])assert.equal(group('Sports','NBA & NFL',name),null,name);
+});
+test('v28: only verified regional NFL and NBA VIP provider groups overflow',()=>{
+ assert.equal(group('RAW','US| NFL NETWORK HULU','NFL NETWORK (N658) GREEN BAY'),'Live Events');
+ assert.equal(group('RAW','US| NBA NETWORK VIP','LIVE | CHI - BULLS VS PHI - 76ERS'),'Live Events');
+ for(const groupName of ['US| SPORTS NETWORK','UK| WORLD SPORTS','US| NFL NETWORK','US| NBA NETWORK','US| ESPN PLUS'])
+  assert.equal(group('RAW',groupName,'NFL NETWORK'),null,groupName);
+ assert.equal(group('SPORTS','NBA & NFL','NBA TV'),null);
+});
+test('v28: source IDs, programme guide, icons and playback metadata never mutate',()=>{
+ const fixtures=[
+  {display_name:'NBA • Charlotte Hornets @ Los Angeles Lakers',category:'Sports',subcategory:'NBA & NFL',external_id:1234,provider_stream_id:999,epg_id:'',logo_url:'https://example.invalid/x'},
+  {display_name:'NFL NETWORK (N623) DALLAS',category:'RAW',subcategory:'US| NFL NETWORK HULU',external_id:1235,provider_stream_id:1000,epg_id:'id',source_format:'ts'},
+  {display_name:'NBA TV',category:'Sports',subcategory:'NBA & NFL',external_id:1236,provider_stream_id:1001,epg_id:'NBATV.us'}
+ ];
+ const before=JSON.stringify(fixtures);
+ assert.deepEqual(fixtures.map(row=>group(row.category,row.subcategory,row.display_name)),['Live Events','Live Events',null]);
+ assert.equal(JSON.stringify(fixtures),before);
+ const gateway=readFileSync(new URL('./n-v22-index.ts',import.meta.url),'utf8');
+ assert.match(gateway,/nuvioStreamingGroup\(t,v,String\(r\.display_name\|\|""\)\)/);
+ assert.match(gateway,/const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;/);
+ assert.match(gateway,/stream_id:Number\(r\.external_id\)/);
+ assert.match(gateway,/epg_channel_id:effectiveLiveEpgId\(r\)/);
+ assert.match(gateway,/category_id:nuvioGroupId\(nuvioGroup\(r\)\)/);
+});
