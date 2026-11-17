@@ -1281,7 +1281,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:full:qa:v7-customer-labels",cache=catalogueCache.get(k);
+ const k="nuvio:full:qa:v8-ranked-guide",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
@@ -1316,10 +1316,14 @@ async function nuvioFullRows():Promise<any[]>{
   rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));
   // QA EPG recovery: assign only current, verified EPG IDs to exact NZ/AU
   // and selected Sports Networks alternatives. Never guess regional schedules.
+  // Rank four customer categories against available programme metadata only:
+  // this never edits the source's EPG identity or creates synthetic listings.
+  const currentGuideIds=new Set<string>();
   try{
     const available=await sql`select epg_id from lounge_delivery.shared_epg_channels
       where expires_at>now() and programme_count>0`;
     const ids=new Set(available.map((x:any)=>String(x.epg_id)));
+    for(const id of ids) currentGuideIds.add(id);
     for(const row of rows){
       if(ids.has(String(row.epg_id||"")))continue;
       const alias=qaEpgAlias(nuvioGroup(row),String(row.display_name||""));
@@ -1327,9 +1331,11 @@ async function nuvioFullRows():Promise<any[]>{
     }
   }catch(err){console.error("LOUNGE_NUVIO_QA_EPG_ALIAS_FALLBACK",String(err));}
   rows.sort((a:any,b:any)=>{
-   const ga=NUVIO_VISIBLE_ORDER.indexOf(nuvioGroup(a)),gb=NUVIO_VISIBLE_ORDER.indexOf(nuvioGroup(b));
+   const groupA=nuvioGroup(a),groupB=nuvioGroup(b);
+   const ga=NUVIO_VISIBLE_ORDER.indexOf(groupA),gb=NUVIO_VISIBLE_ORDER.indexOf(groupB);
    if(ga!==gb)return ga-gb;
-   const sa=nuvioChannelPriority(nuvioGroup(a),a),sb=nuvioChannelPriority(nuvioGroup(b),b);
+   const sa=nuvioChannelPriority(groupA,a,currentGuideIds.has(String(a.epg_id||"")));
+   const sb=nuvioChannelPriority(groupB,b,currentGuideIds.has(String(b.epg_id||"")));
    if(sa!==sb)return sa-sb;
    return String(a.display_name).localeCompare(String(b.display_name),undefined,{numeric:true,sensitivity:"base"});
   });

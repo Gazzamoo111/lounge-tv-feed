@@ -6,9 +6,71 @@ const tidy = (value) => String(value || '').toUpperCase()
   .replace(/\s+/g,' ').trim();
 const isRaw = (row) => String(row.category||'').toUpperCase()==='RAW';
 const number = (name,re) => Number(re.exec(name)?.[1] || 0);
-export function nuvioChannelPriority(group, row) {
+export function nuvioChannelPriority(group, row, hasGuide = false) {
   const n = tidy(row.display_name);
   const bias = isRaw(row) ? 0.25 : 0;
+  // v27: customer browsing order in four formerly alphabetical groups.
+  // An EPG match influences ranking only. Never invent or replace guide IDs.
+  if(group==='Entertainment & Streaming'){
+    const v=String(row.subcategory||'').toUpperCase();
+    const brands=[
+      /NETFLIX/, /PRIME VIDEO|AMAZON PRIME|AMAZON UK/, /DISNEY\+/,
+      /APPLE TV\+?/, /HBO\s*MAX/, /PARAMOUNT\+?/, /HULU/, /PEACOCK/,
+      /SKYMIX|SKY MIX/
+    ];
+    const idx=brands.findIndex(re=>re.test(v));
+    if(idx>=0)return idx*10+(hasGuide?0:0.4)+bias;
+    return (hasGuide?95:110)+bias;
+  }
+  if(group==='FAST TV'){
+    const v=String(row.subcategory||'').toUpperCase();
+    if(/PLUTO TV/.test(v))return (hasGuide?0:20)+bias;
+    if(/TUBI/.test(v))return (hasGuide?30:50)+bias;
+    if(/\bPRIME\b/.test(v))return (hasGuide?60:80)+bias;
+    return (hasGuide?65:110)+bias;
+  }
+  if(group==='Movie Channels'){
+    // Never let the large guide-less Sky Store line-up precede scheduled cinema.
+    if(/^SKY STORE INFO/.test(n))return 399+bias;
+    const store=number(n,/^SKY STORE PREMIERE (\d{1,2})$/);
+    if(store)return 300+store+bias;
+    const leaders=[
+      [/^SKY CINEMA PREMI(?:ER|ERE)$/,0],[/^SKY CINEMA HITS$/,1],
+      [/^SKY CINEMA ACTION$/,2],[/^SKY CINEMA COMEDY$/,3],
+      [/^SKY CINEMA DRAMA/,4],[/^SKY CINEMA THRILLER$/,5],
+      [/^SKY CINEMA SELECT$/,6],[/^SKY CINEMA GREATS$/,7],
+      [/^SKY CINEMA (?:ANIMATION|FAMILY)$/,8],
+      [/^FILM\s?4$/,10],[/^GREAT!? MOVIES$/,11],[/^GREAT!? ROMANCE$/,12],
+      [/^HBO$/,20],[/^HBO(?: 2| WEST| COMEDY| SIGNATURE| ZONE)$/,21],
+      [/^CINEMAX(?: EAST| WEST)?$/,25],[/^SHOWTIME(?: EAST| 2)?$/,30],
+      [/^SHOWTIME\b/,31],[/^STARZ(?: EAST| WEST)?$/,35],
+      [/^STARZ\b/,36],[/^MGM\+?$/,40],[/^MGM\+?\b/,41],
+      [/^SCREENPIX\b/,45],[/^MOVIEPLEX$/,46],
+      [/^THE MOVIE CHANNEL$/,47],[/^SONY MOVIE CHANNEL$/,48],
+      [/^5 ACTION$/,49]
+    ];
+    for(const [re,score] of leaders)if(re.test(n))return score+(hasGuide?0:0.4)+bias;
+    return (hasGuide?80:190)+bias;
+  }
+  if(group==='Kids & Family'){
+    const chuchu=number(n,/^CHU CHU TV (\d{1,2})$/);
+    if(chuchu&&chuchu<=10)return 100+chuchu+bias;
+    const kids247=number(n,/^24\/7 KIDS (\d{1,2})$/);
+    if(kids247&&kids247<=12)return 130+kids247+bias;
+    const leaders=[
+      [/^DISNEY (?:JR|JUNIOR)(?: WEST)?$/,0],
+      [/^NICK(?:ELodeon)?\s?JR(?: TOO)?$/i,1],
+      [/^CARTOON NETWORK(?: EAST| WEST| \+1)?$/,2],
+      [/^NICKEL?ODEON(?: EAST| WEST| \+1)?$|^NICK$/,3],
+      [/^BOOMERANG(?: \+1)?$/,4],[/^CARTOONITO$/,5],
+      [/^DISNEY CHANNEL(?: WEST)?$/,6],[/^DISNEY XD(?: WEST)?$/,7],
+      [/^PBS KIDS$/,8],[/^BABY TV$/,9],[/^BABY\s?FIRST$/,10],
+      [/^METV TOONS$/,11],[/^NICK TOONS$/,12],[/^SKY KIDS$/,13],
+      [/^POP$/,14]
+    ];
+    for(const [re,score] of leaders)if(re.test(n))return score+(hasGuide?0:0.4)+bias;
+    return (hasGuide?80:220)+bias;
+  }
   if(group==='New Zealand'){
     if(/^TVNZ 1$/.test(n)) return 0+bias;
     if(/^TVNZ 2$/.test(n)) return 1+bias;
