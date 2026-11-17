@@ -1,0 +1,28 @@
+name: QA Live TV Customer Catalogue
+on:
+  push:
+    branches: [qa/nuvio-gateway-20261115]
+    paths:
+      - 'qa/qa-customer-live-presentation.mjs'
+      - 'qa/qa-customer-live-presentation.test.mjs'
+      - 'qa/n-v22-index.ts'
+      - '.github/workflows/qa-customer-live-catalogue.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  presentation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate NZ channel exclusions and category labels
+        run: node --test qa/qa-customer-live-presentation.test.mjs
+      - name: Validate existing Sky Sport and TVNZ QA regressions
+        run: |
+          node --test qa/qa-sky-hd-backups.test.mjs qa/qa-sky-nz-loop-filter.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck Nuvio full playlist gateway
+        run: deno check qa/n-v22-index.ts
