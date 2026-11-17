@@ -57,12 +57,29 @@ test("clean 23 categories use unique numeric slots and meaningful category 12",(
  assert.equal(labels.length,23);
  assert.equal(new Set(labels).size,23);
  for(const x of labels)assert.match(x,/^(?:0[1-9]|1\d|2[0-2]|99) [^\s].+$/);
- assert.equal(qaCustomerCategoryLabels["24/7 Movies & Series"],"12 🍿 24/7 Movies & Series");
+ assert.equal(qaCustomerCategoryLabels["24/7 Movies & Series"],"12 🍿 24/7 Movies and Series");
  assert.equal(qaCustomerCategoryLabels["New Zealand"],"01 🇳🇿 New Zealand");
  const original=readFileSync(new URL("./n-v21-index.ts",import.meta.url),"utf8");
  const map=original.match(/const NUVIO_CATEGORY_LABELS:Record<string,string>=({[\s\S]*?});/);
  assert.ok(map,"Original category template is present");
- assert.deepEqual(qaCustomerCategoryLabels,JSON.parse(map[1]));
+ const originalLabels=JSON.parse(map[1]);
+ const expected={...originalLabels};
+ const affected=[
+   ["Kids & Family","09 🧸 Kids and Family"],
+   ["Documentaries & Lifestyle","10 🌿 Documentaries and Lifestyle"],
+   ["24/7 Movies & Series","12 🍿 24/7 Movies and Series"],
+   ["24/7 Drama & Crime","16 🎬 24/7 Drama and Crime"],
+   ["24/7 Kids & Cartoons","19 🎨 24/7 Kids and Cartoons"]
+ ];
+ for(const [key,name] of affected)expected[key]=name;
+ assert.deepEqual(qaCustomerCategoryLabels,expected);
+ assert.deepEqual(Object.keys(qaCustomerCategoryLabels),Object.keys(originalLabels));
+ assert.ok(Object.values(qaCustomerCategoryLabels).every(name=>!name.includes("&")));
+ assert.ok(Object.values(qaCustomerCategoryLabels).every(name=>!name.includes("&amp")));
+ for(const [key,name] of affected){
+   const original=originalLabels[key];
+   assert.equal(name.slice(0,original.indexOf(" ")+1),original.slice(0,original.indexOf(" ")+1));
+ }
 });
 
 test("Te Reo follows Whakaata Māori, before Sky Sport, in the unchanged NZ group",()=>{
