@@ -7,6 +7,7 @@ import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
+import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
 import { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";
 import postgres from "npm:postgres@3.4.7";
 
@@ -1279,7 +1280,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:full:qa:v6-epg",cache=catalogueCache.get(k);
+ const k="nuvio:full:qa:v7-customer-labels",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
@@ -1310,6 +1311,8 @@ async function nuvioFullRows():Promise<any[]>{
   // curated release bindings remain untouched; preserve local network variants.
   const auVisible=qaAuVisibleRows(rows,nuvioGroup);
   rows.splice(0,rows.length,...auVisible);
+  // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.
+  rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));
   // QA EPG recovery: assign only current, verified EPG IDs to exact NZ/AU
   // and selected Sports Networks alternatives. Never guess regional schedules.
   try{
@@ -1335,31 +1338,7 @@ async function nuvioFullRows():Promise<any[]>{
 }
 // QA only: labels keep the Xtream IDs and channel linkage unchanged.
 // Prefixes preserve priority order even when Nuvio alphabetically sorts categories.
-const NUVIO_CATEGORY_LABELS:Record<string,string>={
- "New Zealand":"01 🇳🇿 New Zealand",
- "Australia":"02 🇦🇺 Australia",
- "Sports Networks":"03 🏆 Sports Networks",
- "UK TV":"04 🇬🇧 UK TV",
- "US TV":"05 🇺🇸 US TV",
- "Entertainment & Streaming":"06 ▶️ Streaming Services",
- "FAST TV":"07 📡 FAST TV",
- "Movie Channels":"08 🎬 Movie Channels",
- "Kids & Family":"09 🧸 Kids & Family",
- "Documentaries & Lifestyle":"10 🌿 Documentaries & Lifestyle",
- "News":"11 📰 News",
- "24/7 Movies & Series":"12 🍿 24/7 Movies & Series",
- "24/7 Movies":"13 🎞️ 24/7 Movies",
- "24/7 Series":"14 📺 24/7 Series",
- "24/7 Comedy":"15 🎭 24/7 Comedy",
- "24/7 Drama & Crime":"16 🎬 24/7 Drama & Crime",
- "24/7 Reality":"17 📹 24/7 Reality",
- "24/7 Streaming":"18 ▶️ 24/7 Streaming",
- "24/7 Kids & Cartoons":"19 🎨 24/7 Kids & Cartoons",
- "24/7 OnePlay":"20 ▶️ 24/7 OnePlay",
- "Music":"21 🎵 Music",
- "International TV":"22 🌍 International TV",
- "Live Events":"99 🗄️ Sports Event Sources"
-};
+const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;
 async function nuvioLiveCategories(){
  const rows=await nuvioFullRows(),seen=new Set(rows.map((r:any)=>nuvioGroup(r)));
  return NUVIO_VISIBLE_ORDER.filter(g=>seen.has(g)).map(g=>({
