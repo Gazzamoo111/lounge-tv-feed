@@ -6,8 +6,6 @@ on:
       - 'qa/qa-customer-live-presentation.mjs'
       - 'qa/qa-customer-live-presentation.test.mjs'
       - 'qa/n-v22-index.ts'
-      - 'qa/qa-au-direct-playback.mjs'
-      - 'qa/qa-au-direct-playback.test.mjs'
       - '.github/workflows/qa-customer-live-catalogue.yml'
   workflow_dispatch:
 permissions:
@@ -26,7 +24,5 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Validate Australian direct M3U replay and safety
-        run: node --test qa/qa-au-direct-playback.test.mjs
       - name: Typecheck Nuvio full playlist gateway
         run: deno check qa/n-v22-index.ts

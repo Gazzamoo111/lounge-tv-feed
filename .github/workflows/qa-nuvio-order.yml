@@ -41,8 +41,6 @@ on:
       - 'qa/qa-au-duplicates.test.mjs'
       - 'qa/qa-au-integrity.mjs'
       - 'qa/qa-au-integrity.test.mjs'
-      - 'qa/qa-au-direct-playback.mjs'
-      - 'qa/qa-au-direct-playback.test.mjs'
       - 'qa/qa-stream-groups.mjs'
       - 'qa/qa-stream-groups.test.mjs'
       - '.github/workflows/qa-nuvio-order.yml'
@@ -57,4 +55,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run ranking and PPV regression tests
-        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs qa/priority-uk-us-sports.test.mjs qa/qa-247-groups.test.mjs qa/qa-stream-groups.test.mjs qa/qa-au-duplicates.test.mjs qa/qa-au-integrity.test.mjs qa/qa-au-direct-playback.test.mjs qa/qa-sky-fhd-primary.test.mjs qa/qa-sky-hd-backups.test.mjs qa/qa-sky-nz-loop-filter.test.mjs qa/qa-tvnz-xtream-drm.test.mjs qa/qa-epg-alias.test.mjs qa/qa-tvnz-duke-playback.test.mjs qa/qa-tvnz-single-playlist.test.mjs
+        run: node --test qa/channel-priority.test.mjs qa/xtream-ordering.test.mjs qa/priority-uk-us-sports.test.mjs qa/qa-247-groups.test.mjs qa/qa-stream-groups.test.mjs qa/qa-au-duplicates.test.mjs qa/qa-au-integrity.test.mjs qa/qa-sky-fhd-primary.test.mjs qa/qa-sky-hd-backups.test.mjs qa/qa-sky-nz-loop-filter.test.mjs qa/qa-tvnz-xtream-drm.test.mjs qa/qa-epg-alias.test.mjs qa/qa-tvnz-duke-playback.test.mjs qa/qa-tvnz-single-playlist.test.mjs

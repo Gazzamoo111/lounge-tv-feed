@@ -47,15 +47,6 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    .replaceAll('nuvio:full:qa:v9-sports-overflow','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v10-au-integrity','nuvio:full:qa:v6-epg')
    .replace('import { qaAuWrongGuide } from "./qa-au-integrity.mjs";\n','')
-   .replace('import { qaAuBestDirectUrl } from "./qa-au-direct-playback.mjs";\n','')
-   .replace(`    // QA: restore Australia's original BEST direct playback, bypassing the
-    // HTTPS -> HTTP redirect known to fail on some Android media stacks.
-    const auDirect=qaAuBestDirectUrl(r,nuvioGroup(r),BEST_BASE,u,p);
-    if(nz) lines.push(...nzPlaylistLines(nz));
-    else if(auDirect)lines.push(auDirect);
-    else lines.push(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(r.external_id)+"."+String(r.source_format||"ts"));`,
-   `    if(nz) lines.push(...nzPlaylistLines(nz));
-    else lines.push(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(r.external_id)+"."+String(r.source_format||"ts"));`)
    .replace('  // Ten is not 10 Bold. Do not display another network’s programmes.\n  if(qaAuWrongGuide(row))return "";\n','')
    .replace('  if(qaAuWrongGuide(mapped))return []; // no Ten->10 Bold nor unverified provider fallback\n','')
    .replace('const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));','const gstream=nuvioStreamingGroup(t,v);')
