@@ -1,0 +1,50 @@
+{
+  "id": "lounge-tv-master-v1",
+  "status": "DESIGN_ONLY_NOT_IMPORTED",
+  "target": "new independent Nuvio account, never operator profiles",
+  "profile": {
+    "name": "Lounge TV",
+    "copyAvatar": false,
+    "copyWatchHistory": false,
+    "copyWatchProgress": false,
+    "copyLibrary": false
+  },
+  "addons": {
+    "onlyNewCustomerNeutral": true,
+    "noOperatorManifestUrls": true,
+    "noOperatorTorboxKey": true,
+    "xperience": "fresh, dedicated configuration required",
+    "badges": "approved pack applied only where supported"
+  },
+  "home": {
+    "source": "Xperience visual reference only",
+    "order": [
+      "Featured hero",
+      "Movies collection",
+      "Series collection",
+      "Family collection"
+    ],
+    "showHeroImages": true,
+    "excludeUnrelatedCatalogues": true
+  },
+  "live": {
+    "playlistLabel": "Lounge TV Live",
+    "source": "individual tokenised M3U from approved service",
+    "epg": "playlist supplied",
+    "setupSync": "enabled by customer on own Nuvio account"
+  },
+  "provisioning": {
+    "nuvioIdentity": "customer-owned",
+    "best": "individual service assignment",
+    "torbox": "individual and optional",
+    "noAdminWriteToSetupSync": true
+  },
+  "accept": [
+    "zero copied history/library/avatar",
+    "no personal add-on tokens",
+    "approved home order and hero/badges",
+    "one active playlist and guide",
+    "renewal without link replacement",
+    "expiry and revocation"
+  ]
+}
