@@ -38,5 +38,5 @@ test('QA Xtream response preserves upstream rank when PPV exists', () => {
 });
 test('category filtered Xtream response starts numbering from 1', () => {
  const nz = ranked(rows).filter(r=>r.group==='New Zealand').map((r,i)=>({name:r.display_name,num:i+1}));
- assert.equal(nz[0].num,1); assert.equal(nz.at(-1).name,'Te Reo');
+ assert.equal(nz[0].num,1); assert.equal(nz[4].name,'Te Reo'); assert.equal(nz[5].name,'Sky Sport 1');
 });
