@@ -5,6 +5,7 @@ import { nuvio247Group } from "./qa-247-groups.mjs";
 import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
 import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaAuWrongGuide } from "./qa-au-integrity.mjs";
+import { qaAuHlsVariants, QA_AU_HLS_BASE } from "./qa-au-hls-test.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
@@ -1284,7 +1285,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:full:qa:v10-au-integrity",cache=catalogueCache.get(k);
+ const k="nuvio:full:qa:v11-au-hls-transport",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
@@ -1317,6 +1318,8 @@ async function nuvioFullRows():Promise<any[]>{
   rows.splice(0,rows.length,...auVisible);
   // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.
   rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));
+  // QA v30 diagnostic: expose alternate HLS transport for AU Fox/ESPN/Kayo only.
+  rows.splice(0,rows.length,...qaAuHlsVariants(rows,nuvioGroup));
   // QA v29: strip the provably wrong Ten->10 Bold guide in the customer list.
   for(const row of rows)if(qaAuWrongGuide(row))row.epg_id="";
   // QA EPG recovery: assign only current, verified EPG IDs to exact NZ/AU
@@ -1834,6 +1837,18 @@ Deno.serve(async(req)=>{
   if(parts[0]==="live"){
     const {u,p}=credentials(url,parts);const idPart=parts[3]||"";const externalId=Number(idPart.split(".")[0]);
     if(!u||!p||!Number.isFinite(externalId)) return json({error:"not_allowed"},403);
+    // HLS test IDs use the same verified provider ID, only a different
+    // Xtream transport extension. No playlist credential or stream ID changes.
+    if(externalId>=QA_AU_HLS_BASE){
+      const rawId=externalId-QA_AU_HLS_BASE;
+      const auth=await catalogueAccountState(base,u,p);
+      if(!auth.ok)return json({error:"not_allowed"},403);
+      const matching=(await nuvioFullRows()).some((r:any)=>
+        Number(r.external_id)===externalId&&Number(r.provider_stream_id)===rawId
+        &&String(r.source_format)==="m3u8");
+      if(!matching)return json({error:"not_allowed"},403);
+      return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+rawId+".m3u8",302);
+    }
     if(externalId>=NUVIO_STREAM_BASE){
       const rawId=externalId-NUVIO_STREAM_BASE;
       const auth=await catalogueAccountState(base,u,p);
