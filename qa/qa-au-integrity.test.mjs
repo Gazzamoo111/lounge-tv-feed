@@ -17,6 +17,6 @@ test('v29: deny Ten wrong-guide list, short EPG and provider fallback in QA only
   assert.match(c,/if\(qaAuWrongGuide\(row\)\)return "";/);
   assert.match(c,/if\(qaAuWrongGuide\(mapped\)\)return \[\];/);
   assert.match(c,/for\(const row of rows\)if\(qaAuWrongGuide\(row\)\)row\.epg_id="";/);
-  assert.match(c,/nuvio:full:qa:v11-au-hls-transport/);
+  assert.match(c,/nuvio:full:qa:v10-au-integrity/);
   assert.match(c,/\.\.\.qaTvnzXtreamDrmFields\(r\)/);
 });

@@ -46,22 +46,6 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    .replaceAll('nuvio:full:qa:v8-ranked-guide','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v9-sports-overflow','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v10-au-integrity','nuvio:full:qa:v6-epg')
-   .replaceAll('nuvio:full:qa:v11-au-hls-transport','nuvio:full:qa:v6-epg')
-   .replace('import { qaAuHlsVariants, QA_AU_HLS_BASE } from "./qa-au-hls-test.mjs";\n','')
-   .replace('  // QA v30 diagnostic: expose alternate HLS transport for AU Fox/ESPN/Kayo only.\n  rows.splice(0,rows.length,...qaAuHlsVariants(rows,nuvioGroup));\n','')
-   .replace(`    // HLS test IDs use the same verified provider ID, only a different
-    // Xtream transport extension. No playlist credential or stream ID changes.
-    if(externalId>=QA_AU_HLS_BASE){
-      const rawId=externalId-QA_AU_HLS_BASE;
-      const auth=await catalogueAccountState(base,u,p);
-      if(!auth.ok)return json({error:"not_allowed"},403);
-      const matching=(await nuvioFullRows()).some((r:any)=>
-        Number(r.external_id)===externalId&&Number(r.provider_stream_id)===rawId
-        &&String(r.source_format)==="m3u8");
-      if(!matching)return json({error:"not_allowed"},403);
-      return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+rawId+".m3u8",302);
-    }
-`, '')
    .replace('import { qaAuWrongGuide } from "./qa-au-integrity.mjs";\n','')
    .replace('  // Ten is not 10 Bold. Do not display another network’s programmes.\n  if(qaAuWrongGuide(row))return "";\n','')
    .replace('  if(qaAuWrongGuide(mapped))return []; // no Ten->10 Bold nor unverified provider fallback\n','')

@@ -106,13 +106,3 @@ test('v29 AU source comparison: FOX HD and Kayo ordered as exact pairs, retainin
   ]);
   assert.equal(JSON.stringify(rows),input,'QA source pairing must not modify IDs or streams');
 });
-
-test('v30: HLS transport test is adjacent, primary Fox/Kayo order remains stable',()=>{
-  const names=['FOX SPORTS 501','FOX SPORTS 501 (HLS TEST)',
-    'KAYO - FOX SPORTS 501 CRICKET','KAYO - FOX SPORTS 501 CRICKET (HLS TEST)',
-    'FOX SPORTS 502','FOX SPORTS 502 (HLS TEST)',
-    'KAYO - FOX SPORTS 502 LEAUGE','KAYO - FOX SPORTS 502 LEAUGE (HLS TEST)'];
-  const ordered=[...names].sort((a,b)=>score('Australia',{display_name:a,category:a.includes('KAYO')?'RAW':'Australia'})
-    -score('Australia',{display_name:b,category:b.includes('KAYO')?'RAW':'Australia'}));
-  assert.deepEqual(ordered,names);
-});
