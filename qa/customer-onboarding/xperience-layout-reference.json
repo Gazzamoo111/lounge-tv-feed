@@ -1,0 +1,1119 @@
+{
+  "status": "REFERENCE_ONLY_NOT_DEPLOYED",
+  "source": "User-supplied Xperience collections export; all unique account addon IDs, folder IDs, artwork URLs and personal settings removed",
+  "instructions": "Import/build a NEW neutral Lounge TV Xperience profile; remap every catalog to that profile; run validate-xperience.mjs against its manifest before pushing to a customer.",
+  "collections": [
+    {
+      "title": "Streaming",
+      "folders": [
+        {
+          "title": "Netflix",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_netflix_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_netflix_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_netflix_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_netflix_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "fp_netflix_kids_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "fp_netflix_kids_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_netflix_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_netflix_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_netflix_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_netflix_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_netflix_originals_series"
+            }
+          ]
+        },
+        {
+          "title": "Prime Video",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_prime_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_prime_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_prime_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_prime_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_prime_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_prime_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_prime_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_prime_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_prime_originals_series"
+            }
+          ]
+        },
+        {
+          "title": "Disney+",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_disney_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_disney_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_disney_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_disney_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_disney_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_disney_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_disney_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_disney_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_disney_originals_series"
+            }
+          ]
+        },
+        {
+          "title": "HBO Max",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_hbo_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_hbo_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_hbo_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_hbo_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_hbo_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_hbo_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_hbo_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_hbo_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_hbo_originals_series"
+            }
+          ]
+        },
+        {
+          "title": "Apple TV+",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_apple_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_apple_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_apple_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_apple_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_apple_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_apple_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_apple_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_apple_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_apple_originals_series"
+            }
+          ]
+        },
+        {
+          "title": "Paramount+",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_paramount_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_paramount_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_paramount_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_paramount_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_paramount_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_paramount_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_paramount_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_paramount_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_paramount_originals_series"
+            }
+          ]
+        },
+        {
+          "title": "Hulu",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "streaming_hulu_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_hulu_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "fp_hulu_top10_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "fp_hulu_top10_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "snoak_latest_hulu_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "snoak_latest_hulu_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "streaming_hulu_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_hulu_toprated_series"
+            },
+            {
+              "type": "series",
+              "catalogId": "streaming_hulu_originals_series"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Genres",
+      "folders": [
+        {
+          "title": "Action",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_action_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_action_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_action_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_action_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_action_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_action_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Adventure",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_adventure_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_adventure_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_adventure_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_adventure_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_adventure_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_adventure_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Animated",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_animation_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_animation_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_animation_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_animation_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_animation_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_animation_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Anime",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_anime_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_anime_series"
+            }
+          ]
+        },
+        {
+          "title": "Comedy",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_comedy_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_comedy_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_comedy_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_comedy_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_comedy_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_comedy_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Crime",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_crime_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_crime_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_crime_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_crime_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_crime_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_crime_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Documentaries",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_documentary_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_documentary_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_documentary_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_documentary_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_documentary_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_documentary_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Drama",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_drama_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_drama_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_drama_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_drama_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_drama_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_drama_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Family",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_family_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_family_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_family_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_family_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_family_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_family_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Fantasy",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_fantasy_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_fantasy_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_fantasy_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_fantasy_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_fantasy_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_fantasy_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "History",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_history_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_limited_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_history_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_history_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Horror",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_horror_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_horror_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_horror_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_horror_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_horror_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_horror_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Musicals",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_musicals_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_musicals_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_musicals_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Mystery",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_mystery_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_mystery_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_mystery_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_mystery_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_mystery_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_mystery_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Romance",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_romance_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_romance_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_romance_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_romance_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_romance_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_romance_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Romantic Comedy",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_romantic_comedy_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_romantic_comedy_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_romantic_comedy_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_romantic_comedy_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Sci-Fi",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_scifi_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_scifi_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_scifi_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_scifi_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_scifi_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_scifi_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "Sports",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_sports_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_sports_series"
+            }
+          ]
+        },
+        {
+          "title": "Spy Thrillers",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_spy_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_spy_series"
+            }
+          ]
+        },
+        {
+          "title": "Thrillers",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_thriller_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_thriller_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_thriller_latest_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_thriller_latest_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "genre_thriller_toprated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_thriller_toprated_series"
+            }
+          ]
+        },
+        {
+          "title": "War",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_war_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_war_series"
+            }
+          ]
+        },
+        {
+          "title": "Westerns",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "genre_westerns_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "genre_westerns_series"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Studios",
+      "folders": [
+        {
+          "title": "20th Century",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_20th_century_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_20th_century_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_20th_century_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_20th_century_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "DC",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_dc_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_dc_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_dc_toprated_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_dc_dceu_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_dcu_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_dcu_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_dc_batman_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_dc_superman_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_dc_animation_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_dc_animation_series"
+            }
+          ]
+        },
+        {
+          "title": "Disney Animated",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_disney_animated_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_disney_animated_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_disney_animated_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_disney_animated_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "DreamWorks",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_dreamworks_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_dreamworks_series"
+            }
+          ]
+        },
+        {
+          "title": "Illumination",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_illumination_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_illumination_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_illumination_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Lionsgate",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_lionsgate_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_lionsgate_series"
+            }
+          ]
+        },
+        {
+          "title": "Marvel",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_marvel_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_toprated_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "collection_mcu"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_spiderman_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_xmen_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_avengers_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_animation_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_marvel_animation_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_marvel_legacy_movies"
+            }
+          ]
+        },
+        {
+          "title": "Paramount Pictures",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_paramount_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_paramount_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_paramount_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_paramount_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Pixar",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_pixar_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_pixar_series"
+            }
+          ]
+        },
+        {
+          "title": "Sony Pictures",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_sony_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_sony_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_sony_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_sony_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Universal Pictures",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_universal_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_universal_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_universal_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_universal_toprated_movies"
+            }
+          ]
+        },
+        {
+          "title": "Warner Bros",
+          "catalogs": [
+            {
+              "type": "movie",
+              "catalogId": "studio_warner_movies"
+            },
+            {
+              "type": "series",
+              "catalogId": "studio_warner_series"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_warner_latest_movies"
+            },
+            {
+              "type": "movie",
+              "catalogId": "studio_warner_toprated_movies"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
