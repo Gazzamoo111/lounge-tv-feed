@@ -14,13 +14,13 @@ export function nuvioChannelPriority(group, row) {
     if(/^TVNZ 2$/.test(n)) return 1+bias;
     if(/^THREE$/.test(n)) return 2+bias;
     if(/^WHAKAATA(?: MĀORI| MAORI)?$/.test(n)) return 3+bias;
+    if(/^TE REO$/.test(n))return 4+bias;
     const sky=number(n,/^SKY SPORT ([1-9])$/);
-    if(sky)return sky+3+bias; // 4..12
-    if(/^(?:TVNZ )?DUKE$/.test(n))return 13+bias;
-    if(/^BRAVO$/.test(n))return 14+bias;
-    if(/^HGTV$/.test(n))return 15+bias;
-    if(/^TE REO$/.test(n))return 16+bias;
-    if(/^SKY SPORT (?:SELECT|10 SELECT|POP UP)/.test(n))return 17+bias;
+    if(sky)return sky+4+bias; // 5..13, after Whakaata Māori and Te Reo
+    if(/^(?:TVNZ )?DUKE$/.test(n))return 14+bias;
+    if(/^BRAVO$/.test(n))return 15+bias;
+    if(/^HGTV$/.test(n))return 16+bias;
+    if(/^SKY SPORT (?:SELECT|10 SELECT|POP UP)/.test(n))return 18+bias;
     return 100+bias;
   }
   if(group==='Australia'){
