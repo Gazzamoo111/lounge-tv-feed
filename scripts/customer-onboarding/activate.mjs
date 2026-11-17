@@ -38,16 +38,16 @@ try{
  const issued=await call("issue",{service_assignment_id:sid,label,expires_in_days:days});
  if(!issued.ok||!issued.url||!issued.link_id)throw Error("Gateway did not return a complete link.");
  const welcome=[
-  "Your Lounge TV access is ready.",
+  "Your Lounge TV Live TV access is ready.",
   "",
   "1. Install Nuvio + IPTV using the guide on loungetv.nz.",
   "2. Create or sign in to your OWN Nuvio account.",
-  "3. In Settings > Live TV, choose Add M3U Playlist. Paste this private link:",
+  "3. In Settings > Live TV > Playlists, choose Add M3U Playlist and paste this private link:",
   issued.url,
   "Name the playlist Lounge TV Live.",
-  "4. Enable Settings > Live TV > Setup Sync on your own devices once it works.",
+  "4. Once channels work, enable Settings > Live TV > Nuvio Account Sync for your other devices.",
   "",
-  "If your package includes TorBox, link your own account or API key separately.",
+  "Premium movies/series, Xperience and TorBox are activated separately when confirmed; the playlist link activates Live TV only.",
   "Do not share this playlist link."
  ].join("\n");
  console.log(JSON.stringify({link_id:issued.link_id,link_expires_at:issued.expires_at,customer_message:welcome,note:"Send the message privately. No secrets or links written to disk."},null,2));
