@@ -43,11 +43,25 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    .replace('  // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.\n  rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));\n','')
    .replace('const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;',originalMap)
    .replaceAll('nuvio:full:qa:v7-customer-labels','nuvio:full:qa:v6-epg')
+   .replaceAll('nuvio:full:qa:v8-ranked-guide','nuvio:full:qa:v6-epg')
    .replace('shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});',
             'shortEpgCache.set(key,{until:Date.now()+10*60*1000,list});')
    .replace('  if(!list)return null;\n  const now=Math.floor(Date.now()/1000);',
             '  const now=Math.floor(Date.now()/1000);');
- assert.equal(equivalent,core);
+ // v27 deliberately changes ONLY the EPG-aware sorting block in the full catalogue.
+ // Normalize that single block to the locked pre-v27 implementation before
+ // comparing every other byte of the playback gateway and protected TVNZ logic.
+ const sortStart='  // QA EPG recovery:';
+ const sortEnd='  catalogueCache.set(k,';
+ const block=(text)=>{
+   const from=text.indexOf(sortStart),to=text.indexOf(sortEnd,from);
+   assert.ok(from>=0&&to>from,'Expected bounded catalogue ranking block');
+   return text.slice(from,to);
+ };
+ const originalRanking=block(core),v27Ranking=block(equivalent);
+ assert.match(v27Ranking,/currentGuideIds/);
+ assert.match(v27Ranking,/nuvioChannelPriority\(groupA,a,currentGuideIds.has/);
+ assert.equal(equivalent.replace(v27Ranking,originalRanking),core);
  assert.match(now,/if\(action==="get_live_streams"\)/);
  assert.match(now,/\.\.\.qaTvnzXtreamDrmFields\(r\)/);
  assert.doesNotMatch(now,/TVNZ_BEST_COMPAT_QA/);
