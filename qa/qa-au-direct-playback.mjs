@@ -16,7 +16,11 @@ export function qaAuBestDirectUrl(row, group, bestBase, username, password) {
   if(!username||!password)return null;
   const ext=String(row?.source_format||'ts').trim().toLowerCase();
   if(ext!=='ts'&&ext!=='m3u8')return null;
-  const url=String(bestBase||'').replace(/\\/+$/,'');
-  if(!/^https?:\\/\\/[^/]+$/.test(url))return null;
+  let url=String(bestBase||'');
+  while(url.endsWith('/'))url=url.slice(0,-1);
+  let parsed;
+  try{parsed=new URL(url)}catch{return null}
+  if(!['http:','https:'].includes(parsed.protocol)||parsed.username||parsed.password
+      ||parsed.pathname!=='/'||parsed.search||parsed.hash)return null;
   return url+'/live/'+encodeURIComponent(username)+'/'+encodeURIComponent(password)+'/'+id+'.'+ext;
 }
