@@ -5,6 +5,7 @@ import { nuvio247Group } from "./qa-247-groups.mjs";
 import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
 import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaAuWrongGuide } from "./qa-au-integrity.mjs";
+import { qaAuBestDirectUrl } from "./qa-au-direct-playback.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
@@ -1698,7 +1699,11 @@ async function releaseM3u(u:string,p:string,url:URL){
     const tvg=String(effectiveLiveEpgId(r)||("ltv-"+r.external_id));
     lines.push(`#EXTINF:-1 channel-id="ltv-${r.external_id}" tvg-id="${xmlEsc(tvg)}" tvg-logo="${xmlEsc(r.logo_url||"")}" tvg-chno="${no++}" group-title="${xmlEsc(group)}",${String(r.display_name)}`);
     const nz=nzSourceForBinding(r.provider_name,r.provider_stream_id);
+    // QA: restore Australia's original BEST direct playback, bypassing the
+    // HTTPS -> HTTP redirect known to fail on some Android media stacks.
+    const auDirect=qaAuBestDirectUrl(r,nuvioGroup(r),BEST_BASE,u,p);
     if(nz) lines.push(...nzPlaylistLines(nz));
+    else if(auDirect)lines.push(auDirect);
     else lines.push(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(r.external_id)+"."+String(r.source_format||"ts"));
   }
   return new Response(lines.join("\n")+"\n",{status:200,headers:{"Content-Type":"application/x-mpegURL; charset=utf-8","Cache-Control":"private, max-age=120","Access-Control-Allow-Origin":"*"}});
