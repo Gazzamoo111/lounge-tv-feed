@@ -60,7 +60,7 @@ test("clean 23 categories use unique numeric slots and meaningful category 12",(
  assert.equal(qaCustomerCategoryLabels["24/7 Movies & Series"],"12 🍿 24/7 Movies & Series");
  assert.equal(qaCustomerCategoryLabels["New Zealand"],"01 🇳🇿 New Zealand");
  const original=readFileSync(new URL("./n-v21-index.ts",import.meta.url),"utf8");
- const map=original.match(/const NUVIO_CATEGORY_LABELS:Record<string,string>=({[\\s\\S]*?});/);
+ const map=original.match(/const NUVIO_CATEGORY_LABELS:Record<string,string>=({[\s\S]*?});/);
  assert.ok(map,"Original category template is present");
  assert.deepEqual(qaCustomerCategoryLabels,JSON.parse(map[1]));
 });
