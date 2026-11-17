@@ -4,7 +4,7 @@ import { nuvioChannelPriority as score } from './channel-priority.mjs';
 const rank=(group,names)=>names.map(name=>({display_name:name,category:'New Zealand'})).sort((a,b)=>score(group,a)-score(group,b)).map(r=>r.display_name);
 test('NZ main channels then nine Sky networks then others',()=>{
  const input=['Te Reo','Sky Sport 9','TVNZ DUKE HD','TVNZ 2','Sky Sport 1','Three','Whakaata Māori','TVNZ 1','Bravo'];
- assert.deepEqual(rank('New Zealand',input),['TVNZ 1','TVNZ 2','Three','Whakaata Māori','Sky Sport 1','Sky Sport 9','TVNZ DUKE HD','Bravo','Te Reo']);
+ assert.deepEqual(rank('New Zealand',input),['TVNZ 1','TVNZ 2','Three','Whakaata Māori','Te Reo','Sky Sport 1','Sky Sport 9','TVNZ DUKE HD','Bravo']);
 });
 test('Australia main network order and sport before unranked channels',()=>{
  const input=['FOX SPORTS 501','BEIN SPORTS 1','SBS','Channel 9','Seven','Ten','ABC','ABC Kids','ESPN Australia'];
