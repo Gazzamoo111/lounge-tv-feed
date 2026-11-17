@@ -1,18 +1,25 @@
 /**
- * QA-only visibility rule. Remove the looping NZ Sky Sports group and its
- * nine FHD-replaced curated primaries; preserve all nine working HD BACKUP
- * channels and every other NZ, UK, Sky, EPG, and event source.
+ * QA customer visibility: keep the curated Sky Sport 1–9 FHD routes.
+ * The old filter accidentally removed these and left unreliable HD RAW feeds
+ * displayed as the main Sky channels. No underlying provider mapping is edited.
  */
+const HD_BY_NUMBER=new Map(Array.from({length:9},(_,i)=>[i+1,636918+i]));
+const FHD_BY_NUMBER=new Map(Array.from({length:9},(_,i)=>[i+1,2024778-i]));
 export function qaSkyNzLoopFilter(rows) {
-  return rows.filter((row) => {
-    const name=String(row?.display_name||"").trim();
-    const category=String(row?.category||"").trim();
-    const sourceGroup=String(row?.subcategory||"").trim();
-    // All sources from BEST's explicitly named "NZ| SKY SPORTS NZ" category.
-    if(category.toUpperCase()==="RAW" && sourceGroup.toUpperCase()==="NZ| SKY SPORTS NZ") return false;
-    // The nine trial FHD primaries are looping too; do not remove HD BACKUP.
-    if(category.toLowerCase()==="new zealand" && row?.provider_name==="BEST" &&
-       /^SKY SPORT [1-9]$/i.test(name)) return false;
-    return true;
-  });
+ return rows.filter(row=>{
+  const name=String(row?.display_name||"").trim();
+  const group=String(row?.subcategory||"").toUpperCase();
+  const category=String(row?.category||"").toUpperCase();
+  if(category==="RAW" && group==="NZ| SKY SPORTS NZ")return false;
+  const matched=/^SKY SPORT ([1-9])(?: HD(?: BACKUP)?)?$/i.exec(name);
+  if(!matched || row?.provider_name!=="BEST")return true;
+  const number=Number(matched[1]);
+  const id=Number(row.provider_stream_id);
+  if(category==="RAW" && id===HD_BY_NUMBER.get(number))return false;
+  if(category==="NEW ZEALAND" && id===HD_BY_NUMBER.get(number))return false;
+  // The curated display entry uses the FHD provider ID and retains its
+  // stable Lounge external ID, guide, artwork and category.
+  if(category==="NEW ZEALAND" && id===FHD_BY_NUMBER.get(number))return true;
+  return true;
+ });
 }
