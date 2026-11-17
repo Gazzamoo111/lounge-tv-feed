@@ -1,52 +1,47 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import {qaAuVisibleRows} from './qa-au-duplicates.mjs';
-
-const au=(name,epg,category='RAW',id=0)=>({display_name:name,epg_id:epg,category,provider_stream_id:id,group:'Australia'});
-const visible=(rows)=>qaAuVisibleRows(rows,row=>row.group);
-test('keep curated national secondary service; hide regional simulcasts with same known EPG',()=>{
-  const list=[au('7flix','7Flix.au','Australia',752160),au('7FLIX BRISBANE','7Flix.au','RAW',752166),
-    au('7FLIX CANBERRA','7Flix.au','RAW',752165),au('7FLIX PERTH','7Flix.au','RAW',752161)];
-  const result=visible(list); assert.deepEqual(result.map(x=>x.provider_stream_id),[752160]);
-  assert.equal(list.length,4,'inventory source array must not be mutated');
+import test from "node:test";
+import assert from "node:assert/strict";
+import {qaAuVisibleRows} from "./qa-au-duplicates.mjs";
+const au=(name,category="RAW",id=0,epg=null,group="Australia")=>({
+ display_name:name,category,provider_stream_id:id,epg_id:epg,group
 });
-test('preserve regionally distinct main networks and no-EPG region feeds',()=>{
-  const rows=[au('ABC','ABC.au','Australia',156899),au('ABC BRISBANE',null,'RAW',156898),
-    au('CHANNEL 9 PERTH',null,'RAW',156865),au('10 SHAKE SYDNEY',null,'RAW',752176),
-    au('AU: 9NOW 9GEM (NSW) ᴿᴬᵂ',null,'RAW',1921349)];
-  assert.deepEqual(visible(rows),rows);
+const visible=rows=>qaAuVisibleRows(rows,row=>row.group);
+test("curated Australian TV and sports channels win over raw variants",()=>{
+ const list=[
+ au("7flix","Australia",752160),au("AU| 7FLIX PERTH","RAW",752161),
+ au("9Gem","Australia",1921314),au("AU: 9NOW 9GEM (NSW) ᴿᴬᵂ","RAW",1921349),
+ au("Channel 9","Australia",156905),au("AU: 9NOW CHANNEL 9 (VIC) ᴿᴬᵂ","RAW",1921345),
+ au("ESPN Australia","Australia",646974),au("AU| KAYO - ESPN 1","RAW",1520168),
+ au("FOX SPORTS 502","Australia",646970),au("AU| KAYO - FOX SPORTS 502 LEAUGE","RAW",1520171),
+ au("Fox Sports News Australia","Australia",1520172),au("AU| FOX SPORTS NEWS","RAW",646972),
+ au("SBS World Movies","Australia",156873),au("AU| SBS WORLD MOVIES NATIONAL","RAW",156923),
+ au("10 Shake","Australia",752176),au("AU| 10 SHAKE HOBART","RAW",752179),
+ au("Seven","Australia",738209),au("AU| CHANNEL 7 HD","RAW",738209)
+ ];
+ assert.deepEqual(visible(list).map(x=>x.provider_stream_id),
+  [752160,1921314,156905,646974,646970,1520172,156873,752176,738209]);
 });
-test('different EPG mappings are never collapsed',()=>{
-  const rows=[au('SBS Food','SBSFood.au','Australia'),au('SBS FOOD PERTH','SBSFood.Perth.au'),
-    au('10 Peach','10Peach.au','Australia'),au('10 PEACH BRISBANE',null),
-    au('CHANNEL 10 PERTH','10Bold.au')];
-  assert.deepEqual(visible(rows),rows);
+test("unknown extra channels and distinct channel numbers survive",()=>{
+ const list=[
+ au("FOX SPORTS 501","Australia",646971),au("FOX SPORTS 502","Australia",646970),
+ au("SKY NEWS EXTRA 1","RAW",646959),au("SKY NEWS EXTRA 2","RAW",646958),
+ au("AU| NRL EVENT 1","RAW",1234,null,"Live Events"),au("SKY NEWS EXTRA 1","RAW",1812071)
+ ];
+ assert.deepEqual(visible(list).map(x=>x.provider_stream_id),[646971,646970,646959,646958,1234]);
 });
-test('national Racing.com stays visible when no curated primary exists',()=>{
-  const rows=[au('RACING.COM MELBOURNE','RacingCom.au','RAW',1),
-    au('RACING.COM NATIONAL','RacingCom.au','RAW',2),au('RACING.COM PERTH','RacingCom.au','RAW',3)];
-  assert.deepEqual(visible(rows).map(x=>x.provider_stream_id),[2]);
-  assert.deepEqual(visible(rows.filter(x=>x.provider_stream_id!==2)).map(x=>x.provider_stream_id),[1,3],
-    'no national primary means do not suppress regionals');
+test("prefer national and then Sydney when only regional raw options exist",()=>{
+ const rows=[
+ au("RACING.COM PERTH","RAW",156876),au("RACING.COM NATIONAL","RAW",156926),
+ au("RACING.COM MELBOURNE","RAW",156896),
+ au("SKY RACING 1","RAW",646956),au("SKY RACING 1 HD","RAW",646952),
+ au("ABC PERTH","RAW",156862),au("ABC SYDNEY","RAW",156899)
+ ];
+ assert.deepEqual(visible(rows).map(x=>x.provider_stream_id),[156926,646952,156899]);
 });
-test('all other categories, independent sports backups, and ordering survive unchanged',()=>{
-  const rows=[au('FOX SPORTS 505','FoxSports5.au','Australia',646967),
-    au('KAYO - FOX SPORTS 505','FoxSports5.au','RAW',1520174),
-    {...au('7FLIX PERTH','7Flix.au','RAW',752161),group:'Sports Networks'},
-    {...au('7FLIX PERTH','7Flix.au','RAW',752162),group:'Live Events'},
-    {...au('7FLIX PERTH','7Flix.au','RAW',752163),group:'New Zealand'}];
-  assert.deepEqual(visible(rows),rows);
-});
-test('duplicate names alone never trigger deletion',()=>{
-  const rows=[au('7FLIX SYDNEY','7Flix.au','RAW',1),au('7FLIX PERTH','7Flix.au','RAW',2),
-    au('RACING.COM PERTH','RacingCom.au','RAW',3)];
-  assert.deepEqual(visible(rows),rows);
-});
-test('shared EPG approved families consolidate without touching stream/EPG fields',()=>{
-  const rows=[au('10 Peach','10Peach.au','Australia',752184),au('10 PEACH ADELAIDE','10Peach.au','RAW',752191),
-    au('ABC ME','ABCME.au','Australia',156882),au('ABC ME NATIONAL','ABCME.au','RAW',156902),
-    au('SBS Viceland','SBSViceland.au','Australia',156874),au('SBS VICELAND NATIONAL','SBSViceland.au','RAW',156922)];
-  const result=visible(rows);
-  assert.deepEqual(result.map(x=>x.provider_stream_id),[752184,156882,156874]);
-  assert.equal(result[0].epg_id,'10Peach.au');
+test("does not modify inputs or remove channels outside Australia",()=>{
+ const rows=[au("ABC SYDNEY","RAW",156899),au("ABC PERTH","RAW",156862),
+  au("ABC SYDNEY","RAW",555,null,"New Zealand"),
+  au("ABC PERTH","RAW",556,null,"UK TV")];
+ const copy=structuredClone(rows),result=visible(rows);
+ assert.deepEqual(result.map(x=>x.provider_stream_id),[156899,555,556]);
+ assert.deepEqual(rows,copy);
 });
