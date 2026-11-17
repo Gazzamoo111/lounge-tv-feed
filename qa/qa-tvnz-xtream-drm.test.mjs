@@ -30,7 +30,21 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    'import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";\nimport { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";')
    .replace('custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0\n      })))',
     'custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0,\n        ...qaTvnzXtreamDrmFields(r)\n      })))');
- assert.equal(now,core);
+ // The customer-facing QA cleanup is a presentation-only overlay.
+ // Reverse the permitted edits before asserting that TVNZ Xtream DRM remains the
+ // only change relative to the earlier verified gateway.
+ const originalCategories=core.match(/const NUVIO_CATEGORY_LABELS:Record<string,string>=\\{[\\s\\S]*?\\n\\};/);
+ assert.ok(originalCategories,"Expected original category labels");
+ const equivalent=now
+   .replace('import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";\n','')
+   .replace('  // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.\\n  rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));\n','')
+   .replace('const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;',originalCategories[0])
+   .replaceAll('nuvio:full:qa:v7-customer-labels','nuvio:full:qa:v6-epg')
+   .replace('shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});',
+            'shortEpgCache.set(key,{until:Date.now()+10*60*1000,list});')
+   .replace('  if(!list)return null;\\n  const now=Math.floor(Date.now()/1000);',
+            '  const now=Math.floor(Date.now()/1000);');
+ assert.equal(equivalent,core);
  assert.match(now,/if\(action==="get_live_streams"\)/);
  assert.match(now,/\.\.\.qaTvnzXtreamDrmFields\(r\)/);
  assert.doesNotMatch(now,/TVNZ_BEST_COMPAT_QA/);
