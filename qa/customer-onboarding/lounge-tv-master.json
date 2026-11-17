@@ -1,6 +1,6 @@
 {
   "id": "lounge-tv-master-v1",
-  "status": "DESIGN_ONLY_NOT_IMPORTED",
+  "status": "DESIGN_ONLY_NOT_IMPORTED_OR_CUSTOMER_TESTED",
   "target": "new independent Nuvio account, never operator profiles",
   "profile": {
     "name": "Lounge TV",
@@ -13,19 +13,24 @@
     "onlyNewCustomerNeutral": true,
     "noOperatorManifestUrls": true,
     "noOperatorTorboxKey": true,
-    "xperience": "fresh, dedicated configuration required",
+    "xperience": "Create a new dedicated Xperience configuration; use sanitised 41-folder reference, remap to the new manifest and validate with validate-xperience.mjs",
     "badges": "approved pack applied only where supported"
   },
   "home": {
-    "source": "Xperience visual reference only",
+    "source": "Neutral reference from user-supplied 3-collection Xperience export, not an account clone",
+    "layoutReference": "qa/customer-onboarding/xperience-layout-reference.json",
+    "collectionCount": 3,
+    "folderCount": 41,
+    "catalogReferenceCount": 223,
     "order": [
       "Featured hero",
-      "Movies collection",
-      "Series collection",
-      "Family collection"
+      "Streaming",
+      "Genres",
+      "Studios"
     ],
     "showHeroImages": true,
-    "excludeUnrelatedCatalogues": true
+    "excludeUnrelatedCatalogues": true,
+    "note": "Push to Nuvio only after customer-authorised Link Nuvio; set Follow addons order when local settings override"
   },
   "live": {
     "playlistLabel": "Lounge TV Live",
@@ -36,8 +41,11 @@
   "provisioning": {
     "nuvioIdentity": "customer-owned",
     "best": "individual service assignment",
-    "torbox": "individual and optional",
-    "noAdminWriteToSetupSync": true
+    "torbox": "individual customer-owned account/key or approved partner-issued account only",
+    "noAdminWriteToSetupSync": true,
+    "xperiencePush": "customer-authorised Link Nuvio + Push to Nuvio; not a verified bulk API",
+    "badgeSetup": "Install approved Obsidian/Fusion pack in Nuvio Layout settings and verify restart",
+    "trial": "BEST reseller-issued 24-hour Live TV only; retired Supabase trial functions must not be used"
   },
   "accept": [
     "zero copied history/library/avatar",
@@ -45,6 +53,7 @@
     "approved home order and hero/badges",
     "one active playlist and guide",
     "renewal without link replacement",
-    "expiry and revocation"
+    "expiry and revocation",
+    "all 223 catalog references found in fresh manifest; real folder content and device verified"
   ]
 }
