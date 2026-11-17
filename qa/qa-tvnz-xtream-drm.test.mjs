@@ -33,16 +33,19 @@ test("Xtream adds the new fields to the existing full channel response only",()=
  // The customer-facing QA cleanup is a presentation-only overlay.
  // Reverse the permitted edits before asserting that TVNZ Xtream DRM remains the
  // only change relative to the earlier verified gateway.
- const originalCategories=core.match(/const NUVIO_CATEGORY_LABELS:Record<string,string>=\\{[\\s\\S]*?\\n\\};/);
- assert.ok(originalCategories,"Expected original category labels");
+ const marker='const NUVIO_CATEGORY_LABELS:Record<string,string>=';
+ const mapStart=core.indexOf(marker);
+ const mapEnd=core.indexOf('\nasync function nuvioLiveCategories',mapStart);
+ assert.ok(mapStart>=0 && mapEnd>mapStart,"Expected original category map");
+ const originalMap=core.slice(mapStart,mapEnd);
  const equivalent=now
    .replace('import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";\n','')
-   .replace('  // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.\\n  rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));\n','')
-   .replace('const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;',originalCategories[0])
+   .replace('  // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.\n  rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));\n','')
+   .replace('const NUVIO_CATEGORY_LABELS:Record<string,string>=qaCustomerCategoryLabels;',originalMap)
    .replaceAll('nuvio:full:qa:v7-customer-labels','nuvio:full:qa:v6-epg')
    .replace('shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});',
             'shortEpgCache.set(key,{until:Date.now()+10*60*1000,list});')
-   .replace('  if(!list)return null;\\n  const now=Math.floor(Date.now()/1000);',
+   .replace('  if(!list)return null;\n  const now=Math.floor(Date.now()/1000);',
             '  const now=Math.floor(Date.now()/1000);');
  assert.equal(equivalent,core);
  assert.match(now,/if\(action==="get_live_streams"\)/);
