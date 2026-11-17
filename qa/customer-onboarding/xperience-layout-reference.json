@@ -1,13 +1,22 @@
 {
   "status": "REFERENCE_ONLY_NOT_DEPLOYED",
-  "source": "User-supplied Xperience collections export; all unique account addon IDs, folder IDs, artwork URLs and personal settings removed",
-  "instructions": "Import/build a NEW neutral Lounge TV Xperience profile; remap every catalog to that profile; run validate-xperience.mjs against its manifest before pushing to a customer.",
+  "source": "User-supplied Xperience collections export; original collection/folder IDs and personal addon IDs removed; only approved public CDN artwork kept.",
+  "instructions": "Build new clean Xperience profile with new IDs. Remap every catalog to its customer-neutral addon manifest; validate before pushing. Do not import original account addon IDs.",
   "collections": [
     {
       "title": "Streaming",
+      "pinToTop": true,
+      "focusGlowEnabled": true,
+      "viewMode": "FOLLOW_LAYOUT",
+      "showAllTab": true,
       "folders": [
         {
           "title": "Netflix",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.netflix.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.netflix.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.netflix.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -57,6 +66,11 @@
         },
         {
           "title": "Prime Video",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.prime_video.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.prime_video.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.prime_video.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -98,6 +112,11 @@
         },
         {
           "title": "Disney+",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.disney_plus.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.disney_plus.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.disney_plus.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -139,6 +158,11 @@
         },
         {
           "title": "HBO Max",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.hbo_max.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.hbo_max.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.hbo_max.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -180,6 +204,11 @@
         },
         {
           "title": "Apple TV+",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.apple_tv_plus.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.apple_tv_plus.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.apple_tv_plus.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -221,6 +250,11 @@
         },
         {
           "title": "Paramount+",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.paramount_plus.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.paramount_plus.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.paramount_plus.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -262,6 +296,11 @@
         },
         {
           "title": "Hulu",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/two_hue/streaming_services.hulu.webp?v=10",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/streaming_services.hulu.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/logomark/streaming_services.hulu.logo.webp?v=10",
           "catalogs": [
             {
               "type": "movie",
@@ -305,9 +344,18 @@
     },
     {
       "title": "Genres",
+      "pinToTop": false,
+      "focusGlowEnabled": true,
+      "viewMode": "FOLLOW_LAYOUT",
+      "showAllTab": true,
       "folders": [
         {
           "title": "Action",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.action.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.action.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.action.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -337,6 +385,11 @@
         },
         {
           "title": "Adventure",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.adventure.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.adventure.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.adventure.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -366,6 +419,11 @@
         },
         {
           "title": "Animated",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.animated.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.animated.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.animated.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -395,6 +453,11 @@
         },
         {
           "title": "Anime",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.anime.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.anime.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.anime.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -408,6 +471,11 @@
         },
         {
           "title": "Comedy",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.comedy.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.comedy.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.comedy.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -437,6 +505,11 @@
         },
         {
           "title": "Crime",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.crime.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.crime.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.crime.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -466,6 +539,11 @@
         },
         {
           "title": "Documentaries",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.documentaries.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.documentaries.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.documentaries.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -495,6 +573,11 @@
         },
         {
           "title": "Drama",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.drama.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.drama.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.drama.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -524,6 +607,11 @@
         },
         {
           "title": "Family",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.family.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.family.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.family.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -553,6 +641,11 @@
         },
         {
           "title": "Fantasy",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.fantasy.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.fantasy.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.fantasy.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -582,6 +675,11 @@
         },
         {
           "title": "History",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.history.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.history.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.history.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -603,6 +701,11 @@
         },
         {
           "title": "Horror",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.horror.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.horror.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.horror.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -632,6 +735,11 @@
         },
         {
           "title": "Musicals",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.musicals.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.musicals.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.musicals.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -649,6 +757,11 @@
         },
         {
           "title": "Mystery",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.mystery.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.mystery.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.mystery.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -678,6 +791,11 @@
         },
         {
           "title": "Romance",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.romance.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.romance.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.romance.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -707,6 +825,11 @@
         },
         {
           "title": "Romantic Comedy",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.romantic_comedy.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.romantic_comedy.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.romantic_comedy.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -728,6 +851,11 @@
         },
         {
           "title": "Sci-Fi",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.sci_fi.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.sci_fi.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.sci_fi.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -757,6 +885,11 @@
         },
         {
           "title": "Sports",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.sports.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.sports.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.sports.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -770,6 +903,11 @@
         },
         {
           "title": "Spy Thrillers",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.spy.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.spy.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.spy.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -783,6 +921,11 @@
         },
         {
           "title": "Thrillers",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.thrillers.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.thrillers.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.thrillers.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -812,6 +955,11 @@
         },
         {
           "title": "War",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.war.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.war.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.war.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -825,6 +973,11 @@
         },
         {
           "title": "Westerns",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.westerns.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/genres.westerns.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/genres.westerns.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -840,9 +993,18 @@
     },
     {
       "title": "Studios",
+      "pinToTop": false,
+      "focusGlowEnabled": true,
+      "viewMode": "FOLLOW_LAYOUT",
+      "showAllTab": true,
       "folders": [
         {
           "title": "20th Century",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.twentieth_century.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.twentieth_century.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.twentieth_century.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -864,6 +1026,11 @@
         },
         {
           "title": "DC",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.dc.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.dc.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.dc.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -909,6 +1076,11 @@
         },
         {
           "title": "Disney Animated",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.disney_animated.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.disney_animated.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.disney_animated.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -930,6 +1102,11 @@
         },
         {
           "title": "DreamWorks",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.dreamworks.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.dreamworks.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.dreamworks.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -943,6 +1120,11 @@
         },
         {
           "title": "Illumination",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.illumination.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.illumination.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.illumination.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -960,6 +1142,11 @@
         },
         {
           "title": "Lionsgate",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.lionsgate.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.lionsgate.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.lionsgate.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -973,6 +1160,11 @@
         },
         {
           "title": "Marvel",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.marvel.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.marvel.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.marvel.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -1018,6 +1210,11 @@
         },
         {
           "title": "Paramount Pictures",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.paramount.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.paramount.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.paramount.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -1039,6 +1236,11 @@
         },
         {
           "title": "Pixar",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.pixar.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.pixar.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.pixar.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -1052,6 +1254,11 @@
         },
         {
           "title": "Sony Pictures",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.sony.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.sony.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.sony.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -1073,6 +1280,11 @@
         },
         {
           "title": "Universal Pictures",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.universal.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.universal.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.universal.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
@@ -1094,6 +1306,11 @@
         },
         {
           "title": "Warner Bros",
+          "hideTitle": true,
+          "tileShape": "LANDSCAPE",
+          "coverImageUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.warner_bros.webp?v=3",
+          "heroBackdropUrl": "https://cdn.xperience-app.com/covers/dynamic_showcase/studios.warner_bros.backdrop.webp?v=20261115",
+          "titleLogoUrl": "https://cdn.xperience-app.com/covers/liquid_glass/studios.warner_bros.logo.webp?v=3",
           "catalogs": [
             {
               "type": "movie",
