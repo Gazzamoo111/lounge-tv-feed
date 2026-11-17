@@ -45,6 +45,10 @@ test("Xtream adds the new fields to the existing full channel response only",()=
    .replaceAll('nuvio:full:qa:v7-customer-labels','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v8-ranked-guide','nuvio:full:qa:v6-epg')
    .replaceAll('nuvio:full:qa:v9-sports-overflow','nuvio:full:qa:v6-epg')
+   .replaceAll('nuvio:full:qa:v10-au-integrity','nuvio:full:qa:v6-epg')
+   .replace('import { qaAuWrongGuide } from "./qa-au-integrity.mjs";\n','')
+   .replace('  // Ten is not 10 Bold. Do not display another network’s programmes.\n  if(qaAuWrongGuide(row))return "";\n','')
+   .replace('  if(qaAuWrongGuide(mapped))return []; // no Ten->10 Bold nor unverified provider fallback\n','')
    .replace('const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));','const gstream=nuvioStreamingGroup(t,v);')
    .replace('shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});',
             'shortEpgCache.set(key,{until:Date.now()+10*60*1000,list});')
@@ -63,7 +67,11 @@ test("Xtream adds the new fields to the existing full channel response only",()=
  const originalRanking=block(core),v27Ranking=block(equivalent);
  assert.match(v27Ranking,/currentGuideIds/);
  assert.match(v27Ranking,/nuvioChannelPriority\(groupA,a,currentGuideIds.has/);
- assert.equal(equivalent.replace(v27Ranking,originalRanking),core);
+ // The v29 AU guard lives immediately before the permitted ranking overlay.
+ // Normalize exactly that bounded extra statement; all other paths stay locked.
+ const safeCore=equivalent.replace('  // QA v29: strip the provably wrong Ten->10 Bold guide in the customer list.\n  for(const row of rows)if(qaAuWrongGuide(row))row.epg_id="";\n','');
+ const safeRanking=block(safeCore);
+ assert.equal(safeCore.replace(safeRanking,originalRanking),core);
  assert.ok(now.includes('const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));'));
  assert.match(now,/if\(action==="get_live_streams"\)/);
  assert.match(now,/\.\.\.qaTvnzXtreamDrmFields\(r\)/);

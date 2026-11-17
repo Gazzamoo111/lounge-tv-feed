@@ -4,6 +4,7 @@ import { nuvioChannelPriority } from "./channel-priority.mjs";
 import { nuvio247Group } from "./qa-247-groups.mjs";
 import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
 import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
+import { qaAuWrongGuide } from "./qa-au-integrity.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
@@ -1015,6 +1016,8 @@ function shortEpgFileKey(raw:string){
   return (h>>>0).toString(16).padStart(8,"0");
 }
 function effectiveLiveEpgId(row:any){
+  // Ten is not 10 Bold. Do not display another network’s programmes.
+  if(qaAuWrongGuide(row))return "";
   const supplied=String(row?.epg_id||"").trim();
   if(supplied)return supplied;
   const name=String(row?.display_name||"").trim().toUpperCase().replace(/\s+/g," ");
@@ -1281,7 +1284,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:full:qa:v9-sports-overflow",cache=catalogueCache.get(k);
+ const k="nuvio:full:qa:v10-au-integrity",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
@@ -1314,6 +1317,8 @@ async function nuvioFullRows():Promise<any[]>{
   rows.splice(0,rows.length,...auVisible);
   // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.
   rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));
+  // QA v29: strip the provably wrong Ten->10 Bold guide in the customer list.
+  for(const row of rows)if(qaAuWrongGuide(row))row.epg_id="";
   // QA EPG recovery: assign only current, verified EPG IDs to exact NZ/AU
   // and selected Sports Networks alternatives. Never guess regional schedules.
   // Rank four customer categories against available programme metadata only:
@@ -1766,6 +1771,7 @@ async function releaseShortEpg(base:string,u:string,p:string,externalId:number,l
     return [];
   }
   const mapped:any=await releaseLivePlayback(externalId); if(!mapped)return [];
+  if(qaAuWrongGuide(mapped))return []; // no Ten->10 Bold nor unverified provider fallback
   const epgId=effectiveLiveEpgId(mapped);
   // The curated short-EPG path must use the same verified alias as
   // get_live_streams. Previously Seven and AU Fox Sports showed a valid

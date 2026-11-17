@@ -100,8 +100,15 @@ export function nuvioChannelPriority(group, row, hasGuide = false) {
     ];
     for(const [re,score] of leading)if(re.test(n))return score+bias;
     if(/^FOX SPORTS? (?:50[1-7])$/.test(n))return 30+Number(n.match(/50([1-7])/)[1])+bias;
+    // QA v29: pair each Fox HD customer channel with its independent Kayo
+    // labelled test stream. No sources are swapped or marked healthy.
+    const kayoFox=/^KAYO - FOX SPORTS (50[1-7])(?:\b|\s)/.exec(n);
+    if(kayoFox)return 30+Number(kayoFox[1].slice(-1))+0.5+bias;
     if(/^FOX CRICKET$/.test(n))return 38+bias;
     if(/^ESPN(?:2)?(?: AUSTRALIA)?$/.test(n))return (/2/.test(n)?41:40)+bias;
+    if(/^KAYO - ESPN [12]$/.test(n))return (n.endsWith('2')?41.5:40.5)+bias;
+    if(/^FOX SPORTS NEWS(?: AUSTRALIA)?$/.test(n))return 39+bias;
+    if(/^KAYO - FOX SPORTS NEWS$/.test(n))return 39.5+bias;
     if(/^BEIN SPORTS? [1-9]$/.test(n))return 44+Number(n.match(/\d$/)[0])+bias;
     if(/^SKY NEWS(?: AUSTRALIA)?$/.test(n))return 60+bias;
     if(/^(?:AU: )?9NOW\b|^KAYO\b/.test(n))return 170+bias;

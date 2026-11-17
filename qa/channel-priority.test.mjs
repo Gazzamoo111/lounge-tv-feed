@@ -83,3 +83,26 @@ test('v27 guide preference applies only to new four groups, not NZ/AU/Sports',()
   assert.equal(score(group,row,true),score(group,row,false));
  assert.ok(score('Movie Channels',row,true)<score('Movie Channels',row,false));
 });
+
+test('v29 AU source comparison: FOX HD and Kayo ordered as exact pairs, retaining source identity',()=>{
+  const rows=[
+    {display_name:'KAYO - FOX SPORTS 503',category:'RAW',provider_stream_id:1520175},
+    {display_name:'FOX SPORTS 501',category:'Australia',provider_stream_id:646971},
+    {display_name:'KAYO - FOX SPORTS 501 CRICKET',category:'RAW',provider_stream_id:1520176},
+    {display_name:'FOX SPORTS 503',category:'Australia',provider_stream_id:646969},
+    {display_name:'KAYO - FOX SPORTS 502 LEAUGE',category:'RAW',provider_stream_id:1520171},
+    {display_name:'FOX SPORTS 502',category:'Australia',provider_stream_id:646970},
+    {display_name:'FOX CRICKET',category:'Australia',provider_stream_id:646948},
+    {display_name:'KAYO - ESPN 2',category:'RAW',provider_stream_id:1520167},
+    {display_name:'ESPN2 Australia',category:'Australia',provider_stream_id:646973},
+    {display_name:'ESPN Australia',category:'Australia',provider_stream_id:646974},
+    {display_name:'KAYO - ESPN 1',category:'RAW',provider_stream_id:1520168}
+  ];
+  const input=JSON.stringify(rows);
+  const ordered=[...rows].sort((a,b)=>score('Australia',a)-score('Australia',b));
+  assert.deepEqual(ordered.map(r=>r.provider_stream_id),[
+    646971,1520176,646970,1520171,646969,1520175,
+    646948,646974,1520168,646973,1520167
+  ]);
+  assert.equal(JSON.stringify(rows),input,'QA source pairing must not modify IDs or streams');
+});
