@@ -1052,10 +1052,11 @@ async function staticShortEpg(epgId:string,limit:number,externalId:number){
       if(!r.ok)return null;
       const body=await r.json().catch(()=>null);
       list=Array.isArray(body?.epg_listings)?body.epg_listings:[];
-      shortEpgCache.set(key,{until:Date.now()+10*60*1000,list});
+      shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});
       }
     }catch{return null;}
   }
+  if(!list)return null;
   const now=Math.floor(Date.now()/1000);
   return list
     .filter((x:any)=>Number(x.stop_timestamp||0)>=now-900)
