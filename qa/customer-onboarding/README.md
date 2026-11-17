@@ -1,36 +1,44 @@
-# Customer activation for Lounge TV, Issue 6
+# Lounge TV customer launch flow (QA, 18 Nov 2026)
 
-STATUS: QA staging only. A repeatable activation command is implemented. No live customer link can be issued until a new approved, current BEST service assignment exists. Public publication requires a clean first run.
+## 24-hour trial
+1. Customer requests a trial through WhatsApp.
+2. Operator issues a real 24-hour BEST reseller trial, then privately sends individual credentials.
+3. Customer installs Nuvio + IPTV, creates a Nuvio account, and imports the BEST trial under Settings > Live TV > Playlists.
+4. Verify playback and guide. The trial expires in BEST. Do not purchase TorBox or promise premium movie/series access for a trial.
 
-## One activation step after approved sale
+**Important:** The old Supabase trial functions return HTTP 410 and must not be used. The QA customer-token gateway currently requires an active subscription and service assignment, so it does not replace the BEST trial flow.
 
-The existing payment process must mark the subscription and service assignment active, with a future paid-through date, and map the service assignment to its specific BEST provider account with stored Vault credentials.
+## Paid customer
+1. Verify payment, subscription expiry, provider account and BEST assignment.
+2. Run the existing admin-only activation script in check mode, then issue the revocable individual M3U link.
+3. Customer installs Nuvio + IPTV, creates their own account, and imports the link as Lounge TV Live through a supported URL/QR route.
+4. Verify Live TV + EPG. Customer enables Settings > Live TV > Nuvio Account Sync so their setup carries over to additional devices.
+5. Add the premium experience only after the separate customer-specific AIOStreams, TorBox and Xperience components have been configured and verified. The existing paid activation script does not automate those components.
 
-Run locally with Node 20+ and environment variables LOUNGE_ADMIN_ACCESS_TOKEN (authenticated Supabase admin session JWT), LOUNGE_SERVICE_ASSIGNMENT_ID (service UUID). Optional: LOUNGE_CUSTOMER_LABEL and LOUNGE_LINK_DAYS (1-365; default 365).
+## Premium setup: minimum viable standard
+- **Nuvio identity:** customer-owned, distinct from all operator profiles.
+- **TorBox:** individual customer account and API key. Commercial partner/voucher/account issuance requires TorBox approval. Never reuse an operator API key for customers.
+- **AIOStreams:** customer-specific verified configuration referencing that customer's TorBox key, approved stream add-ons, source preferences and size limits. Official User API supports creation and returns UUID and encrypted password for a private manifest. Do not invoke it on an instance without commercial permission.
+- **Xperience:** use a dedicated, neutral Lounge TV profile for the Movies, Series and Family collections. Link the customer's authorised Nuvio account and use Push to Nuvio for the chosen profile. This distributes the Xperience add-on, collections and order. No bulk reseller account API has been established.
+- **Metadata:** install only the approved catalogues/metadata. Hide duplicate source rows so the home screen is not flooded.
+- **Badges:** install the approved Obsidian/Fusion badge JSON using Nuvio Settings > Layout > Fusion badge URLs > Import and Save. Badge settings syncing requires live-device testing.
+- **Hero and ordering:** enable Show hero images. On TV set Reorder home catalogs to Follow addons order when Nuvio local overrides prevent the Xperience row order from showing. Recheck after restart.
+- **Master:** use only a neutral Lounge TV Master Profile 2. Never clone Mum & Dad or kids viewing history, profiles, libraries, avatars, credentials or personal add-ons.
 
-- Read-only preflight: node scripts/customer-onboarding/activate.mjs --check
-- Issue and generate one welcome message: node scripts/customer-onboarding/activate.mjs
+## Current automation boundaries
+| Component | Status |
+| --- | --- |
+| BEST trial | Manual through reseller; existing old Supabase trial endpoints retired |
+| Paid customer playlist | QA link issuance/revoke/check implemented; no fresh eligible paid service yet verified end-to-end |
+| Nuvio sign-in | Customer-owned account |
+| Live TV Setup Sync | One manual initial import; independent encrypted fork service |
+| Xperience rows/collections | Manual authorised Link Nuvio and Push to Nuvio supported |
+| Badges/hero settings | Supported in app; automatic customer sync not yet proven |
+| AIOStreams manifest | User API exists; commercial instance and customer config not connected to Lounge TV |
+| TorBox | Partner approval and customer issuance not verified; cannot be promised as automated |
+| WhatsApp handoff | Script generates message; operator sends it |
 
-Never run in public CI, use shell arguments for secret values, or publish the generated bearer link. Store the returned link ID securely for admin revocation. The output is the ready-to-send private message; it is not sent automatically via WhatsApp.
+## Launch gate
+Use ONE completely new dummy customer account. Check separate identity, clean add-ons, populated Xperience folders, hero, Obsidian badges, a single working Live TV source, EPG, subscription expiry/revoke, app restart and second-device sync. Test paid TorBox + AIOStreams only with a separately authorised customer account/key.
 
-The link stays usable across normal PAID renewal of the SAME service assignment ID because every playlist/EPG/licence/stream request checks the current entitlement and current assigned BEST account. Revoking or expiring the service denies subsequent requests. Existing playing provider streams may remain open until their connection ends. A NEW service assignment ID needs a new link. Tokens expire independently after at most 365 days.
-
-As of 17 November 2026 the 7 recorded services are expired by date; the one service that still says active expired November 5. Do NOT extend a historic customer record or falsely grant paid access to pass QA.
-
-## Master and sync limitations
-
-The JSON specification here is a no-credentials design contract, not a created Nuvio account, deployed Xperience template, or existing customer login.
-
-Create a dedicated neutral Lounge TV Master identity and configure its add-ons and Xperience catalogues independently; only use Mum & Dad and The Boys as visual references. Do not copy their avatar, history, library, watch-progress, add-on URLs, or TorBox API key.
-
-Account Manager can clone/manage add-ons/plugins and build collections on an account the operator is authorized to manage. Add-on/plugin push can fully replace. Collection import/clone merges by ID and may retain unrelated rows. Device-local settings are not reliably copied by that tool. Nuvio Cloud APIs document profile and home settings blob endpoints. Its current Android code includes ProfileSettingsSyncService syncing layout settings plus StreamBadgeSettingsDataStore, and HomeCatalogSettingsSyncService for catalog ordering. Therefore those categories are technically sync-capable. The external Account Manager tool used for the failed clone does NOT transfer them. A future customer-authorised push of a sanitised MASTER settings blob is a plausible integration, but requires a real clean master export, Nuvio user authorization and verification against the deployed Nuvio + IPTV build. Never market automatic complete home restoration as proven today.
-
-Nuvio + IPTV Setup Sync is separately encrypted and owned by the logged-in Nuvio user. It syncs their own playlists and guide between devices once enabled. We have no authenticated third-party admin write endpoint to automatically push a Lounge TV M3U into another customer's Setup Sync account. The customer adds the single private M3U once and enables sync. TorBox needs its own customer account/key; do not supply shared TorBox keys.
-
-## Nuvio personal playlist cleanup
-
-No remote authenticated Nuvio device/account-control session is available here. Do not claim deletion. Identify exact source labels in the installed Nuvio app; preserve approved Live TV source and personal profiles. Remove retired sources, sync the cleaned Live TV setup, then confirm they stay removed on a second device. Do NOT use Delete Saved Setup without intending to erase the entire sync backup. Do not delete source BEST accounts, customer history or production gateways.
-
-## Release gate
-
-One fresh customer identity with a real active BEST service must show clean profiles, correct collections, home order, badges and hero settings, Live TV, EPG, renewal, expiry and revoke, plus second-device Setup Sync. Record only unavoidable setup steps, then update public website instructions. Production lounge-core-xtream v52 remains unchanged. Supabase Free only; never proxy video bandwidth.
+Do not claim full automatic premium provisioning until that is proven. Leave production lounge-core-xtream v52, QA gateway n v33, Supabase Free tier and all personal profiles untouched. Never put customer credentials, tokens, manifest URLs or provider accounts in public GitHub.
