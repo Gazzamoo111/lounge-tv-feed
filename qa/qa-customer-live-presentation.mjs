@@ -4,29 +4,29 @@
  * Existing tested NZ TVNZ / Sky Sport media routes must remain identical.
  */
 export const qaCustomerCategoryLabels = Object.freeze({
-  "New Zealand": "01 New Zealand",
-  "Australia": "02 Australia",
-  "Sports Networks": "03 Sports Networks",
-  "UK TV": "04 UK TV",
-  "US TV": "05 US TV",
-  "Entertainment & Streaming": "06 Streaming Channels",
-  "FAST TV": "07 Free Streaming TV",
-  "Movie Channels": "08 Movie Channels",
-  "Kids & Family": "09 Kids & Family",
-  "Documentaries & Lifestyle": "10 Documentaries & Lifestyle",
-  "News": "11 News",
-  "24/7 Movies & Series": "12 24/7 Movies & Series",
-  "24/7 Movies": "13 24/7 Movies",
-  "24/7 Series": "14 24/7 Series",
-  "24/7 Comedy": "15 24/7 Comedy",
-  "24/7 Drama & Crime": "16 24/7 Drama & Crime",
-  "24/7 Reality": "17 24/7 Reality TV",
-  "24/7 Streaming": "18 24/7 Streaming",
-  "24/7 Kids & Cartoons": "19 24/7 Kids & Cartoons",
-  "24/7 OnePlay": "20 24/7 OnePlay",
-  "Music": "21 Music",
-  "International TV": "22 International TV",
-  "Live Events": "99 Live Sports Events"
+ "New Zealand":"01 🇳🇿 New Zealand",
+ "Australia":"02 🇦🇺 Australia",
+ "Sports Networks":"03 🏆 Sports Networks",
+ "UK TV":"04 🇬🇧 UK TV",
+ "US TV":"05 🇺🇸 US TV",
+ "Entertainment & Streaming":"06 ▶️ Streaming Services",
+ "FAST TV":"07 📡 FAST TV",
+ "Movie Channels":"08 🎬 Movie Channels",
+ "Kids & Family":"09 🧸 Kids & Family",
+ "Documentaries & Lifestyle":"10 🌿 Documentaries & Lifestyle",
+ "News":"11 📰 News",
+ "24/7 Movies & Series":"12 🍿 24/7 Movies & Series",
+ "24/7 Movies":"13 🎞️ 24/7 Movies",
+ "24/7 Series":"14 📺 24/7 Series",
+ "24/7 Comedy":"15 🎭 24/7 Comedy",
+ "24/7 Drama & Crime":"16 🎬 24/7 Drama & Crime",
+ "24/7 Reality":"17 📹 24/7 Reality",
+ "24/7 Streaming":"18 ▶️ 24/7 Streaming",
+ "24/7 Kids & Cartoons":"19 🎨 24/7 Kids & Cartoons",
+ "24/7 OnePlay":"20 ▶️ 24/7 OnePlay",
+ "Music":"21 🎵 Music",
+ "International TV":"22 🌍 International TV",
+ "Live Events":"99 🗄️ Sports Event Sources"
 });
 
 const excludedNzNames = [
@@ -40,7 +40,9 @@ const excludedNzNames = [
   /^SHINE TV$/,
   /^(?:TAB\s+)?TRACK\s*SIDE\s+[12]$/,
   /^TVSN SHOPPING$/,
-  /^WAIRARAPA TV$/
+  /^WAIRARAPA TV$/,
+  /^PARLIAMENT\s*TV$/,
+  /^CH\s*200$/
 ];
 
 function cleanName(value) {
