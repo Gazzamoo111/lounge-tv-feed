@@ -52,3 +52,19 @@ Do not claim full automatic premium provisioning until that is proven. Leave pro
 5. Use Xperience's Link Nuvio and Push to Nuvio on the explicitly authorised customer account, then check badge import and hero settings separately.
 
 Offline QA: generated 3 collections, 41 unique folders, 223 remapped source entries and 123 public CDN artwork URLs, with no original personal addon ID. The generator rejected an invalid new addon ID. The manifest validator passed 223/223 on a synthetic complete manifest and failed correctly with two catalogue mappings removed. **These checks do not prove the fresh Xperience account, device import or live TorBox playback.**
+
+
+## Xperience Import: preferred live path (18 November 2026)
+
+**Use Xperience's supported Profiles > Import config workflow first.** The user-provided Nuvio collections.json contains 3 collections, 41 folders, 223 catalogue references and 123 Xperience CDN artworks, with no TorBox/API credentials. Import it into a **new neutral Xperience profile**, rather than copying the Mum & Dad Nuvio account.
+
+1. Sign in to the dedicated Xperience account, then Profiles > Import config > Nuvio collections.json. Check that it creates a new profile (not an overwrite of the personal profile).
+2. On the imported profile, verify separately owned MDBList and TMDB credentials and check that all 223 catalogue identifiers resolve to the **new** Xperience install manifest. The original file references a personal Xperience addon ID: verify imported sources are remapped; do not assume the import does it automatically.
+3. Set home rows with new releases/trending prominent, and collections Streaming, Genres and Studios. The collections export alone does not include the complete home rows or TV hero settings.
+4. Link only the isolated Nuvio test identity and target its clean profile via Finalize > Push to Nuvio. Inspect all rows and streams after restart. Check badge pack, hero toggles and "Follow addons order" separately.
+
+**Hard commercial boundary:** Xperience's guide says install links are for an individual/household and multi-location use may trigger a pause/reset. Reuse the **collection layout as a template**, not the same hosted profile manifest across unrelated customer accounts. Obtain explicit commercial authorisation or design an authorised individual-profile provisioning solution before selling it as shared/managed access. Likewise TorBox account resale requires written permission.
+
+**Existing cloner risk:** At latest read, the source displayed a personal profile with multiple provider manifests and a TorBox key in the URL; the test target indicated 10 addons copied. Do NOT use this target as the clean master until inspected/cleared. Never reuse the old copied personal TorBox key; rotate it and replace its private integrations only after verifying the impact on the operator's devices.
+
+The earlier build-xperience-import.mjs is an **offline alternative for an already-created new neutral Xperience addon ID**. Do not use it as the primary route or claim it has been imported/tested on a device.
