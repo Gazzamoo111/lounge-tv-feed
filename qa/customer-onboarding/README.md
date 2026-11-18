@@ -21,7 +21,7 @@
 - **AIOStreams:** customer-specific verified configuration referencing that customer's TorBox key, approved stream add-ons, source preferences and size limits. Official User API supports creation and returns UUID and encrypted password for a private manifest. Do not invoke it on an instance without commercial permission.
 - **Xperience:** use a dedicated, neutral Lounge TV profile for the Movies, Series and Family collections. Link the customer's authorised Nuvio account and use Push to Nuvio for the chosen profile. This distributes the Xperience add-on, collections and order. No bulk reseller account API has been established.
 - **Metadata:** install only the approved catalogues/metadata. Hide duplicate source rows so the home screen is not flooded.
-- **Badges:** install the approved Obsidian/Fusion badge JSON using Nuvio Settings > Layout > Fusion badge URLs > Import and Save. Badge settings syncing requires live-device testing.
+- **Badges:** install the approved customer's current custom Fusion badge JSON (7 groups; 31 enabled badges; 1 disabled) using Nuvio Settings > Layout > Fusion badge URLs > Import and Save. Badge settings syncing requires live-device testing.
 - **Hero and ordering:** enable Show hero images. On TV set Reorder home catalogs to Follow addons order when Nuvio local overrides prevent the Xperience row order from showing. Recheck after restart.
 - **Master:** use only a neutral Lounge TV Master Profile 2. Never clone Mum & Dad or kids viewing history, profiles, libraries, avatars, credentials or personal add-ons.
 
@@ -39,7 +39,7 @@
 | WhatsApp handoff | Script generates message; operator sends it |
 
 ## Launch gate
-Use ONE completely new dummy customer account. Check separate identity, clean add-ons, populated Xperience folders, hero, Obsidian badges, a single working Live TV source, EPG, subscription expiry/revoke, app restart and second-device sync. Test paid TorBox + AIOStreams only with a separately authorised customer account/key.
+Use ONE completely new dummy customer account. Check separate identity, clean add-ons, populated Xperience folders, hero, custom Fusion badges, a single working Live TV source, EPG, subscription expiry/revoke, app restart and second-device sync. Test paid TorBox + AIOStreams only with a separately authorised customer account/key.
 
 Do not claim full automatic premium provisioning until that is proven. Leave production lounge-core-xtream v52, QA gateway n v33, Supabase Free tier and all personal profiles untouched. Never put customer credentials, tokens, manifest URLs or provider accounts in public GitHub.
 
@@ -55,3 +55,35 @@ Do not claim full automatic premium provisioning until that is proven. Leave pro
 6. Continue BEST Live TV customer activation separately (private M3U + one customer import), and TorBox/AIOStreams only with permitted individual accounts.
 
 The earlier 41-folder sanitised JSON and the offline generator/validator remain **QA reference or fallback**, not the preferred onboarding route. Do not delete them, but do not instruct operators to rebuild an existing complete profile from partial collections.
+
+
+## Preconfigured Fire TV Stick 4K Max: customer handover acceptance gate (18 Nov 2026)
+
+**Product target:** One physical Fire TV Stick 4K Max (2nd gen), configured for an isolated demo customer, couriered or moved to a second household, with no manual catalogue building by that household. Do not reset or alter the operator's working personal Fire TV.
+
+**Apps visible in Projectivy:** Nuvio + IPTV and TizenTube only. Projectivy is the launcher; Downloader and support tools remain installed but hidden. No unnecessary apps.
+
+**Verified platform capabilities (not yet proof of our handover):**
+- Xperience can duplicate a complete existing profile and push its rows/collections into the target customer's chosen Nuvio profile; use a clean duplicate, preserve the original 10-row order, 3 collections and 41 folders, then remove personal trackers and inherited credentials. A collections-only JSON is not a full profile.
+- The Nuvio + IPTV fork's Setup Sync supports customer-scoped Live TV playlists, guide, favourites and settings after initial authorised sign-in. It does NOT automatically provision TorBox, Xperience, badges or all on-device launcher settings.
+- Fire TV remains associated with a configured Amazon account; customer site requires Wi-Fi, and TV HDMI/CEC input and remote volume/power may require on-site calibration.
+- Projectivy reliably starting on Fire OS 8 from a power-disconnected boot is **not** guaranteed by merely selecting the home app or installing Launch on Boot. Test the **actual chosen redirect mechanism** and firmware across three cold boots, standby, Home button and Fire OS updates.
+
+**Per-device assembly:**
+1. Start with a new Fire Stick registered to a dedicated, recoverable account controlled by the appropriate party. Keep individual customers' Nuvio credentials unique, and use the customer's own account or a securely handed-over account, not the operator account.
+2. Install the trusted APKs Projectivy, Nuvio + IPTV, TizenTube and Downloader. Hide noncustomer-facing apps from the Projectivy home screen.
+3. Apply Projectivy wallpaper, icon order, Home interception/autostart, and preserve Amazon Settings for Wi-Fi, accessibility and power/volume.
+4. In Nuvio + IPTV, sign in as the *demo customer*, add only that customer's Lounge TV Live playlist, enable Setup Sync and verify NZ/AU TV, EPG and paid-service expiry/revoke.
+5. Apply a clean copy of the working full Xperience **home layout in the exact original order** to the customer's authorised Nuvio profile; confirm every row and folder populates, metadata posters appear and no personal add-ons/history remain.
+6. Set Nuvio hero preference, home catalogue sorting, media playback preferences and **the 18 Nov uploaded custom Fusion pack (not Obsidian)**. Confirm its badge import survives app restart.
+7. Treat TorBox/AIOStreams playback as a separate *customer-specific configuration* and pass gate: individual account/key, approved manifest, 4K file size limits and real video play tests. Neither account cloning nor the badge JSON solves premium source provisioning.
+
+**Shipment simulation (GO / NO-GO):**
+1. Disconnect power, HDMI and Wi-Fi; move the assembled stick to a different TV/network, without resetting it.
+2. Have a person with no previous setup knowledge plug it into HDMI and power, select correct input, connect to household Wi-Fi, and verify remote power/volume.
+3. Boot/reboot at least 3 times; Home must consistently return to Projectivy (no stranded Fire home), Nuvio must retain that customer's account.
+4. Verify Live TV channel and populated EPG; test multiple movie and series streams where applicable, including 4K, and confirm no duplicate playlist channels.
+5. Verify all 10 Xperience home rows in correct order, three collections/41 folders, real metadata, customer custom Fusion badges, TizenTube and hidden support apps. Check after a full power cycle.
+6. Confirm subscription deactivation and password/credential handover/repair process without affecting other customers.
+
+**Decision:** Hardware format is technically plausible based on working components and current documentation, but **the complete shippable customer handover has not passed this acceptance test**. Until it passes, do not promise zero-setup delivery, reliable boot interception, automated per-customer On Demand, or recurring remote updates. First new stick is an isolated pilot, not production evidence.
