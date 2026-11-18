@@ -123,7 +123,7 @@ Deno.serve(async(req)=>{
   if(!(await permit(req)))return reply({error:"not_found"},404);
   const body=await req.json().catch(()=>null);
   const mode=String(body?.mode||"probe");
-  if(!["probe","ingest","account","probe_all","epg_probe"].includes(mode))return reply({error:"mode_not_allowed"},400);
+  if(!["probe","ingest","account","probe_all","epg_probe","playback_probe"].includes(mode))return reply({error:"mode_not_allowed"},400);
   const c=await loadCredentials();
   if(mode==="account"){
    const url=new URL(c.base+"/player_api.php");
@@ -134,6 +134,69 @@ Deno.serve(async(req)=>{
    return reply({status:res.status,active:Number(a?.user_info?.auth)===1,
      account_status:String(a?.user_info?.status||"unknown"),
      expires_at:a?.user_info?.exp_date?new Date(Number(a.user_info.exp_date)*1000).toISOString():null});
+  }
+  if(mode==="playback_probe"){
+   const prefixes=Array.isArray(body?.region_prefixes)?body.region_prefixes.map(String):[];
+   if(prefixes.length<1||prefixes.length>6||prefixes.some((x:string)=>! /^[A-Z]{2,5}$/.test(x)))
+     return reply({error:"invalid_prefixes"},400);
+   const selections=await sql`
+    SELECT pref.prefix,s.provider_stream_id
+    FROM unnest(${prefixes}::text[]) AS pref(prefix)
+    LEFT JOIN LATERAL (
+      SELECT s.provider_stream_id
+      FROM lounge_sync.international_master_selection_qa_20261119 chosen
+      JOIN lounge_sync.international_master_streams_qa_20261119 s USING(provider_stream_id)
+      JOIN lounge_sync.international_master_categories_qa_20261119 c
+        ON c.provider_category_id=s.provider_category_id
+      WHERE chosen.tier='primary'
+        AND (upper(c.provider_category_name) LIKE pref.prefix||'|%'
+          OR upper(c.provider_category_name) LIKE pref.prefix||' |%')
+      ORDER BY CASE WHEN s.epg_channel_id<>'' THEN 0 ELSE 1 END,s.provider_stream_id
+      LIMIT 1
+    ) s ON true
+   `;
+   const results=[];
+   for(const row of selections){
+     const id=Number(row.provider_stream_id);
+     if(!Number.isSafeInteger(id)||id<=0){results.push({prefix:row.prefix,status:"no_primary_candidate"});continue;}
+     const target=c.base+"/live/"+encodeURIComponent(c.username)+"/"+encodeURIComponent(c.password)+"/"+id+".ts";
+     const start=Date.now();
+     let status=0,bytes=0,kind="unknown",verdict="failed";
+     try{
+       const response=await fetch(target,{
+        headers:{"Range":"bytes=0-4095","Accept":"*/*","User-Agent":"LoungeTV-QA-Transport-Probe/1.0"},
+        signal:AbortSignal.timeout(11000)});
+       status=response.status;
+       if((status===200||status===206)&&response.body){
+        const reader=response.body.getReader();
+        const first=await reader.read();
+        const data=first.value||new Uint8Array();
+        bytes=data.byteLength;
+        try{await reader.cancel()}catch{}
+        const textStart=new TextDecoder().decode(data.slice(0,16));
+        if(textStart.startsWith("#EXTM3U"))kind="hls_manifest";
+        else if(data[0]===0x47||data[188]===0x47)kind="transport_stream";
+        else if(bytes>0)kind="response_bytes";
+        verdict=bytes>0?"transport_responded":"empty_body";
+       }else{
+        try{await response.body?.cancel()}catch{}
+        verdict="http_"+status;
+       }
+     }catch(e){verdict=e instanceof Error?e.name:"network_error";}
+     const ms=Date.now()-start;
+     await sql`
+      INSERT INTO lounge_sync.international_master_transport_probes_qa_20261119
+      (provider_stream_id,last_checked_at,http_status,first_data_ms,first_chunk_bytes,transport_kind,verdict)
+      VALUES(${id},now(),${status||null},${ms},${bytes},${kind},${verdict})
+      ON CONFLICT(provider_stream_id) DO UPDATE SET
+       last_checked_at=now(),http_status=EXCLUDED.http_status,
+       first_data_ms=EXCLUDED.first_data_ms,first_chunk_bytes=EXCLUDED.first_chunk_bytes,
+       transport_kind=EXCLUDED.transport_kind,verdict=EXCLUDED.verdict
+     `;
+     results.push({prefix:row.prefix,stream_id:id,http_status:status,first_chunk_bytes:bytes,
+       first_data_ms:ms,transport_kind:kind,verdict});
+   }
+   return reply({mode,results});
   }
   if(mode==="epg_probe"){
    const xmlUrl=new URL(c.base+"/xmltv.php");
