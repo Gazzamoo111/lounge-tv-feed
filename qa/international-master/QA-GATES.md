@@ -1,76 +1,69 @@
-# Lounge TV International Master: QA v4
+# Lounge TV International Master: QA Build Status
 
-**Status: INCOMPLETE / DO NOT ROLL OUT.** This branch and the separate
-`lounge-international-master-v4-qa` Edge Function are QA-only.
-Production `n` v36, the production releases and the original
-`lounge-international-master-qa` v3 are not changed.
+**As of 19 November 2026: implemented in isolated QA, NOT ready for customer release.**
+**Production `n` v36 and original `lounge-international-master-qa` v3 are untouched.**
 
-## Source of truth and what exists
+## Implemented and verified
 
-- QA gateway: `lounge-international-master-v4-qa`, isolated Edge Function.
-- Full new BEST International Master category taxonomy: **835** categories
-  from an authenticated `get_live_categories` trial call, stored in
+- BEST International Master trial authenticated against the provider; returned all
+  **835** live category banks via `get_live_categories`.
+- Fixed HTTP 451 block on bulk inventory polling by category-scoped
+  `get_live_streams&category_id=<id>` queries using a bounded,
+  single-use-authenticated QA Supabase Edge importer.
+- Imported **54,971 unique provider live IDs from 835/835 banks** into
+  `lounge_sync.international_master_streams_qa_20261119`.
+  Two HTTP 503 categories succeeded on retry.
+- Preserved category metadata in
   `lounge_sync.international_master_categories_qa_20261119`.
-- The full worldwide **stream list is not imported**. The QA gateway currently
-  combines the existing Nov 9 BEST snapshot (16,140 marked-present live records),
-  the currently published curated NZ/AU channels and selected existing SEA
-  stream candidates. Those are not a reliable inventory of all 835 trial groups.
-- Existing SEA QA table has 2,982 stream records, 2,714 choice_rank=1. Selection
-  is not the same as verified playback.
-- Shared guide table has 1,194 channels with nonexpired programmes as audited.
-  The 80% threshold has not been achieved or demonstrated.
+- Generated a **16,910-source precomputed, balanced QA selection** using
+  `lounge_sync.international_master_selection_qa_20261119`. It removes radio,
+  adult and placeholder banks, prioritises observed video and existing guide
+  evidence, balances region/country coverage and keeps event overflow separate.
+  **This is selection, not playback proof.**
+- The QA-only `lounge-international-master-v4-qa` Edge Function serves this
+  shortlist with unchanged NZ/AU curated bindings and TVNZ Widevine M3U
+  metadata. The old Asian add-on overlay has been removed.
+- An authenticated `player_api.php?action=qa_summary` returned **16,012
+  customer-facing live entries across 95 populated categories**.
+- An authenticated `get.php?type=m3u_plus` returned HTTP **200**, a
+  **5,157,734-byte M3U** with **16,012 EXTINF channel entries**. Its
+  category numbering is contiguous from **01 to 95**. TVNZ 1/2 and
+  DRM metadata are present. Live Events and PPV Source Overflow are last.
+- Category-contract GitHub Actions tests passed prior to integration; changes
+  remain in draft pull request #9, not merged to the main branch.
 
-## Presentation contract
+## Confirmed outstanding gates
 
-- Flat Xtream groups. The architecture owns one priority order and emits
-  **only nonempty groups** with consecutive visible display numbers.
-- Country grouping uses proven provider category prefixes, and explicitly
-  handles collisions such as `AR` (Arabic, not Argentina), `IR` (Iran versus
-  Ireland), `CH` (China versus Switzerland), `SK` (South Korea).
-- Category display numbers in M3U and Xtream are derived from the same
-  `nuvioVisibleLabels()` function. Category IDs are stable within this QA
-  implementation. Existing production IDs are not changed.
-- Never invent an absent territory's channels or EPG; unknown source groups
-  remain International TV.
-- Live Events and PPV Source Overflow remain at the bottom.
+1. **EPG:** only **417 of 16,012** selected channel entries currently
+   have a guide with actual programmes through the shared guide table.
+   EPG IDs alone do not count. BEST provider `get_short_epg` returned zero
+   programmes for three sample IDs; `xmltv.php` HEAD returned HTTP 200
+   with an empty text/html response. Independent EPG sources require
+   exact ID matching, programme validation and commercial rights review.
+   Do not promise 80% EPG coverage.
+2. **Playback:** HTTP playlist generation and TVNZ DRM tags are confirmed;
+   long-duration channel playback and Nuvio + IPTV device behaviour have
+   not been verified. Test live streams on a real player and investigate
+   affected regional banks before promoting sources.
+3. **Delivery:** The BEST account is a short trial with provider-reported
+   expiration **2026-11-19 21:24:19 UTC** (20 Nov at 10:24 NZDT).
+   Future customer credentials must carry the correct entitlement for this
+   International Master template.
+4. **Performance:** 55k records loaded into the function directly caused
+   Supabase HTTP 546 WORKER_RESOURCE_LIMIT; a precomputed shortlist resolved
+   it. The 16k-entry 5.16 MB M3U still requires clean Nuvio sync timing,
+   memory, guide loading and stability tests.
+5. **Source reliability and commercial permission:** The importer retrieves
+   provider entries, not licensed or continuously verified channels.
+   Confirm rebroadcast and EPG redistribution rights before selling.
 
-## Existing media behaviour retained
+## Safety boundaries
 
-- NZ/AU curated release remains the foundation.
-- TVNZ DRM-aware M3U export uses existing `nzPlaylistLines()` handling.
-- Sky Sport FHD selection, AU duplicate controls and existing EPG aliases
-  remain implemented in the QA function.
-- `get_live_streams` intentionally responds with the existing 503 M3U retry
-  directive to preserve TVNZ Widevine playback in Nuvio; this should be tested
-  end to end, not treated as a failure until client fallback is observed.
-- No stream playback was verified from a real Nuvio client during this build.
-
-## Acceptance gates (not yet passed)
-
-1. Import a current, authorized **full stream list** for the test account.
-   Validate the source item ID and category ID join against the 835 categories;
-   do not treat category metadata as stream coverage. Do not write to the
-   shared `best_inventory_items` production snapshot.
-2. Filter rejected, placeholder, duplicate and dead streams. Prefer stable
-   working FHD sources over misleading HD/4K names. Preserve verified backups.
-   Record a playback probe result and date for every primary source.
-3. Verify M3U sync and flat category order on Nuvio + IPTV; test NZ TVNZ 1/2,
-   Sky Sport, AU Fox/Kayo, UK, US and a representative channel per new region.
-4. Quantify valid logos and EPG programmes by permanent channel group,
-   separating true guide matches from an EPG ID string with no current shows.
-   Aim for 80% of permanent channels; exclude PPV/overflow from that denominator.
-5. Validate login with an active customer trial without displaying credentials
-   in logs or reports; check expiration and entitlement behaviour.
-6. Measure total playlist duration, category/channel count, M3U size, cache
-   and sync performance with a clean Nuvio + IPTV install.
-7. Review provider rebroadcast/commercial rights and all DRM handling before
-   selling the additional channel coverage.
-8. Publish only after a signed-off QA result. No automatic production promotion.
-
-## Operational constraints
-
-- Free tier only, no new Supabase project or paid branch.
-- QA category snapshot occupies approximately 152 KB as measured at import.
-- No cron or recurring provider polling was added.
-- A new worldwide full stream snapshot should use a bounded, rate-limited
-  and isolated storage strategy rather than duplicating the active inventory.
+- No edits or deployments to `n` v36, original International QA v3 or
+  active production catalogue tables.
+- No paid Supabase branch, extra project or recurring polling job.
+- All importer requests are rate-bounded and require single-use tokens;
+  trial credentials are loaded server-side from Supabase Vault.
+- Trial credentials and stream URLs are not committed to GitHub.
+- Never merge this PR or route customer devices to v4 QA until every
+  release gate above is met.
