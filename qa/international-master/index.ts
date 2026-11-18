@@ -1222,9 +1222,9 @@ function nuvioGroupId(g:string){const n=NUVIO_GROUPS.indexOf(g);return String(18
 function nuvioGood(r:any):boolean{
  const n=String(r.name||"").trim(),c=String(r.provider_group||"").trim();
  if(!n||r.is_adult===true)return false;
- if(/^(?:\\s*#{3,}|\\s*[-=*]{5,}|\\s*\\[HEADER\\])/i.test(n))return false;
+ if(/^(?:\s*#{3,}|\s*[-=*]{5,}|\s*\[HEADER\])/i.test(n))return false;
  if(/NO EVENT STREAMING|NO SIGNAL|OFF AIR|COMING SOON|TEST PATTERN|CHANNEL NOT FOUND/i.test(n))return false;
- if(/(?:^|\\W)(?:XXX|ADULT|18\\+)(?:\\W|$)/i.test(c))return false;
+ if(/(?:^|\W)(?:XXX|ADULT|18\+)(?:\W|$)/i.test(c))return false;
  return true;
 }
 function nuvioClean(n:string){return n.replace(/^(?:NZ|AU|UK|US|CA|IR|NA|EN)\s*\|\s*/i,"").trim().replace(/\s+/g," ");}
@@ -1237,8 +1237,8 @@ function nuvioGroup(r:any):string{
  const gstream=nuvioStreamingGroup(t,v,String(r.display_name||""));
  if(gstream)return gstream;
  if(t==="raw"){
-  if(/PPV|ESPN\\+|ESPN PLUS|ESPN PLAY|PACKAGE|FLO NETWORK|NCAA|RED BUTTON|TENNIS CHANNEL PLUS/.test(v))return "PPV Source Overflow";
-  if(/EVENT|REPLAY|WORLD LIVE SPORTS|CHAMPIONSHIP|FA PLAYER|LEAGUE ONE|LEAGUE TWO|NATIONAL LEAGUE|SKY SPORT\\+|CUP GAMES|UEFA/.test(v))return "Live Events";
+  if(/PPV|ESPN\+|ESPN PLUS|ESPN PLAY|PACKAGE|FLO NETWORK|NCAA|RED BUTTON|TENNIS CHANNEL PLUS/.test(v))return "PPV Source Overflow";
+  if(/EVENT|REPLAY|WORLD LIVE SPORTS|CHAMPIONSHIP|FA PLAYER|LEAGUE ONE|LEAGUE TWO|NATIONAL LEAGUE|SKY SPORT\+|CUP GAMES|UEFA/.test(v))return "Live Events";
   if(/SPORT|RUGBY|CRICKET|FORMULA 1|MOTOGP|GOLF|TENNIS|DAZN|EUROSPORT|NBA NETWORK|NFL NETWORK/.test(v))return "Sports Networks";
   if(/NEWS/.test(v))return "News";
   if(/DOCUMENT|SKYMIX DOCS|LIFESTYLE|DISCOVERY|HISTORY|NATURE|SCIENCE/.test(v))return "Documentaries & Lifestyle";
