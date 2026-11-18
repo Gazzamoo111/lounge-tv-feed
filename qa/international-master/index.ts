@@ -1225,10 +1225,11 @@ function nuvioGood(r:any):boolean{
  if(/^(?:\s*#{3,}|\s*[-=*]{5,}|\s*\[HEADER\])/i.test(n))return false;
  if(/NO EVENT STREAMING|NO SIGNAL|OFF AIR|COMING SOON|TEST PATTERN|CHANNEL NOT FOUND/i.test(n))return false;
  if(/(?:^|\W)(?:XXX|ADULT|18\+)(?:\W|$)/i.test(c))return false;
+ if(/(?:^|\W)(?:RADIO|PODCAST|AUDIO ONLY)(?:\W|$)/i.test(c))return false;
  return true;
 }
-function nuvioClean(n:string){return n.replace(/^(?:NZ|AU|UK|US|CA|IR|NA|EN)\s*\|\s*/i,"").trim().replace(/\s+/g," ");}
-function nuvioIdentity(n:string){return nuvioClean(n).replace(/[ᴿᴬᵂ⁶⁰ᶠᵖˢᴴᴰ]/g,"").replace(/\b(?:SD|HD|FHD|HEVC|UHD|4K|720P|1080P)\b/gi,"").replace(/[^a-z0-9]+/gi," ").trim().toLowerCase();}
+function nuvioClean(n:string){return n.replace(/^\s*[A-Z]{2,5}\s*\|\s*/i,"").trim().replace(/\s+/g," ");}
+function nuvioIdentity(n:string){return nuvioClean(n).normalize("NFKC").replace(/[ᴿᴬᵂ⁶⁰ᶠᵖˢᴴᴰ]/g,"").replace(/\b(?:SD|HD|FHD|HEVC|UHD|4K|720P|1080P)\b/gi,"").replace(/[^\p{L}\p{N}]+/gu," ").trim().toLowerCase();}
 function nuvioGroup(r:any):string{
  const t=String(r.category||"").toLowerCase(),v=String(r.subcategory||"").toUpperCase();
  if(t==="intl-qa")return masterSeaGroup(String(r.subcategory||""))||"International TV";
@@ -1280,18 +1281,32 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:international:v4-unified",cache=catalogueCache.get(k);
+ const k="nuvio:international:full-trial-qa-v5",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
-  const [curated,inventory,internationalQa]=await Promise.all([
+  // Use the full authenticated BEST trial inventory as the current QA source.
+  const [curated,inventory]=await Promise.all([
    releaseLiveRows(null),
-   sql.unsafe("select i.provider_item_id,i.name,i.epg_channel_id,i.artwork_url,i.is_adult,coalesce(c.category_name,'') provider_group from lounge_sync.best_inventory_items i left join lounge_sync.best_categories c on c.kind='live' and c.category_id=i.category_id where i.kind='live' and i.is_present=true and i.provider_item_id>0 order by i.provider_item_id"),
-   sql`select provider_stream_id,display_name,logo_url,epg_id,display_group,provider_num
-     from lounge_sync.sea_trial_streams_qa_20261118
-     where choice_rank=1 and display_group=any(${Array.from(INTERNATIONAL_QA_GROUPS)}::text[])
-       and provider_stream_id>0
-     order by group_order,provider_num,provider_stream_id`
+   sql`
+    SELECT s.provider_stream_id AS provider_item_id,s.original_name AS name,
+      s.epg_channel_id,s.artwork_url,false AS is_adult,
+      c.provider_category_name AS provider_group
+    FROM lounge_sync.international_master_streams_qa_20261119 s
+    JOIN lounge_sync.international_master_categories_qa_20261119 c
+      ON c.provider_category_id=s.provider_category_id
+    LEFT JOIN lounge_sync.sea_stream_probes_qa_20261119 probe
+      ON probe.provider_stream_id=s.provider_stream_id
+    LEFT JOIN lounge_delivery.shared_epg_channels guide
+      ON guide.epg_id=s.epg_channel_id AND guide.expires_at>now() AND guide.programme_count>0
+    WHERE s.provider_stream_id>0
+    ORDER BY
+      CASE WHEN probe.has_video=true AND probe.http_status IN(200,206) THEN 0 ELSE 1 END,
+      CASE WHEN guide.epg_id IS NOT NULL THEN 0 ELSE 1 END,
+      CASE WHEN s.epg_channel_id<>'' THEN 0 ELSE 1 END,
+      CASE WHEN s.artwork_url<>'' THEN 0 ELSE 1 END,
+      s.provider_stream_id
+   `
   ]);
   // Customer NZ Sky Sport 1-9: the curated main must remain FHD. The subsequent
   // QA visibility rule removes unreliable HD duplicates and looping sources.
@@ -1308,25 +1323,7 @@ async function nuvioFullRows():Promise<any[]>{
    rows.push(item);
    used.add(id); // A provider stream ID can only appear once across inventory and SEA QA.
   }
-  // International Master QA v2. Isolated candidate overlay, no production data edits.
-  // Playback still requires BEST entitlements for the supplied customer credentials.
-  for(const r of internationalQa){
-   const id=Number(r.provider_stream_id);
-   const sourceGroup=String(r.display_group||"");
-   const group=masterSeaGroup(sourceGroup);
-   if(!Number.isSafeInteger(id)||id<=0||id>=147000000||used.has(id)||!INTERNATIONAL_QA_GROUPS.has(sourceGroup)||!group)continue;
-   const name=String(r.display_name||"").replace(/^[A-Z]{2,3}\s*\|\s*/,"").trim().replace(/\s+/g," ");
-   if(!name||/NO SIGNAL|OFF AIR|COMING SOON|TEST PATTERN|CHANNEL NOT FOUND/i.test(name))continue;
-   const identity=nuvioIdentity(name),key=group+"|"+identity;
-   if(!identity||identities.has(key))continue;
-   rows.push({
-    external_id:NUVIO_STREAM_BASE+id,provider_stream_id:id,
-    display_name:name,category:"intl-qa",subcategory:sourceGroup,
-    epg_id:r.epg_id||"",logo_url:r.logo_url||"",source_format:"ts",
-    provider_name:"BEST",sort_order:999999
-   });
-   used.add(id);identities.add(key);
-  }
+  // SEA add-on removed: full BEST trial inventory is now authoritative.
   // Retain the old NZ HD streams as named manual fallbacks after the FHD trial.
   rows.push(...qaSkyOriginalHdBackups(rows,curated,inventory));
   // Keep curated FHD, hide HD backup rows and looping group. No BEST inventory edit.
@@ -1925,6 +1922,20 @@ Deno.serve(async(req)=>{
   // Third-party players receive the same stable Xtream-compatible flat category list, while
   // the Lounge Android app re-groups those names into its richer section accordion.
   const loungeApp=true;
+  if(action==="qa_summary"){
+    const rows=await nuvioFullRows(),labels=nuvioVisibleLabels(rows);
+    const gids=await sql`SELECT epg_id FROM lounge_delivery.shared_epg_channels WHERE expires_at>now() AND programme_count>0`;
+    const guideIds=new Set(gids.map((x:any)=>String(x.epg_id)));
+    const counts=new Map<string,{count:number,logos:number,guide:number}>();
+    for(const row of rows){
+      const g=nuvioGroup(row),v=counts.get(g)||{count:0,logos:0,guide:0};
+      v.count++;if(row.logo_url)v.logos++;if(guideIds.has(String(row.epg_id||"")))v.guide++;
+      counts.set(g,v);
+    }
+    const categories=NUVIO_VISIBLE_ORDER.filter(g=>Boolean(labels[g])).map(g=>({name:labels[g],...counts.get(g)}));
+    return json({source:"international-master-trial-qa",total:rows.length,category_count:categories.length,
+      verified_guide:categories.reduce((n,c)=>n+(c.guide||0),0),categories});
+  }
   if(action==="get_live_categories"){
     return json(await nuvioLiveCategories());
   }
