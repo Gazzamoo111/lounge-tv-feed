@@ -16,11 +16,16 @@ export const masterVisibleOrder = Object.freeze([
   "India","India Regional","India Streaming","India Movies","India News",
   "Singapore","Malaysia","Indonesia","Japan","South Korea","China",
   "Thailand","Vietnam","Philippines","Pakistan","Bangladesh",
+  "Taiwan","Nepal","Afghanistan","Uzbekistan","Tajikistan","Kazakhstan","Asia (Other)",
   "France","Germany","Spain","Italy","Portugal","Netherlands","Poland",
-  "Türkiye","Greece","Russia","Ukraine",
-  "United Arab Emirates","Saudi Arabia","Israel",
-  "South Africa","Nigeria","Egypt","Kenya",
-  "Mexico","Brazil","Argentina","Colombia",
+  "Türkiye","Greece","Russia","Ukraine","Belgium","Czech Republic",
+  "Romania","Austria","Albania","Switzerland","Croatia","Montenegro",
+  "North Macedonia","Bulgaria","Bosnia","Cyprus","Hungary","Serbia",
+  "Slovenia","Malta","Estonia","Belarus","Finland","Georgia","Kosovo",
+  "Armenia","Azerbaijan","Balkans",
+  "United Arab Emirates","Saudi Arabia","Israel","Arabic TV","Kurdish TV",
+  "South Africa","Nigeria","Egypt","Kenya","Africa",
+  "Mexico","Brazil","Argentina","Colombia","Chile","Suriname","Latin America","Caribbean",
   "International TV","Live Events","PPV Source Overflow"
 ]);
 
@@ -54,23 +59,57 @@ export function masterSeaGroup(group) {
   return seaGroupMap[String(group||"").trim()]||null;
 }
 
+// BEST prefixes are provider-specific, not ISO codes. In particular:
+// AR means Arabic; IR mixes Iran/Ireland; CH mixes China/Switzerland.
 const providerCountryPrefix = Object.freeze({
-  NZ:"New Zealand",AU:"Australia",UK:"UK TV",GB:"UK TV",
-  US:"US TV",CA:"Canada",IE:"Ireland",IR:"Ireland",
-  IN:"India",SG:"Singapore",MY:"Malaysia",ID:"Indonesia",
-  JP:"Japan",KR:"South Korea",CN:"China",TH:"Thailand",
-  VN:"Vietnam",PH:"Philippines",PK:"Pakistan",BD:"Bangladesh",
-  FR:"France",DE:"Germany",ES:"Spain",IT:"Italy",PT:"Portugal",
-  NL:"Netherlands",PL:"Poland",TR:"Türkiye",GR:"Greece",
-  RU:"Russia",UA:"Ukraine",AE:"United Arab Emirates",
-  SA:"Saudi Arabia",IL:"Israel",ZA:"South Africa",
-  NG:"Nigeria",EG:"Egypt",KE:"Kenya",MX:"Mexico",
-  BR:"Brazil",AR:"Argentina",CO:"Colombia"
+ NZ:"New Zealand",AU:"Australia",UK:"UK TV",GB:"UK TV",US:"US TV",
+ CA:"Canada",IE:"Ireland",
+ SG:"Singapore",MY:"Malaysia",ID:"Indonesia",
+ JP:"Japan",KR:"South Korea",CN:"China",TH:"Thailand",VT:"Vietnam",
+ VN:"Vietnam",PH:"Philippines",PK:"Pakistan",BD:"Bangladesh",
+ BAN:"Bangladesh",TAI:"Taiwan",NP:"Nepal",AFG:"Afghanistan",UZ:"Uzbekistan",
+ TJ:"Tajikistan",KA:"Kazakhstan",
+ FR:"France",DE:"Germany",ES:"Spain",IT:"Italy",PT:"Portugal",
+ NL:"Netherlands",PL:"Poland",TR:"Türkiye",GR:"Greece",RU:"Russia",
+ UKR:"Ukraine",UA:"Ukraine",BE:"Belgium",CZ:"Czech Republic",RO:"Romania",
+ AT:"Austria",AL:"Albania",HR:"Croatia",CG:"Montenegro",MK:"North Macedonia",
+ BG:"Bulgaria",BH:"Bosnia",CY:"Cyprus",HU:"Hungary",RS:"Serbia",
+ SL:"Slovenia",MT:"Malta",EST:"Estonia",BY:"Belarus",FI:"Finland",
+ GE:"Georgia",KO:"Kosovo",AM:"Armenia",AZ:"Azerbaijan",
+ AE:"United Arab Emirates",SA:"Saudi Arabia",IL:"Israel",IS:"Israel",
+ ZA:"South Africa",NG:"Nigeria",EG:"Egypt",KE:"Kenya",
+ BR:"Brazil",CO:"Colombia",MX:"Mexico",SU:"Suriname",
+ AR:"Arabic TV",KU:"Kurdish TV",AFR:"Africa",EXYU:"Balkans",CRB:"Caribbean",
+ SK:"South Korea"
 });
 export function masterRegionGroup(providerCategory) {
-  const group=String(providerCategory||"").toUpperCase();
-  const match=/^\s*([A-Z]{2})\s*\|/.exec(group);
-  return match ? providerCountryPrefix[match[1]]||null : null;
+ const group=String(providerCategory||"").toUpperCase().trim();
+ const match=/^([A-Z]{2,5})\s*\|/.exec(group);
+ if(!match)return null;
+ const prefix=match[1];
+ // Some BEST category prefixes are shared by different countries.
+ if(prefix==="IR"){
+  if(/\bIRELAND\b/.test(group))return "Ireland";
+  if(/\bIRAN\b/.test(group))return "International TV";
+  return null;
+ }
+ if(prefix==="CH"){
+  if(/\bSWITZERLAND\b/.test(group))return "Switzerland";
+  if(/\bCHINA\b|\bHONG\s*KONG\b/.test(group))return "China";
+  return null;
+ }
+ if(prefix==="LAT"){
+  if(/\bMEXICO\b/.test(group))return "Mexico";
+  if(/\bARGENTINA\b|\bARG\b/.test(group))return "Argentina";
+  if(/\bCOLOMBIA\b/.test(group))return "Colombia";
+  if(/\bCHILE\b/.test(group))return "Chile";
+  return "Latin America";
+ }
+ if(prefix==="ASIA"){
+  if(/\bINDIA\b|\bINDIAN\b/.test(group))return "India";
+  return "Asia (Other)";
+ }
+ return providerCountryPrefix[prefix]||null;
 }
 
 const icons = Object.freeze({
@@ -90,16 +129,26 @@ const icons = Object.freeze({
   "Singapore":"🇸🇬","Malaysia":"🇲🇾","Indonesia":"🇮🇩",
   "Japan":"🇯🇵","South Korea":"🇰🇷","China":"🇨🇳",
   "Thailand":"🇹🇭","Vietnam":"🇻🇳","Philippines":"🇵🇭",
-  "Pakistan":"🇵🇰","Bangladesh":"🇧🇩",
+  "Pakistan":"🇵🇰","Bangladesh":"🇧🇩","Taiwan":"🇹🇼",
+  "Nepal":"🇳🇵","Afghanistan":"🇦🇫","Uzbekistan":"🇺🇿",
+  "Tajikistan":"🇹🇯","Kazakhstan":"🇰🇿","Asia (Other)":"🌏",
   "France":"🇫🇷","Germany":"🇩🇪","Spain":"🇪🇸",
   "Italy":"🇮🇹","Portugal":"🇵🇹","Netherlands":"🇳🇱",
   "Poland":"🇵🇱","Türkiye":"🇹🇷","Greece":"🇬🇷",
-  "Russia":"🇷🇺","Ukraine":"🇺🇦",
+  "Russia":"🇷🇺","Ukraine":"🇺🇦","Belgium":"🇧🇪","Czech Republic":"🇨🇿",
+  "Romania":"🇷🇴","Austria":"🇦🇹","Albania":"🇦🇱","Switzerland":"🇨🇭",
+  "Croatia":"🇭🇷","Montenegro":"🇲🇪","North Macedonia":"🇲🇰",
+  "Bulgaria":"🇧🇬","Bosnia":"🇧🇦","Cyprus":"🇨🇾","Hungary":"🇭🇺",
+  "Serbia":"🇷🇸","Slovenia":"🇸🇮","Malta":"🇲🇹","Estonia":"🇪🇪",
+  "Belarus":"🇧🇾","Finland":"🇫🇮","Georgia":"🇬🇪","Kosovo":"🇽🇰",
+  "Armenia":"🇦🇲","Azerbaijan":"🇦🇿","Balkans":"🌍",
   "United Arab Emirates":"🇦🇪","Saudi Arabia":"🇸🇦",
   "Israel":"🇮🇱","South Africa":"🇿🇦","Nigeria":"🇳🇬",
-  "Egypt":"🇪🇬","Kenya":"🇰🇪",
+  "Egypt":"🇪🇬","Kenya":"🇰🇪","Africa":"🌍",
+  "Arabic TV":"🌍","Kurdish TV":"🌍",
   "Mexico":"🇲🇽","Brazil":"🇧🇷","Argentina":"🇦🇷",
-  "Colombia":"🇨🇴","International TV":"🌍",
+  "Colombia":"🇨🇴","Chile":"🇨🇱","Suriname":"🇸🇷","Latin America":"🌎",
+  "Caribbean":"🌴","International TV":"🌍",
   "Live Events":"🏟️","PPV Source Overflow":"🗄️"
 });
 const labelOverrides = Object.freeze({
@@ -112,8 +161,5 @@ const labelOverrides = Object.freeze({
   "PPV Source Overflow":"PPV Source Overflow"
 });
 export const masterCategoryLabels = Object.freeze(Object.fromEntries(
-  masterVisibleOrder.map((g,i)=>[
-    g,
-    `${g==="Live Events"?"98":g==="PPV Source Overflow"?"99":String(i+1).padStart(2,"0")} ${icons[g]||"🌍"} ${labelOverrides[g]||g}`
-  ])
+ masterVisibleOrder.map(g=>[g,`${icons[g]||"🌍"} ${labelOverrides[g]||g}`])
 ));
