@@ -1730,6 +1730,51 @@ async function releaseM3u(u:string,p:string,url:URL){
   }
   return new Response(lines.join("\n")+"\n",{status:200,headers:{"Content-Type":"application/x-mpegURL; charset=utf-8","Cache-Control":"private, max-age=120","Access-Control-Allow-Origin":"*"}});
 }
+/**
+ * International QA EPG: emit only genuine programme rows for IDs present in
+ * the selected catalogue. Stream XMLTV in batches; avoid pulling the 90 MB
+ * production guide into this free-tier Edge Function's memory.
+ */
+async function internationalQaXmltv(req:Request){
+ const rows=await nuvioFullRows();
+ const candidateIds=[...new Set(rows.map((r:any)=>String(effectiveLiveEpgId(r)||"")).filter(Boolean))];
+ const eligible=await sql`
+   SELECT epg_id FROM lounge_delivery.shared_epg_channels
+   WHERE epg_id=any(${candidateIds}::text[])
+     AND programme_count>0 AND expires_at>now()
+   ORDER BY epg_id
+ `;
+ const ids=eligible.map((x:any)=>String(x.epg_id));
+ const encoder=new TextEncoder();
+ const xml=new ReadableStream<Uint8Array>({
+   async start(controller){
+     try{
+       controller.enqueue(encoder.encode('<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Lounge TV International QA">\n'));
+       for(let start=0;start<ids.length;start+=25){
+         const batch=ids.slice(start,start+25);
+         const parts=await sql`SELECT xmltv FROM lounge_delivery.shared_epg_channels
+           WHERE epg_id=any(${batch}::text[]) AND programme_count>0 AND expires_at>now()
+           ORDER BY epg_id`;
+         for(const p of parts){
+           if(p.xmltv)controller.enqueue(encoder.encode(String(p.xmltv)+"\n"));
+         }
+       }
+       controller.enqueue(encoder.encode("</tv>\n"));
+       controller.close();
+     }catch(e){controller.error(e);}
+   }
+ });
+ const canGzip=/\bgzip\b/i.test(req.headers.get("accept-encoding")||"");
+ const headers:Record<string,string>={
+   "Content-Type":"application/xml; charset=utf-8",
+   "Cache-Control":"private, max-age=300",
+   "Access-Control-Allow-Origin":"*",
+   "X-Lounge-Guide-Scope":"selected-qa"
+ };
+ if(canGzip)headers["Content-Encoding"]="gzip";
+ return new Response(canGzip?xml.pipeThrough(new CompressionStream("gzip")):xml,
+   {status:200,headers});
+}
 let skyNzShortCache:{until:number,body:string}|null=null;
 async function skyNzShortEpg(epgId:string,limit:number,externalId:number){
   const match=epgId.match(/^SkySport([1-9])\.nz$/);
@@ -1901,10 +1946,8 @@ Deno.serve(async(req)=>{
     const {u,p}=credentials(url,parts);
     const auth=await accountState(base,u,p);
     if(!auth.ok)return json({error:"not_allowed"},403);
-    if(RECOVERY_MODE) return await providerXmltv(base,u,p);
-    const r=await xmltv();
-    if(r.ok)return r;
-    return await providerXmltv(base,u,p);
+    if(RECOVERY_MODE)return await providerXmltv(base,u,p);
+    return await internationalQaXmltv(req);
   }
   if(parts[0]==="get.php"){const {u,p}=credentials(url,parts);const auth=await accountState(base,u,p);if(!auth.ok)return json({error:"not_allowed"},403);if(RECOVERY_MODE)return await providerM3u(base,u,p);return await releaseM3u(u,p,url);}
 
