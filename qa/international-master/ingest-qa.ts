@@ -68,7 +68,7 @@ async function fetchBest(c:ProviderCredentials,action:string,category:string|nul
 async function writeCategory(id:string, result:{http:number;elapsed:number;items:any[]|null;kind:string}){
  let rows=0;
  if(result.items){
-  const filtered=[];
+  const uniqueIds=new Map<number,any>();
   for(const item of result.items){
    const streamId=Number(item?.stream_id);
    if(!Number.isSafeInteger(streamId)||streamId<=0||streamId>=147000000)continue;
@@ -77,12 +77,13 @@ async function writeCategory(id:string, result:{http:number;elapsed:number;items
    if(!name)continue;
    const categoryId=String(item?.category_id||id).trim();
    if(categoryId!==id)continue; // do not mislabel a source to a territory
-   filtered.push({
+   uniqueIds.set(streamId,{
     id:streamId,category_id:categoryId,name,
     logo:String(item?.stream_icon||"").slice(0,1200),
     epg:String(item?.epg_channel_id||"").slice(0,250)
    });
   }
+  const filtered=[...uniqueIds.values()];
   // Bounded inserts keep database pressure low on Supabase free tier.
   for(let start=0;start<filtered.length;start+=150){
    const batch=filtered.slice(start,start+150);
@@ -163,6 +164,6 @@ Deno.serve(async(req)=>{
   return reply({mode,categories:result});
  }catch(e){
   console.error("QA_IMPORT_FAIL",e instanceof Error?e.name:"error");
-  return reply({error:e instanceof Error?e.name:"internal_error"},500);
+  return reply({error:e instanceof Error?e.name:"internal_error",sqlstate:typeof (e as any)?.code==="string"?(e as any).code:null},500);
  }
 });
