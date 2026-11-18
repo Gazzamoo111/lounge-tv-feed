@@ -1256,7 +1256,8 @@ function nuvioGroup(r:any):string{
   }
   if(v.startsWith("AU|"))return "Australia";
   if(v.startsWith("UK|")||v.startsWith("EN|"))return "UK TV";
-  if(v.startsWith("US|")||v.startsWith("NA|"))return "US TV";
+  if(v.startsWith("US|"))return "US TV";
+  if(v.startsWith("NA|"))return /PPV|EVENT|HOCKEY|SPORT/.test(v)?"PPV Source Overflow":"International TV";
   const region=masterRegionGroup(String(r.subcategory||""));
   if(region)return region;
   return "International TV";
