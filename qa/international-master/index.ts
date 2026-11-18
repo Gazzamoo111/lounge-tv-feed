@@ -1281,7 +1281,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:international:full-trial-qa-v5",cache=catalogueCache.get(k);
+ const k="nuvio:international:balanced-selection-v6",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
@@ -1293,6 +1293,8 @@ async function nuvioFullRows():Promise<any[]>{
       s.epg_channel_id,s.artwork_url,false AS is_adult,
       c.provider_category_name AS provider_group
     FROM lounge_sync.international_master_streams_qa_20261119 s
+    JOIN lounge_sync.international_master_selection_qa_20261119 chosen
+      ON chosen.provider_stream_id=s.provider_stream_id
     JOIN lounge_sync.international_master_categories_qa_20261119 c
       ON c.provider_category_id=s.provider_category_id
     LEFT JOIN lounge_sync.sea_stream_probes_qa_20261119 probe
