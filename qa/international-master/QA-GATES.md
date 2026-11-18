@@ -67,3 +67,11 @@
 - Trial credentials and stream URLs are not committed to GitHub.
 - Never merge this PR or route customer devices to v4 QA until every
   release gate above is met.
+
+## QA guide transport optimisation (19 Nov 2026)
+
+- The International QA XMLTV endpoint now streams only current programme records whose EPG IDs belong to the **selected customer-facing catalogue**; it does not download the entire active NZ/AU shared guide into memory.
+- An authenticated XMLTV GET returned **HTTP 200**, well-formed XMLTV wrapper, **15,768,924 bytes**. Before the QA-only optimisation, the same gateway returned **90,774,577 bytes** of full shared guide data, a measured **82.6% payload reduction**.
+- Optional HTTP gzip compression is implemented for requesting clients. Compressed output and actual Nuvio guide-sync time are **not tested**.
+- Smaller guide size does not prove higher coverage: currently **417 of 16,012** visible channels have actual programme data from the shared guide. No synthetic or guessed EPG was imported.
+- The bulky temporary HTTP responses from these checks have been deleted from the internal network-response table to avoid free-tier storage waste.
