@@ -17,8 +17,8 @@ export const masterVisibleOrder = Object.freeze([
   "Singapore","Malaysia","Indonesia","Japan","South Korea","China",
   "Thailand","Vietnam","Philippines","Pakistan","Bangladesh",
   "Taiwan","Nepal","Afghanistan","Uzbekistan","Tajikistan","Kazakhstan","Asia (Other)",
-  "France","Germany","Spain","Italy","Portugal","Netherlands","Poland",
-  "Türkiye","Greece","Russia","Ukraine","Belgium","Czech Republic",
+  "France","Germany","Spain","Italy","Portugal","Netherlands","Poland","Sweden","Norway","Denmark",
+  "Türkiye","Greece","Russia","Ukraine","Belgium","Czech Republic","Iceland","Luxembourg",
   "Romania","Austria","Albania","Switzerland","Croatia","Montenegro",
   "North Macedonia","Bulgaria","Bosnia","Cyprus","Hungary","Serbia",
   "Slovenia","Malta","Estonia","Belarus","Finland","Georgia","Kosovo",
@@ -82,10 +82,23 @@ const providerCountryPrefix = Object.freeze({
  AR:"Arabic TV",KU:"Kurdish TV",AFR:"Africa",EXYU:"Balkans",CRB:"Caribbean",
  SK:"South Korea"
 });
+export function masterExplicitCountryGroup(providerCategory) {
+ const group=String(providerCategory||"").trim().toUpperCase();
+ const matches=[
+  [/^SWEDEN(?:\\s|\\||$)/,"Sweden"],
+  [/^NORWAY(?:\\s|\\||$)/,"Norway"],
+  [/^DENMARK(?:\\s|\\||$)/,"Denmark"],
+  [/^FINLAND(?:\\s|\\||$)/,"Finland"],
+  [/^ICELAND(?:\\s|\\||$)/,"Iceland"],
+  [/^LUXEMBOURG(?:\\s|\\||$)/,"Luxembourg"]
+ ];
+ for(const [rx,name] of matches){if(rx.test(group))return name;}
+ return null;
+}
 export function masterRegionGroup(providerCategory) {
  const group=String(providerCategory||"").toUpperCase().trim();
  const match=/^([A-Z]{2,5})\s*\|/.exec(group);
- if(!match)return null;
+ if(!match)return masterExplicitCountryGroup(group);
  const prefix=match[1];
  // Some BEST category prefixes are shared by different countries.
  if(prefix==="IR"){
@@ -134,7 +147,8 @@ const icons = Object.freeze({
   "Tajikistan":"🇹🇯","Kazakhstan":"🇰🇿","Asia (Other)":"🌏",
   "France":"🇫🇷","Germany":"🇩🇪","Spain":"🇪🇸",
   "Italy":"🇮🇹","Portugal":"🇵🇹","Netherlands":"🇳🇱",
-  "Poland":"🇵🇱","Türkiye":"🇹🇷","Greece":"🇬🇷",
+  "Poland":"🇵🇱","Sweden":"🇸🇪","Norway":"🇳🇴","Denmark":"🇩🇰",
+  "Iceland":"🇮🇸","Luxembourg":"🇱🇺","Türkiye":"🇹🇷","Greece":"🇬🇷",
   "Russia":"🇷🇺","Ukraine":"🇺🇦","Belgium":"🇧🇪","Czech Republic":"🇨🇿",
   "Romania":"🇷🇴","Austria":"🇦🇹","Albania":"🇦🇱","Switzerland":"🇨🇭",
   "Croatia":"🇭🇷","Montenegro":"🇲🇪","North Macedonia":"🇲🇰",
