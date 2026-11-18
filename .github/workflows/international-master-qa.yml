@@ -1,0 +1,24 @@
+name: International Master QA
+on:
+  pull_request:
+    paths:
+      - "qa/international-master/**"
+      - ".github/workflows/international-master-qa.yml"
+  push:
+    branches:
+      - "qa/international-master-unified-20261119"
+    paths:
+      - "qa/international-master/**"
+      - ".github/workflows/international-master-qa.yml"
+jobs:
+  category-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test qa/international-master/qa-international-architecture.test.mjs
