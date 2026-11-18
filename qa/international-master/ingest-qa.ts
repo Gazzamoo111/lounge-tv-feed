@@ -41,7 +41,7 @@ async function loadCredentials(){
  if(!c?.server_url||!c?.username||!c?.password)throw Error("trial_credentials_missing");
  const url=new URL(String(c.server_url));
  if(!["http:","https:"].includes(url.protocol))throw Error("bad_provider_scheme");
- return {base:String(c.server_url).replace(/\\/+$/,""),username:String(c.username),password:String(c.password)};
+ return {base:String(c.server_url).replace(/\/+$/,""),username:String(c.username),password:String(c.password)};
 }
 type ProviderCredentials={base:string;username:string;password:string};
 async function fetchBest(c:ProviderCredentials,action:string,category:string|null){
@@ -147,7 +147,7 @@ Deno.serve(async(req)=>{
    }catch(e){return reply({mode,error:e instanceof Error?e.name:"fetch_error"});}
   }
   const categoryIds=Array.isArray(body?.category_ids)?body.category_ids.map(String):[];
-  if(categoryIds.length<1||categoryIds.length>8||categoryIds.some(x=>!/^\\d{1,7}$/.test(x)))return reply({error:"category_ids_invalid"},400);
+  if(categoryIds.length<1||categoryIds.length>8||categoryIds.some(x=>!/^\d{1,7}$/.test(x)))return reply({error:"category_ids_invalid"},400);
   const unique=[...new Set(categoryIds)];
   const known=await sql`SELECT provider_category_id FROM lounge_sync.international_master_categories_qa_20261119 WHERE provider_category_id=ANY(${unique}::text[])`;
   if(known.length!==unique.length)return reply({error:"category_not_in_trial_snapshot"},400);
