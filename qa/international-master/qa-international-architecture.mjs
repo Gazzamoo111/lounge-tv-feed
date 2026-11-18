@@ -23,7 +23,7 @@ export const masterVisibleOrder = Object.freeze([
   "North Macedonia","Bulgaria","Bosnia","Cyprus","Hungary","Serbia",
   "Slovenia","Malta","Estonia","Belarus","Finland","Georgia","Kosovo",
   "Armenia","Azerbaijan","Balkans",
-  "United Arab Emirates","Saudi Arabia","Israel","Arabic TV","Kurdish TV",
+  "United Arab Emirates","Saudi Arabia","Israel","Iran","Arabic TV","Kurdish TV",
   "South Africa","Nigeria","Egypt","Kenya","Africa",
   "Mexico","Brazil","Argentina","Colombia","Chile","Suriname","Latin America","Caribbean",
   "International TV","Live Events","PPV Source Overflow"
@@ -90,7 +90,7 @@ export function masterRegionGroup(providerCategory) {
  // Some BEST category prefixes are shared by different countries.
  if(prefix==="IR"){
   if(/\bIRELAND\b/.test(group))return "Ireland";
-  if(/\bIRAN\b/.test(group))return "International TV";
+  if(/\bIRAN\b/.test(group))return "Iran";
   return null;
  }
  if(prefix==="CH"){
@@ -143,7 +143,7 @@ const icons = Object.freeze({
   "Belarus":"🇧🇾","Finland":"🇫🇮","Georgia":"🇬🇪","Kosovo":"🇽🇰",
   "Armenia":"🇦🇲","Azerbaijan":"🇦🇿","Balkans":"🌍",
   "United Arab Emirates":"🇦🇪","Saudi Arabia":"🇸🇦",
-  "Israel":"🇮🇱","South Africa":"🇿🇦","Nigeria":"🇳🇬",
+  "Israel":"🇮🇱","Iran":"🇮🇷","South Africa":"🇿🇦","Nigeria":"🇳🇬",
   "Egypt":"🇪🇬","Kenya":"🇰🇪","Africa":"🌍",
   "Arabic TV":"🌍","Kurdish TV":"🌍",
   "Mexico":"🇲🇽","Brazil":"🇧🇷","Argentina":"🇦🇷",
