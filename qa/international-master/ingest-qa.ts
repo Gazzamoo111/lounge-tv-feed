@@ -91,7 +91,7 @@ async function writeCategory(id:string, result:{http:number;elapsed:number;items
     INSERT INTO lounge_sync.international_master_streams_qa_20261119
       (provider_stream_id,provider_category_id,original_name,artwork_url,epg_channel_id,stream_type,seen_at)
     SELECT x.id,x.category_id,x.name,x.logo,x.epg,'live',now()
-    FROM jsonb_to_recordset(${JSON.stringify(batch)}::jsonb)
+    FROM jsonb_to_recordset(${sql.json(batch)}::jsonb)
       AS x(id bigint,category_id text,name text,logo text,epg text)
     ON CONFLICT (provider_stream_id) DO UPDATE SET
       provider_category_id=EXCLUDED.provider_category_id,
