@@ -1239,6 +1239,10 @@ function nuvioGroup(r:any):string{
  if(t==="raw"){
   if(/PPV|ESPN\+|ESPN PLUS|ESPN PLAY|PACKAGE|FLO NETWORK|NCAA|RED BUTTON|TENNIS CHANNEL PLUS/.test(v))return "PPV Source Overflow";
   if(/EVENT|REPLAY|WORLD LIVE SPORTS|CHAMPIONSHIP|FA PLAYER|LEAGUE ONE|LEAGUE TWO|NATIONAL LEAGUE|SKY SPORT\+|CUP GAMES|UEFA/.test(v))return "Live Events";
+  // Retain international national programming inside its provider-supplied region.
+  // Keep the proven NZ/AU/UK/US topical grouping and priority unchanged.
+  const internationalRegion=masterRegionGroup(String(r.subcategory||""));
+  if(internationalRegion && !["New Zealand","Australia","UK TV","US TV"].includes(internationalRegion))return internationalRegion;
   if(/SPORT|RUGBY|CRICKET|FORMULA 1|MOTOGP|GOLF|TENNIS|DAZN|EUROSPORT|NBA NETWORK|NFL NETWORK/.test(v))return "Sports Networks";
   if(/NEWS/.test(v))return "News";
   if(/DOCUMENT|SKYMIX DOCS|LIFESTYLE|DISCOVERY|HISTORY|NATURE|SCIENCE/.test(v))return "Documentaries & Lifestyle";
@@ -1302,6 +1306,7 @@ async function nuvioFullRows():Promise<any[]>{
    if(group!=="Live Events"&&n&&identities.has(key))continue;
    if(group!=="Live Events"&&n)identities.add(key);
    rows.push(item);
+   used.add(id); // A provider stream ID can only appear once across inventory and SEA QA.
   }
   // International Master QA v2. Isolated candidate overlay, no production data edits.
   // Playback still requires BEST entitlements for the supplied customer credentials.
