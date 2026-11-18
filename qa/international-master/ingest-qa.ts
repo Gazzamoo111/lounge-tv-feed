@@ -123,7 +123,7 @@ Deno.serve(async(req)=>{
   if(!(await permit(req)))return reply({error:"not_found"},404);
   const body=await req.json().catch(()=>null);
   const mode=String(body?.mode||"probe");
-  if(!["probe","ingest","account","probe_all"].includes(mode))return reply({error:"mode_not_allowed"},400);
+  if(!["probe","ingest","account","probe_all","epg_probe"].includes(mode))return reply({error:"mode_not_allowed"},400);
   const c=await loadCredentials();
   if(mode==="account"){
    const url=new URL(c.base+"/player_api.php");
@@ -134,6 +134,41 @@ Deno.serve(async(req)=>{
    return reply({status:res.status,active:Number(a?.user_info?.auth)===1,
      account_status:String(a?.user_info?.status||"unknown"),
      expires_at:a?.user_info?.exp_date?new Date(Number(a.user_info.exp_date)*1000).toISOString():null});
+  }
+  if(mode==="epg_probe"){
+   const xmlUrl=new URL(c.base+"/xmltv.php");
+   xmlUrl.searchParams.set("username",c.username);
+   xmlUrl.searchParams.set("password",c.password);
+   let xmlStatus=0,xmlLength:null|string=null,xmlType:null|string=null,xmlKind="unavailable";
+   try{
+     const r=await fetch(xmlUrl,{method:"HEAD",signal:AbortSignal.timeout(14000)});
+     xmlStatus=r.status;xmlLength=r.headers.get("content-length");xmlType=r.headers.get("content-type");
+     xmlKind=r.ok?"head_ok":"head_"+r.status;
+     try{await r.body?.cancel()}catch{}
+   }catch(e){xmlKind=e instanceof Error?e.name:"head_error";}
+   const samples=await sql`
+     SELECT s.provider_stream_id
+     FROM lounge_sync.international_master_selection_qa_20261119 chosen
+     JOIN lounge_sync.international_master_streams_qa_20261119 s USING(provider_stream_id)
+     WHERE s.epg_channel_id<>'' AND chosen.tier='primary'
+     ORDER BY s.provider_stream_id LIMIT 3
+   `;
+   const shortEpg=[];
+   for(const row of samples){
+     const url=new URL(c.base+"/player_api.php");
+     url.searchParams.set("username",c.username);url.searchParams.set("password",c.password);
+     url.searchParams.set("action","get_short_epg");
+     url.searchParams.set("stream_id",String(row.provider_stream_id));
+     url.searchParams.set("limit","4");
+     try{
+       const res=await fetch(url,{signal:AbortSignal.timeout(12000),headers:{Accept:"application/json"}});
+       const data=await res.json().catch(()=>null);
+       shortEpg.push({stream_id:Number(row.provider_stream_id),http_status:res.status,
+         programme_count:Array.isArray(data?.epg_list)?data.epg_list.length:0,
+         response_valid:typeof data==="object"&&data!==null});
+     }catch(e){shortEpg.push({stream_id:Number(row.provider_stream_id),error:e instanceof Error?e.name:"fetch_error"});}
+   }
+   return reply({mode,xmltv:{status:xmlStatus,content_length:xmlLength,content_type:xmlType,kind:xmlKind},short_epg:shortEpg});
   }
   if(mode==="probe_all"){
    const url=new URL(c.base+"/player_api.php");
