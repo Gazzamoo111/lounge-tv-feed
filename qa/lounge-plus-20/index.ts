@@ -1052,14 +1052,23 @@ async function staticShortEpg(epgId:string,limit:number,externalId:number){
         }
       }catch{ /* Existing shared files remain available during database recovery. */ }
       if(!list){
-      const r=await fetch(LOUNGE_SHORT_EPG_BASE+"/"+key+".json",{
-        headers:{Accept:"application/json","User-Agent":"LoungeTV-EPG-Short/1.0"},
-        signal:AbortSignal.timeout(8000)
-      });
-      if(!r.ok)return null;
-      const body=await r.json().catch(()=>null);
-      list=Array.isArray(body?.epg_listings)?body.epg_listings:[];
-      shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});
+        const bases=[LOUNGE_SHORT_EPG_BASE];
+        if(Deno.env.get("LOUNGE_BULK_EPG_ENABLED")==="1"){
+          bases.push(LOUNGE_SHORT_EPG_BASE.replace(/\/short$/,"/bulk/short"));
+        }
+        for(const base of bases){
+          const r=await fetch(base+"/"+key+".json",{
+            headers:{Accept:"application/json","User-Agent":"LoungeTV-EPG-Short/1.0"},
+            signal:AbortSignal.timeout(8000)
+          }).catch(()=>null);
+          if(!r?.ok)continue;
+          const body=await r.json().catch(()=>null);
+          if(body?.epg_id!==epgId||!Array.isArray(body.epg_listings)||
+             !body.epg_listings.some((x:any)=>Number(x.stop_timestamp)>Date.now()/1000))continue;
+          list=body.epg_listings;
+          shortEpgCache.set(key,{until:Date.now()+10*60*1000,list:list||[]});
+          break;
+        }
       }
     }catch{return null;}
   }
@@ -1765,8 +1774,11 @@ async function releaseShortEpg(base:string,u:string,p:string,externalId:number,l
   if(externalId>=NUVIO_STREAM_BASE){
     const mapped=(await nuvioFullRows()).find((row:any)=>Number(row.external_id)===externalId);
     if(!mapped)return [];
-    const epgId=effectiveLiveEpgId(mapped);
+    const epgId=effectiveLiveEpgId(mapped)||(
+      Deno.env.get("LOUNGE_BULK_EPG_ENABLED")==="1"?"ltv-"+externalId:""
+    );
     if(!epgId)return [];
+    // Keep the short guide keyed to the same stable ID advertised by M3U.
     const existing=await staticShortEpg(epgId,limit,externalId);
     if(existing&&existing.length)return existing;
     const sky=await skyNzShortEpg(epgId,limit,externalId);
@@ -1787,7 +1799,10 @@ async function releaseShortEpg(base:string,u:string,p:string,externalId:number,l
     const aliasGuide=await staticShortEpg(aliasGuideId,limit,externalId);
     if(aliasGuide&&aliasGuide.length)return aliasGuide;
   }
-  const staticGuide=await staticShortEpg(epgId,limit,externalId);
+  const guideKey=epgId||(
+    Deno.env.get("LOUNGE_BULK_EPG_ENABLED")==="1"?"ltv-"+externalId:""
+  );
+  const staticGuide=await staticShortEpg(guideKey,limit,externalId);
   if(staticGuide&&staticGuide.length)return staticGuide;
   const nzSkyGuide=await skyNzShortEpg(epgId,limit,externalId);
   if(nzSkyGuide&&nzSkyGuide.length)return nzSkyGuide;

@@ -12,6 +12,10 @@ The replay combined 3,003 admitted source-bound rows, 16,140 BEST inventory rows
 
 International Regional v4 remains separate. Its shared fallback was measured in the launch audit. Its private compiled guide coverage remains unmeasured. Recover NZ/AU v37 and Plus v5 via the Phase 1 manifest and retain the pre-release guide artifact as a separate rollback reference.
 
+## Bulk EPG candidate, 20 November 2026 NZDT
+
+[Feed #15](https://github.com/Gazzamoo111/lounge-tv-feed/pull/15) and [player #80](https://github.com/Gazzamoo111/lounge-tv-player/pull/80) now include the aggregate generator, guarded publishing, bulk guide selection and eligible short-guide retrieval. Authenticated full-catalogue evidence confirms gains of 333 NZ/AU rows, 333 Plus rows and 1,134 International rows with both current and next programmes, using the actual compiled International baseline. The shared and private compiled candidates contain 101,268 and 254,247 programme records respectively. No candidate source or data was deployed. See the [bulk guide evidence and promotion procedure](BULK_EPG_RELEASE.md).
+
 ## Serving paths
 
 | Path | Function | Evidence and behaviour |
