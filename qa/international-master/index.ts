@@ -31,6 +31,8 @@ const sql=postgres(dbUrl,{prepare:false,max:1,idle_timeout:5,connect_timeout:10}
 
 const JSON_HEADERS={"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Access-Control-Allow-Origin":"*"};
 const xmlEsc=(s:unknown)=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
+// M3U attributes are not XML. Keep ampersands in category labels literal.
+const m3uAttr=(s:unknown)=>String(s??"").replace(/[\r\n]+/g," ").replace(/"/g,"&quot;");
 const slug=(s:unknown)=>String(s??"").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"other";
 const epoch=(v:unknown)=>{ if(!v)return null; const n=new Date(String(v)).getTime(); return Number.isFinite(n)?Math.floor(n/1000):null; };
 const b64=(s:unknown)=>btoa(unescape(encodeURIComponent(String(s??""))));
@@ -1751,7 +1753,7 @@ async function releaseM3u(u:string,p:string,url:URL){
     const group=labels[nuvioGroup(r)]||nuvioGroup(r);
     const tvg=String(effectiveLiveEpgId(r)||("ltv-"+r.external_id));
     const display=String(r.__worldDisplay||worldDisplayName(r,nuvioLegacyGroup(r)));
-    lines.push(`#EXTINF:-1 channel-id="ltv-${r.external_id}" tvg-id="${xmlEsc(tvg)}" tvg-logo="${xmlEsc(r.logo_url||"")}" tvg-chno="${no++}" group-title="${xmlEsc(group)}",${display}`);
+    lines.push(`#EXTINF:-1 channel-id="ltv-${r.external_id}" tvg-id="${xmlEsc(tvg)}" tvg-logo="${xmlEsc(r.logo_url||"")}" tvg-chno="${no++}" group-title="${m3uAttr(group)}",${display}`);
     const nz=nzSourceForBinding(r.provider_name,r.provider_stream_id);
     if(nz) lines.push(...nzPlaylistLines(nz));
     else lines.push(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(r.external_id)+"."+String(r.source_format||"ts"));
