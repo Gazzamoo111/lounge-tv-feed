@@ -6,6 +6,7 @@ import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
 import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaAuWrongGuide } from "./qa-au-integrity.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
+import { regionalSkyPreferredSource } from "./qa-sky-regional-preferred.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
@@ -1341,6 +1342,8 @@ async function nuvioFullRows():Promise<any[]>{
   rows.splice(0,rows.length,...auVisible);
   // Customer-facing NZ TV cleanup. Never alter tested stream IDs or TVNZ DRM.
   rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioLegacyGroup));
+  // Trial QA: change backing sources only where BEST returned valid TS bytes.
+  for(let i=0;i<rows.length;i++)rows[i]=regionalSkyPreferredSource(rows[i]);
   // QA v29: strip the provably wrong Ten->10 Bold guide in the customer list.
   for(const row of rows)if(qaAuWrongGuide(row))row.epg_id="";
   // Keep confirmed provider EPG ID conflicts from reaching customers.
@@ -1584,7 +1587,7 @@ async function releaseLivePlayback(externalId:number){
     where i.item_kind='live' and i.external_id=${externalId}
     limit 1
   `;
-  return rows.length?qaSkySwapPrimary(rows[0]):null;
+  return rows.length?regionalSkyPreferredSource(qaSkySwapPrimary(rows[0])):null;
 }
 async function releaseMoviePlayback(externalId:number){
   const rel=await activeRelease(); if(!rel)return null;
