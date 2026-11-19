@@ -1976,11 +1976,16 @@ Deno.serve(async(req)=>{
     ]);
     const verified=new Set(current.map((x:any)=>String(x.epg_id)));
     const mapping=new Map(matches.map((x:any)=>[Number(x.provider_stream_id),x]));
-    const stats={visible:rows.length,current_shared_guide:0,new_qa_candidate:0,needs_review:0};
+    const stats={visible:rows.length,permanent_candidates:0,excluded_unscheduled:0,current_shared_guide:0,new_qa_candidate:0,needs_review:0};
     const counts=new Map<string,{channels:number,current_guide:number,new_qa_candidate:number,review:number}>();
     for(const item of rows){
       const group=nuvioGroup(item),r=counts.get(group)||{channels:0,current_guide:0,new_qa_candidate:0,review:0};
       r.channels++;
+      // Event banks and themed 24/7 streams lack regular linear schedules.
+      // Do not make synthetic placeholders count toward permanent-channel EPG coverage.
+      const permanent=!group.startsWith("24/7")&&group!=="Live Events"&&group!=="PPV Source Overflow";
+      if(!permanent){stats.excluded_unscheduled++;counts.set(group,r);continue;}
+      stats.permanent_candidates++;
       const liveGuide=verified.has(String(effectiveLiveEpgId(item)||""));
       const m=mapping.get(Number(item.provider_stream_id));
       if(liveGuide){stats.current_shared_guide++;r.current_guide++;}
@@ -1990,7 +1995,7 @@ Deno.serve(async(req)=>{
     }
     const groups=NUVIO_VISIBLE_ORDER.filter(x=>counts.has(x)).map(x=>({name:x,...counts.get(x)}));
     return json({scope:"International Master QA only",status:"metadata_only_not_device_epg",
-      ...stats,groups,warning:"Additional QA candidates require programme delivery and licensing review. Do not count them as EPG displayed in Nuvio."});
+      ...stats,groups,warning:"Current shared matches are IDs with programme rows, not validation of programme titles. QA candidates require programme delivery and redistribution permission; never count 24/7 or PPV placeholders as permanent EPG coverage."});
   }
   if(action==="qa_summary"){
     const rows=await nuvioFullRows(),labels=nuvioVisibleLabels(rows);
