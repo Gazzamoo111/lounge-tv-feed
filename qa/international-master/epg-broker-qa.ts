@@ -78,6 +78,64 @@ Deno.serve(async(req)=>{
   const url=new URL(req.url);
   const path=url.pathname.split("/").filter(Boolean).slice(-1)[0]||"";
   try{
+    if(path==="recent-playback-audit"&&req.method==="GET"){
+      // Diagnostic only. Fixed IDs selected from actual QA playback attempts.
+      // No stream URLs, subscriber credentials, tokens or video bytes returned.
+      const samples=[
+        {region:"Japan",channel:"Star Channel 1",id:1432217},
+        {region:"Japan",channel:"NHK BS",id:1432231},
+        {region:"Japan",channel:"MTV Japan",id:1432225},
+        {region:"Japan",channel:"NHK",id:763888},
+        {region:"India",channel:"Colors",id:163527},
+        {region:"India",channel:"Aastha Bhajan",id:156041},
+        {region:"India",channel:"9X Jalwa",id:156123},
+        {region:"India",channel:"& Flix",id:155990},
+        {region:"Control",channel:"Sky Sport 1 HD",id:636918}
+      ];
+      const c=await credentials();
+      async function probe(item:{region:string;channel:string;id:number}){
+        const stream=c.base+"/live/"+encodeURIComponent(c.username)+"/"+
+          encodeURIComponent(c.password)+"/"+item.id+".ts";
+        const start=Date.now();
+        const ctrl=new AbortController();
+        const timer=setTimeout(()=>ctrl.abort(),12000);
+        try{
+          const r=await fetch(stream,{
+            headers:{"Range":"bytes=0-4095","User-Agent":"LoungeTV-BEST-ReadOnly-QA/1.0"},
+            signal:ctrl.signal
+          });
+          let first=new Uint8Array(0);
+          if(r.body){
+            const reader=r.body.getReader();
+            try{
+              const x=await reader.read();
+              if(!x.done&&x.value)first=x.value.slice(0,4096);
+            }finally{try{await reader.cancel()}catch{}}
+          }
+          const ts=first.length>=377&&first[0]===0x47&&first[188]===0x47&&first[376]===0x47;
+          const hls=new TextDecoder().decode(first.slice(0,12)).startsWith("#EXTM3U");
+          return {region:item.region,channel:item.channel,id:item.id,http:r.status,
+            bytes:first.byteLength,valid_ts_sample:ts,hls_manifest:hls,
+            elapsed_ms:Date.now()-start};
+        }catch(e){
+          return {region:item.region,channel:item.channel,id:item.id,http:0,bytes:0,
+            valid_ts_sample:false,hls_manifest:false,
+            error:e instanceof Error?e.name:"request_error",elapsed_ms:Date.now()-start};
+        }finally{clearTimeout(timer);}
+      }
+      const results:any[]=[];
+      // Keep requests low and deterministic to avoid provider throttling.
+      for(let i=0;i<samples.length;i+=3)
+        results.push(...await Promise.all(samples.slice(i,i+3).map(probe)));
+      return json({
+        scope:"recent_international_qa_playback_attempts",
+        method:"first_bytes_range_0_4095",
+        video_usable_in_nuvio_verified:false,
+        results,
+        samples_with_ts:results.filter(x=>x.valid_ts_sample).length,
+        samples_with_no_data:results.filter(x=>!x.valid_ts_sample&&!x.hls_manifest).length
+      });
+    }
     if(path==="regional-final-check"&&req.method==="GET"){
       // OIDC only: test four actual Sky redirects and new XMLTV response.
       const c=await credentials();
