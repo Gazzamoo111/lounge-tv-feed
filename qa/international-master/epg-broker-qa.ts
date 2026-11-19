@@ -166,6 +166,37 @@ Deno.serve(async(req)=>{
       if(!resp.ok)return json({error:"storage_upload_failed",status:resp.status},502);
       return json({stored:true,status:resp.status});
     }
+    if(path==="gateway-probe"&&req.method==="GET"){
+      // Check actual customer-facing QA EPG, without storing its large body
+      // in Postgres or returning credentials in diagnostic results.
+      const c=await credentials();
+      const endpoint=new URL(SUPABASE_URL+"/functions/v1/lounge-international-master-v4-qa/xmltv.php");
+      endpoint.searchParams.set("username",c.username);
+      endpoint.searchParams.set("password",c.password);
+      const started=Date.now();
+      const resp=await fetch(endpoint,{
+        headers:{"Accept":"application/xml,text/xml,*/*","Accept-Encoding":"gzip"},
+        signal:AbortSignal.timeout(25000)
+      });
+      const scope=resp.headers.get("x-lounge-guide-scope");
+      const contentType=resp.headers.get("content-type")||"";
+      const encoding=resp.headers.get("content-encoding")||"";
+      let sample=new Uint8Array(0);
+      if(resp.body){
+        const reader=resp.body.getReader();
+        const first=await reader.read();
+        if(!first.done&&first.value)sample=first.value.slice(0,2048);
+        try{await reader.cancel()}catch{}
+      }
+      const head=new TextDecoder().decode(sample.slice(0,160));
+      const looksXml=head.startsWith('<?xml')||head.startsWith('<tv');
+      const looksGzip=sample[0]===31&&sample[1]===139;
+      return json({gateway_http:resp.status,scope,content_type:contentType,
+        content_encoding:encoding,sampled_bytes:sample.length,
+        stream_signature_valid:looksXml||looksGzip,
+        compiled_private_qa:resp.ok&&scope==="compiled-private-qa"&&(looksXml||looksGzip),
+        elapsed_ms:Date.now()-started,production_untouched:true});
+    }
     if(path==="status"&&req.method==="GET"){
       const resp=await fetch(privateStorage("HEAD"),{
         method:"HEAD",headers:storageHeaders(),signal:AbortSignal.timeout(12000)});
