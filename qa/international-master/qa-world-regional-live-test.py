@@ -133,6 +133,11 @@ def main():
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
             sky=list(pool.map(sky_probe,range(1,10)))
         print("SKY_SOURCE_PROBE "+json.dumps(sky,sort_keys=True))
+        final=json.loads(fetch("regional-final-check",limit=10000))
+        print("REGIONAL_FINAL_CHECK "+json.dumps(final,sort_keys=True))
+        if not final.get("all_passed",False):
+            raise ValueError("live regional Sky redirects or XMLTV delivery not verified")
+
     except ValueError as exc:
         # Controlled validation errors never contain credentials or full URLs.
         print("REGIONAL_QA_FAILED contract: "+str(exc),file=sys.stderr)
