@@ -1967,6 +1967,31 @@ Deno.serve(async(req)=>{
   // Third-party players receive the same stable Xtream-compatible flat category list, while
   // the Lounge Android app re-groups those names into its richer section accordion.
   const loungeApp=true;
+  if(action==="qa_epg_summary"){
+    const rows=await nuvioFullRows();
+    const [current,matches]=await Promise.all([
+      sql`SELECT epg_id FROM lounge_delivery.shared_epg_channels WHERE programme_count>0 AND expires_at>now()`,
+      sql`SELECT provider_stream_id,decision,basis,proposed_epg_id,last_programme_end
+          FROM lounge_sync.international_epg_matches_qa_20261119`
+    ]);
+    const verified=new Set(current.map((x:any)=>String(x.epg_id)));
+    const mapping=new Map(matches.map((x:any)=>[Number(x.provider_stream_id),x]));
+    const stats={visible:rows.length,current_shared_guide:0,new_qa_candidate:0,needs_review:0};
+    const counts=new Map<string,{channels:number,current_guide:number,new_qa_candidate:number,review:number}>();
+    for(const item of rows){
+      const group=nuvioGroup(item),r=counts.get(group)||{channels:0,current_guide:0,new_qa_candidate:0,review:0};
+      r.channels++;
+      const liveGuide=verified.has(String(effectiveLiveEpgId(item)||""));
+      const m=mapping.get(Number(item.provider_stream_id));
+      if(liveGuide){stats.current_shared_guide++;r.current_guide++;}
+      else if(m?.decision==="qa_accepted"&&new Date(String(m.last_programme_end||"")).getTime()>Date.now()){stats.new_qa_candidate++;r.new_qa_candidate++;}
+      else if(m?.decision==="review_required"){stats.needs_review++;r.review++;}
+      counts.set(group,r);
+    }
+    const groups=NUVIO_VISIBLE_ORDER.filter(x=>counts.has(x)).map(x=>({name:x,...counts.get(x)}));
+    return json({scope:"International Master QA only",status:"metadata_only_not_device_epg",
+      ...stats,groups,warning:"Additional QA candidates require programme delivery and licensing review. Do not count them as EPG displayed in Nuvio."});
+  }
   if(action==="qa_summary"){
     const rows=await nuvioFullRows(),labels=nuvioVisibleLabels(rows);
     const gids=await sql`SELECT epg_id FROM lounge_delivery.shared_epg_channels WHERE expires_at>now() AND programme_count>0`;
