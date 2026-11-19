@@ -80,7 +80,7 @@ def assert_equivalent(legacy,regional):
     if set(old)!=set(new):raise ValueError("catalogue IDs differ")
     group_list=list(new_groups)
     if len(group_list)!=23:raise ValueError("regional category count mismatch: "+str(len(group_list)))
-    if not all(any(x in g for g in EXPECTED) for x in group_list):
+    if not all(any(expected in group for expected in EXPECTED) for group in group_list):
         raise ValueError("unknown regional group label(s): "+json.dumps([g for g in group_list if not any(x in g for x in EXPECTED)],ensure_ascii=False))
     if len(old)<14000:raise ValueError("too few channels")
     for k in old:
