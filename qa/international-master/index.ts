@@ -11,7 +11,6 @@ import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
 import { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";
 import { masterVisibleOrder, masterSeaGroups, masterSeaGroup, masterRegionGroup, masterCategoryLabels } from "./qa-international-architecture.mjs";
-import { qaFilteredBestXmltv,qaGuideScanner,qaGuideScanChunk } from "./qa-best-epg-stream.mjs";
 import postgres from "npm:postgres@3.4.7";
 
 // LOUNGE_SUPAVISOR_TRANSACTION_POOL
@@ -1018,6 +1017,7 @@ function shortEpgFileKey(raw:string){
   return (h>>>0).toString(16).padStart(8,"0");
 }
 function effectiveLiveEpgId(row:any){
+  if(row?.qaEpgRejected)return "";
   // Ten is not 10 Bold. Do not display another network’s programmes.
   if(qaAuWrongGuide(row))return "";
   const supplied=String(row?.epg_id||"").trim();
@@ -1338,14 +1338,14 @@ async function nuvioFullRows():Promise<any[]>{
   rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));
   // QA v29: strip the provably wrong Ten->10 Bold guide in the customer list.
   for(const row of rows)if(qaAuWrongGuide(row))row.epg_id="";
-  // Do not let known provider-ID mistakes display another channel's guide.
-  const badGuide=await sql`SELECT provider_stream_id,original_epg_id
+  // Keep confirmed provider EPG ID conflicts from reaching customers.
+  const conflicts=await sql`SELECT provider_stream_id,original_epg_id
     FROM lounge_sync.international_epg_matches_qa_20261119
     WHERE decision='review_required'`;
-  const conflicts=new Map(badGuide.map((x:any)=>[Number(x.provider_stream_id),String(x.original_epg_id||"")]));
+  const rejectIds=new Map(conflicts.map((x:any)=>[Number(x.provider_stream_id),String(x.original_epg_id||"")]));
   for(const row of rows){
-    const conflict=conflicts.get(Number(row.provider_stream_id));
-    if(conflict&&conflict===String(row.epg_id||"")){
+    const wrong=rejectIds.get(Number(row.provider_stream_id));
+    if(wrong&&wrong===String(row.epg_id||"")){
       row.epg_id="";row.qaEpgRejected=true;
     }
   }
@@ -1360,6 +1360,7 @@ async function nuvioFullRows():Promise<any[]>{
     const ids=new Set(available.map((x:any)=>String(x.epg_id)));
     for(const id of ids) currentGuideIds.add(id);
     for(const row of rows){
+      if(row.qaEpgRejected)continue;
       if(ids.has(String(row.epg_id||"")))continue;
       const alias=qaEpgAlias(nuvioGroup(row),String(row.display_name||""));
       if(alias&&ids.has(alias))row.epg_id=alias;
@@ -1747,64 +1748,79 @@ async function releaseM3u(u:string,p:string,url:URL){
  * the selected catalogue. Stream XMLTV in batches; avoid pulling the 90 MB
  * production guide into this free-tier Edge Function's memory.
  */
-async function internationalQaXmltv(req:Request,u:string,p:string,providerBase:string){
+async function compiledPrivateQaXmltv(req:Request){
+  // Private file produced off-worker; no schedule parsing on the 2s CPU tier.
+  const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
+  if(!key)return null;
+  const source=SUPABASE_URL+
+    "/storage/v1/object/authenticated/loung" +
+    "e-international-epg-qa/international-master.xml.gz";
+  let response:Response;
+  try{
+    response=await fetch(source,{headers:{
+      "Authorization":"Bearer "+key,"apikey":key,"Accept":"application/gzip"
+    },signal:AbortSignal.timeout(12000)});
+  }catch{return null;}
+  if(!response.ok||!response.body){
+    try{await response.body?.cancel()}catch{}
+    return null;
+  }
+  const time=Date.parse(response.headers.get("last-modified")||"");
+  if(Number.isFinite(time)&&Date.now()-time>48*3600000){
+    try{await response.body.cancel()}catch{}
+    return null;
+  }
+  const acceptsGzip=/\bgzip\b/i.test(req.headers.get("accept-encoding")||"");
+  const headers:Record<string,string>={
+    "Content-Type":"application/xml; charset=utf-8",
+    "Cache-Control":"private, max-age=300",
+    "Access-Control-Allow-Origin":"*",
+    "X-Lounge-Guide-Scope":"compiled-private-qa"
+  };
+  if(acceptsGzip)headers["Content-Encoding"]="gzip";
+  const body=acceptsGzip?response.body:response.body.pipeThrough(new DecompressionStream("gzip"));
+  return new Response(body,{status:200,headers});
+}
+
+async function internationalQaXmltv(req:Request){
  const rows=await nuvioFullRows();
  const candidateIds=[...new Set(rows.map((r:any)=>String(effectiveLiveEpgId(r)||"")).filter(Boolean))];
  const eligible=await sql`
    SELECT epg_id FROM lounge_delivery.shared_epg_channels
-   WHERE epg_id=any(${candidateIds}::text[]) AND programme_count>0 AND expires_at>now()
-   ORDER BY epg_id`;
- const sharedIds=eligible.map((x:any)=>String(x.epg_id));
- const guideUrl=new URL(providerBase+"/xmltv.php");
- guideUrl.searchParams.set("username",u);
- guideUrl.searchParams.set("password",p);
- let providerBody:ReadableStream<Uint8Array>|null=null;
- try{
-   const upstream=await fetch(guideUrl,{headers:{Accept:"application/xml,text/xml,*/*",
-     "User-Agent":"LoungeTV-International-Guide-QA/1.0"},signal:AbortSignal.timeout(130000)});
-   if(upstream.ok&&upstream.body)providerBody=upstream.body;
-   else await upstream.body?.cancel().catch(()=>{});
- }catch{ /* BEST outage must not erase the shared guide. */ }
- const source=providerBody;
- const feed=(async function*(){
-   yield '<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Lounge TV International QA">\n';
-   if(source){
-     try{
-       for await(const block of qaFilteredBestXmltv(source,rows,effectiveLiveEpgId,sharedIds))yield block;
-     }catch{
-       // Filter emits only complete XML elements; shared guide can follow safely.
-       try{await source.cancel()}catch{}
-     }
-   }
-   for(let start=0;start<sharedIds.length;start+=25){
-     const batch=sharedIds.slice(start,start+25);
-     const parts=await sql`SELECT xmltv FROM lounge_delivery.shared_epg_channels
-       WHERE epg_id=any(${batch}::text[]) AND programme_count>0 AND expires_at>now()
-       ORDER BY epg_id`;
-     for(const item of parts)if(item.xmltv)yield String(item.xmltv)+"\n";
-   }
-   yield "</tv>\n";
- })()[Symbol.asyncIterator]();
+   WHERE epg_id=any(${candidateIds}::text[])
+     AND programme_count>0 AND expires_at>now()
+   ORDER BY epg_id
+ `;
+ const ids=eligible.map((x:any)=>String(x.epg_id));
  const encoder=new TextEncoder();
  const xml=new ReadableStream<Uint8Array>({
-   async pull(controller){
+   async start(controller){
      try{
-       const part=await feed.next();
-       if(part.done)controller.close();
-       else controller.enqueue(encoder.encode(part.value));
+       controller.enqueue(encoder.encode('<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Lounge TV International QA">\n'));
+       for(let start=0;start<ids.length;start+=25){
+         const batch=ids.slice(start,start+25);
+         const parts=await sql`SELECT xmltv FROM lounge_delivery.shared_epg_channels
+           WHERE epg_id=any(${batch}::text[]) AND programme_count>0 AND expires_at>now()
+           ORDER BY epg_id`;
+         for(const p of parts){
+           if(p.xmltv)controller.enqueue(encoder.encode(String(p.xmltv)+"\n"));
+         }
+       }
+       controller.enqueue(encoder.encode("</tv>\n"));
+       controller.close();
      }catch(e){controller.error(e);}
-   },
-   async cancel(){try{await feed.return?.()}catch{}}
+   }
  });
  const canGzip=/\bgzip\b/i.test(req.headers.get("accept-encoding")||"");
  const headers:Record<string,string>={
    "Content-Type":"application/xml; charset=utf-8",
    "Cache-Control":"private, max-age=300",
    "Access-Control-Allow-Origin":"*",
-   "X-Lounge-Guide-Scope":"best-plus-shared-qa"
+   "X-Lounge-Guide-Scope":"selected-qa"
  };
  if(canGzip)headers["Content-Encoding"]="gzip";
- return new Response(canGzip?xml.pipeThrough(new CompressionStream("gzip")):xml,{status:200,headers});
+ return new Response(canGzip?xml.pipeThrough(new CompressionStream("gzip")):xml,
+   {status:200,headers});
 }
 let skyNzShortCache:{until:number,body:string}|null=null;
 async function skyNzShortEpg(epgId:string,limit:number,externalId:number){
@@ -1978,7 +1994,7 @@ Deno.serve(async(req)=>{
     const auth=await accountState(base,u,p);
     if(!auth.ok)return json({error:"not_allowed"},403);
     if(RECOVERY_MODE)return await providerXmltv(base,u,p);
-    return await internationalQaXmltv(req,u,p,base);
+    return await compiledPrivateQaXmltv(req)||await internationalQaXmltv(req);
   }
   if(parts[0]==="get.php"){const {u,p}=credentials(url,parts);const auth=await accountState(base,u,p);if(!auth.ok)return json({error:"not_allowed"},403);if(RECOVERY_MODE)return await providerM3u(base,u,p);return await releaseM3u(u,p,url);}
 
@@ -1998,45 +2014,21 @@ Deno.serve(async(req)=>{
   // Third-party players receive the same stable Xtream-compatible flat category list, while
   // the Lounge Android app re-groups those names into its richer section accordion.
   const loungeApp=true;
-  if(action==="qa_epg_live_probe"){
-    // Account-authenticated read-only diagnostic. No programme contents stored.
-    const rows=await nuvioFullRows();
-    const scan=qaGuideScanner(rows,effectiveLiveEpgId,[]);
-    const xmlUrl=new URL(base+"/xmltv.php");
-    xmlUrl.searchParams.set("username",u);
-    xmlUrl.searchParams.set("password",p);
-    let status=0,bytes=0,matchedXmlBlocks=0;
+  if(action==="qa_compiled_epg_status"){
+    const key=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
+    if(!key)return json({available:false});
     try{
-      const upstream=await fetch(xmlUrl,{headers:{Accept:"application/xml,text/xml,*/*",
-        "User-Agent":"LoungeTV-International-EPG-Probe/1.0"},signal:AbortSignal.timeout(45000)});
-      status=upstream.status;
-      if(!upstream.ok||!upstream.body){
-        await upstream.body?.cancel().catch(()=>{});
-        return json({mode:"qa_best_epg_probe",provider_http:status,error:"provider_not_available"},502);
-      }
-      const reader=upstream.body.getReader(),decoder=new TextDecoder();
-      try{
-        for(let i=0;i<3000&&bytes<8000000;i++){
-          const part=await reader.read();
-          if(part.done)break;
-          bytes+=part.value.byteLength;
-          matchedXmlBlocks+=qaGuideScanChunk(scan,decoder.decode(part.value,{stream:true})).length;
-        }
-      }finally{try{await reader.cancel()}catch{}}
-      return json({
-        mode:"qa_best_epg_probe",provider_http:status,scanned_bytes:bytes,
-        selected_epg_ids:scan.selected.size,correct_channel_ids:scan.valid.size,
-        contradictory_channel_ids:scan.conflicting.size,
-        current_programme_channels:scan.programmes.size,
-        current_programme_blocks:[...scan.programmes.values()].reduce((a,b)=>a+b,0),
-        programme_or_channel_blocks:matchedXmlBlocks,
-        full_guide_scanned:false,
-        warning:"8MB source sample only; these are real BEST programmes not inferred coverage"
+      const resp=await fetch(SUPABASE_URL+
+        "/storage/v1/object/authenticated/lounge-international-epg-qa/international-master.xml.gz",{
+        method:"HEAD",headers:{"Authorization":"Bearer "+key,"apikey":key},
+        signal:AbortSignal.timeout(10000)
       });
-    }catch(err){
-      return json({mode:"qa_best_epg_probe",provider_http:status,
-        scanned_bytes:bytes,error:err instanceof Error?err.name:"provider_stream_error"},502);
-    }
+      return json({scope:"International Master QA only",
+        available:resp.ok,storage_http:resp.status,
+        gzip_bytes:Number(resp.headers.get("content-length")||0),
+        last_modified:resp.headers.get("last-modified")||null,
+        device_verified:false,production_unchanged:true});
+    }catch{return json({available:false,storage_http:0});}
   }
   if(action==="qa_epg_summary"){
     const rows=await nuvioFullRows();
