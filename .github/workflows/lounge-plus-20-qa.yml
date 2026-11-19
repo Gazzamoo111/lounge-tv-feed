@@ -13,3 +13,11 @@ jobs:
         with:
           node-version: "22"
       - run: node --test qa/lounge-plus-20/*.test.mjs
+      - name: Verify deployed QA function boots independently
+        shell: bash
+        run: |
+          code=$(curl --silent --show-error --max-time 25 --output /tmp/plus-response.json --write-out '%{http_code}' \
+            'https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-plus-qa/__qa-route-not-found')
+          test "$code" = 404
+          grep -q 'not_found' /tmp/plus-response.json
+
