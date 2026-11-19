@@ -133,6 +133,10 @@ def main():
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
             sky=list(pool.map(sky_probe,range(1,10)))
         print("SKY_SOURCE_PROBE "+json.dumps(sky,sort_keys=True))
+    except ValueError as exc:
+        # Controlled validation errors never contain credentials or full URLs.
+        print("REGIONAL_QA_FAILED contract: "+str(exc),file=sys.stderr)
+        raise SystemExit(1)
     except Exception as exc:
         print("REGIONAL_QA_FAILED "+type(exc).__name__+"; provider URLs redacted",
               file=sys.stderr)
