@@ -309,8 +309,8 @@ Deno.serve(async(req)=>{
         xmltv=head.startsWith("<?xml")||head.startsWith("<tv");
         html=head.toLowerCase().startsWith("<!doctype html")||head.toLowerCase().startsWith("<html");
       }
-      const channel_tags=(sample.match(/<channel\\b/g)||[]).length;
-      const programme_tags=(sample.match(/<programme\\b/g)||[]).length;
+      const channel_tags=(sample.match(/<channel\b/g)||[]).length;
+      const programme_tags=(sample.match(/<programme\b/g)||[]).length;
       return reply({mode,http_status:res.status,content_type:res.headers.get("content-type"),
         reported_length:res.headers.get("content-length"),sample_bytes:bytes,magic,eof,
         xmltv,html,channel_tags,programme_tags,elapsed_ms:Date.now()-start});
