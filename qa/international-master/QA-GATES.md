@@ -133,3 +133,26 @@
    provider before shipping the data to paying subscribers.
 5. Exclude 24/7 and event/PPV placeholders from the 80% permanent-channel
    coverage denominator. **Current results do NOT meet 80%.**
+
+## Free-tier BEST guide audit runner staged (19 Nov 2026)
+
+- Added `qa/international-master/best-epg-audit.py` to parse the complete
+  BEST XMLTV **on a GitHub-hosted runner**, not in a 256 MB Supabase Edge worker.
+  Parsing is bounded and streaming; programme titles, stream URLs and
+  customer credentials are never put in the audit output.
+- The audit checks actual programme freshness and **requires both the EPG ID
+  and normalised channel identity to match**. Wrong IDs such as France 24
+  pointing to 01TV are held, not auto-assigned.
+- Optional `--persist` stores only provider channel identities and programme
+  counts in the existing **isolated QA source-index tables**; it rejects writes
+  when PostgreSQL reaches 494 MiB, preserving headroom below Free's 500 MiB
+  size limit. No title/schedule records are written.
+- The workflow's live BEST audit job is **opt-in**, gated by repository variable
+  `RUN_BEST_EPG_AUDIT=true` and requires GitHub Actions secrets
+  `BEST_XMLTV_URL` and `QA_DATABASE_URL`. Those are not stored in the public
+  repository, and have **not** been configured or used in this task.
+- Confirmed GitHub Actions run `44453084695`: existing catalogue contracts
+  **passed**, four new XMLTV unit tests **passed**, provider audit **skipped**.
+- **Actual BEST full-guide coverage remains unmeasured**; neither the QA player
+  XMLTV endpoint nor NZ/AU v36 is changed. Commercial programme-data rights,
+  real Nuvio guide sync and stream playback remain release gates.
