@@ -78,6 +78,47 @@ Deno.serve(async(req)=>{
   const url=new URL(req.url);
   const path=url.pathname.split("/").filter(Boolean).slice(-1)[0]||"";
   try{
+    if(path==="regional-final-check"&&req.method==="GET"){
+      // OIDC only: test four actual Sky redirects and new XMLTV response.
+      const c=await credentials();
+      const expected=[
+        {n:1,external:1895,source:636918},
+        {n:2,external:1896,source:1424317},
+        {n:3,external:1897,source:1424316},
+        {n:9,external:1903,source:636926}
+      ];
+      const routes=await Promise.all(expected.map(async x=>{
+        const dest=SUPABASE_URL+"/functions/v1/lounge-international-regional-qa/live/"+
+          encodeURIComponent(c.username)+"/"+encodeURIComponent(c.password)+"/"+x.external+".ts";
+        try{
+          const r=await fetch(dest,{redirect:"manual",signal:AbortSignal.timeout(15000)});
+          const location=r.headers.get("location")||"";
+          const actual=Number(location.match(/\/(\d+)\.ts(?:$|\?)/)?.[1]||0);
+          try{await r.body?.cancel()}catch{}
+          return {channel:x.n,http:r.status,expected_source:x.source,
+            actual_source:actual,correct:r.status===302&&actual===x.source};
+        }catch(e){return {channel:x.n,http:0,correct:false,
+          error:e instanceof Error?e.name:"fetch_error"};}
+      }));
+      const epgUrl=new URL(SUPABASE_URL+"/functions/v1/lounge-international-regional-qa/xmltv.php");
+      epgUrl.searchParams.set("username",c.username);
+      epgUrl.searchParams.set("password",c.password);
+      let guide:any={http:0,valid:false};
+      try{
+        const r=await fetch(epgUrl,{headers:{"Accept":"application/xml"},
+          signal:AbortSignal.timeout(20000)});
+        const reader=r.body?.getReader();
+        const x=reader?await reader.read():{done:true,value:null};
+        const first=x.value||new Uint8Array(0);
+        const head=new TextDecoder().decode(first.slice(0,140));
+        guide={http:r.status,scope:r.headers.get("x-lounge-guide-scope"),
+          valid:r.status===200&&(head.startsWith("<?xml")||head.startsWith("<tv")||
+            (first[0]===31&&first[1]===139))};
+        try{await reader?.cancel()}catch{}
+      }catch(e){guide={http:0,valid:false,error:e instanceof Error?e.name:"fetch_error"}}
+      return json({regional_qa:true,route_checks:routes,epg:guide,
+        all_passed:routes.every(x=>x.correct)&&guide.valid});
+    }
     if(path==="legacy-playlist"&&req.method==="GET"){
       const c=await credentials();
       const target=new URL(SUPABASE_URL+"/functions/v1/lounge-international-master-v4-qa/get.php");
