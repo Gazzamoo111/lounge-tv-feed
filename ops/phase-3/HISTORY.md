@@ -17,4 +17,9 @@
 - **Authenticated feed, EPG, Nuvio and runtime rollback** Blocked at isolation and approval. No authenticated channel counts, category diffs, EPG coverage or playback outcomes were established. Source recovery pins remain `n` v37, Plus v5 and Regional v4 in the [Phase 1 recovery record](../phase-1/RECOVERY.md).
 - **Deployment and merge** No deployments or merges. Existing draft paths do not match either legacy guide refresh push filter. The regression workflow is read-only. GitHub Pages deployment records show `main` publishing, so an eventual merge to `main` can trigger a Pages rebuild. See [Issue #10](https://github.com/Gazzamoo111/lounge-tv-feed/issues/10).
 
+## 20 November 2026 NZDT | Phase 4A staging preflight blocked
+
+- **Evidence** Protected package digests matched. Read-only source audit and offline replay identified production TVNZ licence links in all three profiles, Plus playback links using the live alias, and a hard-coded production Sky guide call in the XMLTV renderer. The connected workspace lacked access to the QA host, router and Nuvio device.
+- **Gate outcome** No isolated runtime or network verification. No owner staging approval. No deployment, merge or runtime rollback. The [acceptance record](../phase-4/ACCEPTANCE.md#phase-4a-local-staging-preflight) lists host actions and the route bindings requiring review. The Phase 1 source restore pins remain in effect.
+
 For subsequent entries record timestamp, target, manifest digest and source SHA, authorisation, planned and actual changes, automated/authenticated/device results, failures or skips, deployment versions and hashes, rollback reference/result and the Issue #10 and current-state updates.

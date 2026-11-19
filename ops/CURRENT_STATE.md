@@ -56,3 +56,7 @@ The release gate remains closed for promotion. No isolated staging environment h
 Use an unlinked local Supabase stack on a private QA LAN as the no-cost staging candidate. Verify database, Vault, guide storage, cron, route and egress isolation from both the runtime and the Nuvio device before seeking approval for the exact environment and manifest. No staging runtime or authorised capture was exercised in this pass. See the [acceptance audit and Nuvio checklist](phase-4/ACCEPTANCE.md) and [release history](phase-3/HISTORY.md).
 
 Drafts #11–13 contain no serving source or static feed changes. An eventual merge to `main` can still trigger GitHub Pages publishing, as observed for the current `main` SHA. Keep the drafts unmerged pending separate approval and a publishing settings check. Production functions, routes and customer accounts were untouched.
+
+## Phase 4A staging preflight
+
+**Blocked before setup on 20 November 2026 NZDT.** The connected workspace cannot administer or test the physical QA network. Offline replay with a non-production Supabase origin still emitted production TVNZ licence URLs for every profile and production playback URLs for Plus. Source inspection also found a direct production Sky guide call in XMLTV v24. See the [host setup and verified route blockers](phase-4/ACCEPTANCE.md#phase-4a-local-staging-preflight). No candidate was deployed. The pinned production baselines and rollback reference are unchanged.
