@@ -65,3 +65,5 @@ jobs:
             core.exportVariable('LOUNGE_QA_OIDC', token);
       - name: Upload compressed QA guide privately and verify
         run: python qa/international-master/build-best-epg-qa.py upload
+      - name: Verify live Nuvio QA XMLTV delivery
+        run: python qa/international-master/build-best-epg-qa.py probe
