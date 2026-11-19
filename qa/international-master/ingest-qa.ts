@@ -128,7 +128,7 @@ function epgStamp(value:string):number{
  const off=(+m[8]*60 + +m[9])*60000;
  return ms+(m[7]==="+"?-off:off);
 }
-function decodeEpg(v:string){return v.replace(/&amp;/g,"&").replace(/&quot;/g,\"\").replace(/&apos;/g,"\x27").replace(/&lt;/g,"<").replace(/&gt;/g,">").trim().slice(0,200);}
+function decodeEpg(v:string){return v.replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&lt;/g,'<').replace(/&gt;/g,'>').trim().slice(0,200);}
 async function indexCountry(country:string){
  const valid=new Set(["nz","au","gb","us","ca","fr","de","in","id","my","sg","nl","it","es","pt","br","za","mx","pl","il","tr"]);
  if(!valid.has(country))return {error:"country_not_allowlisted"};
