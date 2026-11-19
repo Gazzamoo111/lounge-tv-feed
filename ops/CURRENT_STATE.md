@@ -1,48 +1,38 @@
-# Lounge TV Playlist and EPG: Current State
+# Lounge TV Playlist and EPG current state
 
-Last metadata check: 2026-11-20 (NZ date).
-Status: INITIAL INVENTORY ONLY. This document does NOT certify playlist playback, current domain routing, code parity or production readiness.
+Audit date 20 November 2026 NZDT. Tracking [Issue #10](https://github.com/Gazzamoo111/lounge-tv-feed/issues/10). Supabase project `liqocisegeqzbyuqloql` reported healthy with 71 installed Edge Functions. This audit covers the 15 bundles in the [release manifest](phase-1/release-manifest.json).
 
-## Infrastructure
-- GitHub: Gazzamoo111/lounge-tv-feed (public), default branch main.
-- Supabase project: liqocisegeqzbyuqloql.
-- Supabase list returned 71 Edge Functions. This is a count of installed functions, not evidence that all are in use.
-- Deployment versions observed in Supabase list_edge_functions on 2026-11-20:
-  - n: v37, ACTIVE.
-  - lounge-core-xtream: v52, ACTIVE.
-  - lounge-international-master-qa: v3, ACTIVE.
-  - lounge-international-master-v4-qa: v15, ACTIVE.
-  - lounge-international-epg-broker-qa: v8, ACTIVE.
-  - lounge-core-epg: v1, ACTIVE.
-- ACTIVE means the function is deployed; it does not confirm which public domain routes to it or whether it works end to end.
+Phase 1 established a recoverable source baseline and the routes below. Phase 2 offline checks can begin. A release gate still needs authenticated feed exports, measured playback and guide baselines, and a rollback rehearsal against an isolated environment.
 
-## Known source and automation
-- GitHub README describes a legacy/October pipeline and cannot be trusted as current deployment documentation.
-- .github/workflows/refresh-fast-epg.yml runs hourly at minute 7, rebuilds documents and may commit refreshed guide assets to main.
-- The above GitHub workflow is not verified to be the source of the current Nuvio Xtream EPG. Map its consumers before changing it.
-- Full correspondence between deployed Supabase Edge Function source and committed GitHub source is NOT YET VERIFIED.
-- The NZ/AU customer-facing endpoint, International QA endpoint, domain aliases, paths, and credential model must be individually verified without committing private URLs or secrets.
+## Serving paths
 
-## User-reported playback history, not a current pass
-- On 2026-11-19 the user reported Sky Sport working and TVNZ 1/2 had previously worked with a corrected routing path.
-- A later reported Xtream URL update was followed by TVNZ failure; the latest TVNZ playback result is unverified in this inventory.
-- Do not treat either TVNZ or Fox/Kayo AU as passed until a current controlled test.
-- Preserve working NZ/AU behaviour and customer credentials while investigating.
-- Issue #4 and issue #6 contain historically useful QA and customer setup details but their old version references are superseded by current deployed function inventory.
+| Path | Function | Evidence and behaviour |
+| --- | --- | --- |
+| `n.loungetv.nz` | `n` v37 | Public `player_api.php` returned the expected unauthenticated Xtream response. The pinned Worker forwards the root and Xtream suffixes. Origin logs record 166 v37 calls with this alias hint. |
+| Plus Live TV on `n.loungetv.nz` | `n` v37 → `lounge-plus-qa` v5 | A Vault-backed account match delegates the Xtream login, Live TV and guide routes. VOD uses the normal handler. Origin logs record v5 traffic with the same alias hint. |
+| `connect.loungetv.nz` | `lounge-core-xtream` v52 | Public `player_api.php` returned the expected unauthenticated Xtream response. The Worker configuration and alias-marked v52 origin requests agree. Authenticated use was not verified. |
+| `connect.loungetv.nz/n` | Historical Worker in GitHub | The live `player_api.php` probe returned `not_found`. Do not use this path as the protected NZ/AU alias. |
+| International regional QA, direct Supabase function | `lounge-international-regional-qa` v4 | Exact match to the International branch tip source. Logs show 7 M3U and 5 XMLTV HTTP 200s, plus 93 live redirects. This is the best-supported Phase 2 QA target. |
+| International parallel master QA, direct Supabase functions | `lounge-international-master-v4-qa` v15 and `lounge-international-master-qa` v3 | Both saw recent requests. The v15 master handled 17 M3U and 27 XMLTV HTTP 200s, plus 74 live redirects. Keep both paths intact. No unique International customer-facing alias or current in-app selection was confirmed. |
+| Revocable customer M3U QA, direct Supabase function | `lounge-customer-playlist-qa` v2 → `n` v37 and `tvnz-license-qa` v1 | Separate token-based path resolved through service assignment and private account material. Customer adoption and device acceptance were not measured in this audit. |
 
-## Current release designation
-- Protected baseline: the serving NZ/AU customer configuration as verified through read-only inspection and device playback, NOT simply the highest-numbered function.
-- International: QA-only until its source, domain routing, feature completeness and device playback pass the release checklist.
-- Production change authorisation: not granted by creation of these documents.
-- Last known-good deployable source snapshot: NOT YET CAPTURED.
-- Last verified rollback artifact: NOT YET CAPTURED.
-- EPG coverage baseline: NOT YET MEASURED.
+Evidence combines deployed source, pinned Worker configuration, credential-free public probes and aggregate Supabase Edge logs from the 24 hours ending 20 November 2026 at 08:15 NZDT. Worker dashboard deployment IDs were unavailable. HTTP success and redirects are transport evidence. The logged requests do not establish that a device played or received a usable guide.
 
-## Required next audit
-1. Resolve public endpoints/domain-to-function mapping and distinguish QA from customer traffic, without exposing secrets.
-2. Export or reproduce current function sources in GitHub using secret-free configuration, with immutable release identifiers.
-3. Capture protected NZ/AU metadata baseline: groups, order, icons, source choices, channel IDs, TVNZ and Sky routes, EPG IDs.
-4. Audit EPG input, aggregation, refresh cadence and Nuvio guide selection.
-5. Record a verified rollback procedure before the first production release.
-6. Implement automated compare-and-regression checks, then validate on a Nuvio + IPTV device.
-7. Update this snapshot after checks; never overwrite a problem with an untested success assertion.
+## Protected NZ/AU behaviour
+
+- Standard `n` accounts authenticate using their individual BEST service. The authenticated `get_live_streams` action deliberately returns 503 with `nuvio_m3u_drm_fallback_required`. Preserve the existing `get.php` path that emits the DRM-aware M3U for compatible TVNZ playback. A direct DRM-required live request can return 422 by design. The v37 logs contained 2 Xtream 503s and 10 Live TV 422s. The audit did not inspect those response bodies or attribute them to individual channels.
+- Preserve the deployed NZ/AU category order, regional grouping, icons, channel IDs, Sky routing and fallback priority. Their source is captured. The current device-visible counts, logo/guide IDs and provider-facing outcomes still need an authenticated baseline.
+- The active delivery catalogue was `ppv-curated-817-20261106-qa`. Its persisted live rows numbered 3,231, with 565 non-empty stored EPG IDs and a manifest expectation of 3,003 rows. Xtream and M3U add filters, aliases and dynamic provider rows. Use these figures as database context only.
+
+## Guide chains
+
+- Standard NZ/AU `n/xmltv.php` authenticates the viewer, requests `lounge-core-live-xmltv` v24, and falls back to BEST XMLTV on a failed guide response. The renderer reads `Gazzamoo111/lounge-tv-player` branch `epg-data` at `epg/guide.xml`, with Sky and UK supplement logic and a core fallback. The short EPG path has separate shared-database, sibling-repository short-guide and provider fallback logic.
+- Supabase cron invokes `lounge-shared-epg-sync` v3 every five minutes. The function imports the player repo's `epg-data` shards into `lounge_delivery.shared_epg_channels`. The DB held 1,194 rows and 1,184 with positive programme counts and unexpired data, last synced at 08:00 NZDT. This is shared-store freshness rather than Nuvio coverage.
+- The International branch workflow uses GitHub OIDC to call `lounge-international-epg-broker-qa` v8. The broker uses the dedicated QA access held in Vault for BEST and master/regional QA requests and accepts a compiled guide upload into a private Supabase bucket. Master v15 and Regional v4 prefer the compiled artifact, then fall back to eligible, unexpired shared EPG rows. Ingest QA v14 gathers provider and guide evidence in QA tables. The private object existed and was last updated on 19 November at 21:14 NZDT (9,130,487 bytes). The logs do not identify which guide branch supplied each XMLTV response. In-app guide selection remains unverified.
+- The feed repo's `refresh-fast-epg.yml` still builds and commits `docs/epg6-live.xml` and fast guide JSON artifacts on its hourly schedule. A successful scheduled run was recorded on 20 November at 01:50 NZDT. No direct dependency on those assets was found in the audited NZ/AU and International XMLTV chains. Preserve the workflow while its other consumers are investigated.
+
+## Source and rollback
+
+- The manifest pins 76 source files by exact Git blob and SHA-256 across branch tips, with 9 unmatched files in the private archive named there. The versions, deployment timestamps, JWT/import-map settings and Supabase package hashes were captured. A local rebuild restored all 85 files byte for byte and checked relative imports.
+- `n` v37 is the protected source restore point. Its 14 files are all available from pinned GitHub revisions. The v36 rollback entrypoint in the Plus routing branch is historical and would remove the account-scoped Plus route. Whole-service rollback remains unrehearsed. See [recovery steps](phase-1/RECOVERY.md).
+- No runtime deployment, domain change, guide upload, scheduled job edit or customer change was performed in this audit. No current TVNZ, Sky Sport, Fox/Kayo, International or Nuvio device playback result was verified. See [#4](https://github.com/Gazzamoo111/lounge-tv-feed/issues/4), [#5](https://github.com/Gazzamoo111/lounge-tv-feed/issues/5) and [#6](https://github.com/Gazzamoo111/lounge-tv-feed/issues/6) for historical context.

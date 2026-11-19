@@ -1,0 +1,1035 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-11-19T19:15:00Z",
+  "production_change": false,
+  "repository_main_reviewed": "69c7a771b13242b24c0771af2e5493969f2a9e43",
+  "supabase_project": "liqocisegeqzbyuqloql",
+  "archive_filename": "LoungeTV-Phase1-Unmatched-Edge-Source-20261120.zip",
+  "routes": [
+    {
+      "role": "protected NZ/AU standard",
+      "public_base": "https://n.loungetv.nz",
+      "function": "n",
+      "evidence": "public unauthenticated response, Worker config, versioned origin logs with public alias hint"
+    },
+    {
+      "role": "Plus account-scoped Live TV",
+      "public_base": "https://n.loungetv.nz",
+      "function": "n",
+      "delegates_to": "lounge-plus-qa",
+      "evidence": "deployed source and versioned origin logs with public alias hint"
+    },
+    {
+      "role": "separate core Xtream gateway",
+      "public_base": "https://connect.loungetv.nz",
+      "function": "lounge-core-xtream",
+      "evidence": "public unauthenticated response, Worker config, versioned origin logs with public alias hint"
+    },
+    {
+      "role": "historical QA alias",
+      "public_base": "https://connect.loungetv.nz/n",
+      "function": null,
+      "evidence": "public player_api.php probe returned not_found"
+    },
+    {
+      "role": "International regional QA",
+      "origin_slug": "lounge-international-regional-qa",
+      "function": "lounge-international-regional-qa",
+      "evidence": "source bundle parity and versioned origin logs, no custom alias confirmed"
+    },
+    {
+      "role": "International parallel master QA",
+      "origin_slug": "lounge-international-master-v4-qa",
+      "function": "lounge-international-master-v4-qa",
+      "evidence": "versioned origin logs and broker source"
+    },
+    {
+      "role": "International earlier master QA",
+      "origin_slug": "lounge-international-master-qa",
+      "function": "lounge-international-master-qa",
+      "evidence": "versioned origin logs"
+    },
+    {
+      "role": "International private EPG and QA broker",
+      "origin_slug": "lounge-international-epg-broker-qa",
+      "function": "lounge-international-epg-broker-qa",
+      "evidence": "source bundle parity and versioned origin logs"
+    },
+    {
+      "role": "independent revocable customer M3U QA",
+      "origin_slug": "lounge-customer-playlist-qa",
+      "function": "lounge-customer-playlist-qa",
+      "delegates_to": "n",
+      "evidence": "deployed source; current customer adoption unverified"
+    }
+  ],
+  "rollback": {
+    "status": "offline_source_reconstruction_only",
+    "protected_restore_function": "n",
+    "protected_restore_version": 37,
+    "historical_v36": {
+      "commit": "589ecddb085352585d3f7d3b6a65ecc2ad444b68",
+      "entrypoint": "qa/lounge-plus-route/rollback-n-v36-index.ts",
+      "status": "reference_only_disables_plus_route"
+    },
+    "live_rehearsal": false
+  },
+  "functions": {
+    "lounge-core-epg": {
+      "version": 1,
+      "updated_at": "2026-11-01T01:25:04.552Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "7f6d73f23138b66fdc17e88fa738c2f2ad29dfd21f106dd69713a98f550a1fb3",
+      "files": {
+        "index.ts": {
+          "sha256": "8b625b9712e5131be440a5b9917110b7f5ceabb0a05cd4eefe03de7dc3ce6866",
+          "bytes": 3912,
+          "private_archive": true
+        }
+      }
+    },
+    "lounge-core-live-m3u": {
+      "version": 35,
+      "updated_at": "2026-11-12T21:00:48.525Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "ed70f249370195170493482fca08175f1ff97daaef292bd56c55e9a068674e2e",
+      "files": {
+        "index.ts": {
+          "sha256": "7770bbbb6b894b09a4f9418e0e2a4a13da0f843b1552618374b8219ff5930790",
+          "bytes": 46511,
+          "private_archive": true
+        }
+      }
+    },
+    "lounge-core-live-xmltv": {
+      "version": 24,
+      "updated_at": "2026-11-07T02:48:05.204Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "07c924e3d609ad4ff4d34a5b7e89376f95865246ab122cb7e447c196de65adbc",
+      "files": {
+        "index.ts": {
+          "sha256": "11c008c8134eb001dc8cf21c3bc02f7c8ceac8b24ac9369e52ed2c7c6bfdff2d",
+          "bytes": 21075,
+          "private_archive": true
+        },
+        "stream-xmltv.ts": {
+          "sha256": "11f89396637e8903733a8c6b6eb99e45aa3f72d7c2800b4cb8a24a3751ba446a",
+          "bytes": 2245,
+          "private_archive": true
+        }
+      }
+    },
+    "lounge-core-sky-nz-epg": {
+      "version": 1,
+      "updated_at": "2026-11-06T05:47:25.674Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "01e8e31a363aca9526f0f5f55dc83a598a951ebee9d4581734af12e81bd8bf8b",
+      "files": {
+        "index.ts": {
+          "sha256": "2d701043a0c3badc3d67d2a97f0fead9b369cf0a089ebf8aa81bb1f78386274a",
+          "bytes": 2676,
+          "private_archive": true
+        }
+      }
+    },
+    "lounge-core-xtream": {
+      "version": 52,
+      "updated_at": "2026-11-13T01:03:40.145Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "e26caa36474542ad075ef2d1b8f33f2c5d0b5a0920e5f8f477572f06c012f3fa",
+      "files": {
+        "index.ts": {
+          "sha256": "c4e51ddc981509f3536ac9deed60eb05aa4ebc280369db0a3f3fcb58b3ae8003",
+          "bytes": 98137,
+          "private_archive": true
+        },
+        "nz-routing.mjs": {
+          "sha256": "9f7385b0146e1408214f9d9acf596b2168de266c4ac3ce0fcb0d47ffe0835cfb",
+          "bytes": 1238,
+          "git_blob": "385b0cd436e94fb238b1017e3dd4ee3183cee42d",
+          "github": {
+            "branch": "qa/tvnz-baseline-20261116",
+            "commit": "fabe60dabfa68bee877764c11e4a763cde653bc0",
+            "path": "qa/nz-routing.mjs"
+          }
+        }
+      }
+    },
+    "lounge-customer-playlist-qa": {
+      "version": 2,
+      "updated_at": "2026-11-17T07:08:14.831Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "a00c3d57f0a5bb07d58701cdeca48b04d1ed3439d367f8d6d618a8c7f0d5fb55",
+      "files": {
+        "index.ts": {
+          "sha256": "50aae46d8b0b827fbe891549429c1f3d187c03d9565380989ea2c05017174e01",
+          "bytes": 11764,
+          "git_blob": "546cb1dc334730f64b08fa4a308ab85074286ef3",
+          "github": {
+            "branch": "feature/customer-onboarding-issue-6",
+            "commit": "331a2d8b4d9687f9526b550a476fe7b9f23adcc9",
+            "path": "qa/customer-playlist-link/index.ts"
+          }
+        },
+        "link-core.mjs": {
+          "sha256": "68f77f0dc15cc469de5ecd091e9b9e50608c24062903820214b86003d0eb1333",
+          "bytes": 3045,
+          "git_blob": "c2f8ead16d517f910a783f34046a12f6616f34cf",
+          "github": {
+            "branch": "feature/customer-onboarding-issue-6",
+            "commit": "331a2d8b4d9687f9526b550a476fe7b9f23adcc9",
+            "path": "qa/customer-playlist-link/link-core.mjs"
+          }
+        }
+      }
+    },
+    "lounge-international-epg-broker-qa": {
+      "version": 8,
+      "updated_at": "2026-11-19T08:13:06.910Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "8130eb3379e7034a8f6742169906879889b917c2024000b98a6961ee0f3aae0e",
+      "files": {
+        "index.ts": {
+          "sha256": "ab3a216961525c4a32fd8cde682fa7067c2675d0ecda7cadae5e010549d9811c",
+          "bytes": 18817,
+          "git_blob": "fdf346fbe3278402a1bbee6e693e3b0e080a8c73",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/epg-broker-qa.ts"
+          }
+        }
+      }
+    },
+    "lounge-international-ingest-qa": {
+      "version": 14,
+      "updated_at": "2026-11-19T02:59:27.287Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "20b77d19f9e989dd2720a6586830914bff15c1eca4e9274bde9b3a50f714cc2b",
+      "files": {
+        "index.ts": {
+          "sha256": "336625ee6433da21828b1fe42499b2a9d826fa22bcc182aec67286d51d32279e",
+          "bytes": 21947,
+          "git_blob": "7f54ffd8c5317509c063abd5a2c532ced0bca5f4",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/ingest-qa.ts"
+          }
+        }
+      }
+    },
+    "lounge-international-master-qa": {
+      "version": 3,
+      "updated_at": "2026-11-18T21:37:47.637Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "cd57b670a52edff3945cf22f7bc442547fa38da4418586da6b3587d4ea64ed15",
+      "files": {
+        "channel-priority.mjs": {
+          "sha256": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+          "bytes": 10480,
+          "git_blob": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/channel-priority.mjs"
+          }
+        },
+        "index.ts": {
+          "sha256": "acacebc03b456874618c9a11382b4dedcdaacfed9aae884edc947a0b3ac67b38",
+          "bytes": 112435,
+          "private_archive": true
+        },
+        "nz-routing.mjs": {
+          "sha256": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+          "bytes": 1422,
+          "git_blob": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/nz-routing.mjs"
+          }
+        },
+        "qa-247-groups.mjs": {
+          "sha256": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+          "bytes": 992,
+          "git_blob": "6d91531313f1dab23a7fd92f080e4220552f8667",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-247-groups.mjs"
+          }
+        },
+        "qa-au-duplicates.mjs": {
+          "sha256": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+          "bytes": 2523,
+          "git_blob": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-au-duplicates.mjs"
+          }
+        },
+        "qa-au-integrity.mjs": {
+          "sha256": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+          "bytes": 421,
+          "git_blob": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-au-integrity.mjs"
+          }
+        },
+        "qa-customer-live-presentation.mjs": {
+          "sha256": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+          "bytes": 2425,
+          "git_blob": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-customer-live-presentation.mjs"
+          }
+        },
+        "qa-epg-alias.mjs": {
+          "sha256": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+          "bytes": 2085,
+          "git_blob": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-epg-alias.mjs"
+          }
+        },
+        "qa-sky-fhd-primary.mjs": {
+          "sha256": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+          "bytes": 824,
+          "git_blob": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-fhd-primary.mjs"
+          }
+        },
+        "qa-sky-hd-backups.mjs": {
+          "sha256": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+          "bytes": 1201,
+          "git_blob": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-hd-backups.mjs"
+          }
+        },
+        "qa-sky-nz-loop-filter.mjs": {
+          "sha256": "e5d9fd1e6f65d541961d5228eed5e9ee44e430634c2f860cada47c544321e4ee",
+          "bytes": 1277,
+          "git_blob": "43fee0655691a9ed519b1b4fd3da81da1e16b313",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-nz-loop-filter.mjs"
+          }
+        },
+        "qa-stream-groups.mjs": {
+          "sha256": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+          "bytes": 1480,
+          "git_blob": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-stream-groups.mjs"
+          }
+        },
+        "qa-tvnz-xtream-drm.mjs": {
+          "sha256": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44",
+          "bytes": 1031,
+          "git_blob": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-tvnz-xtream-drm.mjs"
+          }
+        }
+      }
+    },
+    "lounge-international-master-v4-qa": {
+      "version": 15,
+      "updated_at": "2026-11-19T06:01:00.710Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "fc7d1a367f2867eafda27b2b987818bbced3d1fd97bb7aac67bae1917e776bbb",
+      "files": {
+        "channel-priority.mjs": {
+          "sha256": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+          "bytes": 10480,
+          "git_blob": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/channel-priority.mjs"
+          }
+        },
+        "index.ts": {
+          "sha256": "e4d68872b859acb4d981a8fedf74b2839895bef1cc9b972349128ab0b04e9a11",
+          "bytes": 119446,
+          "private_archive": true
+        },
+        "nz-routing.mjs": {
+          "sha256": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+          "bytes": 1422,
+          "git_blob": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/nz-routing.mjs"
+          }
+        },
+        "qa-247-groups.mjs": {
+          "sha256": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+          "bytes": 992,
+          "git_blob": "6d91531313f1dab23a7fd92f080e4220552f8667",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-247-groups.mjs"
+          }
+        },
+        "qa-au-duplicates.mjs": {
+          "sha256": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+          "bytes": 2523,
+          "git_blob": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-au-duplicates.mjs"
+          }
+        },
+        "qa-au-integrity.mjs": {
+          "sha256": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+          "bytes": 421,
+          "git_blob": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-au-integrity.mjs"
+          }
+        },
+        "qa-customer-live-presentation.mjs": {
+          "sha256": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+          "bytes": 2425,
+          "git_blob": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-customer-live-presentation.mjs"
+          }
+        },
+        "qa-epg-alias.mjs": {
+          "sha256": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+          "bytes": 2085,
+          "git_blob": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-epg-alias.mjs"
+          }
+        },
+        "qa-international-architecture.mjs": {
+          "sha256": "372c34ed457c0fe9942a834c327be98b9eac2d25d8f794a244c0c8da43a8392a",
+          "bytes": 8682,
+          "git_blob": "f019b0c60f1e98d9c815cb92c416e23f4e7a863c",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-international-architecture.mjs"
+          }
+        },
+        "qa-sky-fhd-primary.mjs": {
+          "sha256": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+          "bytes": 824,
+          "git_blob": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-fhd-primary.mjs"
+          }
+        },
+        "qa-sky-hd-backups.mjs": {
+          "sha256": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+          "bytes": 1201,
+          "git_blob": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-hd-backups.mjs"
+          }
+        },
+        "qa-sky-nz-loop-filter.mjs": {
+          "sha256": "e5d9fd1e6f65d541961d5228eed5e9ee44e430634c2f860cada47c544321e4ee",
+          "bytes": 1277,
+          "git_blob": "43fee0655691a9ed519b1b4fd3da81da1e16b313",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-nz-loop-filter.mjs"
+          }
+        },
+        "qa-stream-groups.mjs": {
+          "sha256": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+          "bytes": 1480,
+          "git_blob": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-stream-groups.mjs"
+          }
+        },
+        "qa-tvnz-xtream-drm.mjs": {
+          "sha256": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44",
+          "bytes": 1031,
+          "git_blob": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-tvnz-xtream-drm.mjs"
+          }
+        }
+      }
+    },
+    "lounge-international-regional-qa": {
+      "version": 4,
+      "updated_at": "2026-11-19T07:43:25.361Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "9a7baef4c8f17dcbbe91642f1bfa459e75ff4d527069e81c9adf7f9c3becdffc",
+      "files": {
+        "channel-priority.mjs": {
+          "sha256": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+          "bytes": 10480,
+          "git_blob": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/channel-priority.mjs"
+          }
+        },
+        "index.ts": {
+          "sha256": "99cedb76414f1ecccd3cf14615bf9e923bcae669a9627d2a9fc00fa4d21c8063",
+          "bytes": 120768,
+          "git_blob": "661841dd01a5f2422bfd67e5634063b85dadb7bc",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/index.ts"
+          }
+        },
+        "nz-routing.mjs": {
+          "sha256": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+          "bytes": 1422,
+          "git_blob": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/nz-routing.mjs"
+          }
+        },
+        "qa-247-groups.mjs": {
+          "sha256": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+          "bytes": 992,
+          "git_blob": "6d91531313f1dab23a7fd92f080e4220552f8667",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-247-groups.mjs"
+          }
+        },
+        "qa-au-duplicates.mjs": {
+          "sha256": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+          "bytes": 2523,
+          "git_blob": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-au-duplicates.mjs"
+          }
+        },
+        "qa-au-integrity.mjs": {
+          "sha256": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+          "bytes": 421,
+          "git_blob": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-au-integrity.mjs"
+          }
+        },
+        "qa-customer-live-presentation.mjs": {
+          "sha256": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+          "bytes": 2425,
+          "git_blob": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-customer-live-presentation.mjs"
+          }
+        },
+        "qa-epg-alias.mjs": {
+          "sha256": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+          "bytes": 2085,
+          "git_blob": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-epg-alias.mjs"
+          }
+        },
+        "qa-international-architecture.mjs": {
+          "sha256": "372c34ed457c0fe9942a834c327be98b9eac2d25d8f794a244c0c8da43a8392a",
+          "bytes": 8682,
+          "git_blob": "f019b0c60f1e98d9c815cb92c416e23f4e7a863c",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-international-architecture.mjs"
+          }
+        },
+        "qa-sky-fhd-primary.mjs": {
+          "sha256": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+          "bytes": 824,
+          "git_blob": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-fhd-primary.mjs"
+          }
+        },
+        "qa-sky-hd-backups.mjs": {
+          "sha256": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+          "bytes": 1201,
+          "git_blob": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-hd-backups.mjs"
+          }
+        },
+        "qa-sky-nz-loop-filter.mjs": {
+          "sha256": "e5d9fd1e6f65d541961d5228eed5e9ee44e430634c2f860cada47c544321e4ee",
+          "bytes": 1277,
+          "git_blob": "43fee0655691a9ed519b1b4fd3da81da1e16b313",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-nz-loop-filter.mjs"
+          }
+        },
+        "qa-sky-regional-preferred.mjs": {
+          "sha256": "5b1e0b56dab6c30f7b11c4abc4e3a2e9d8ed65af27a0f47bc122fd57d6b1725e",
+          "bytes": 928,
+          "git_blob": "6c086612d7489213ce6c87725a4fa19c8808535e",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-sky-regional-preferred.mjs"
+          }
+        },
+        "qa-stream-groups.mjs": {
+          "sha256": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+          "bytes": 1480,
+          "git_blob": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-stream-groups.mjs"
+          }
+        },
+        "qa-tvnz-xtream-drm.mjs": {
+          "sha256": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44",
+          "bytes": 1031,
+          "git_blob": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-tvnz-xtream-drm.mjs"
+          }
+        },
+        "qa-world-regions.mjs": {
+          "sha256": "2694b85923850b6e593c92f51fb21f5e8a053332fcc35a126f2e56880c3f8dc1",
+          "bytes": 7765,
+          "git_blob": "2841d41b4145412a5335ef087e951cdb94e36888",
+          "github": {
+            "branch": "qa/international-master-unified-20261119",
+            "commit": "f8bc7ab33542bda9daedf1839cd23d980f4b6a7c",
+            "path": "qa/international-master/qa-world-regions.mjs"
+          }
+        }
+      }
+    },
+    "lounge-plus-qa": {
+      "version": 5,
+      "updated_at": "2026-11-19T11:03:25.769Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "9820504273ca9e5676fc30bcc9fbe7a6e11ecf6640e7e014db30381af37ee39b",
+      "files": {
+        "channel-priority.mjs": {
+          "sha256": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+          "bytes": 10480,
+          "git_blob": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/channel-priority.mjs"
+          }
+        },
+        "index.ts": {
+          "sha256": "75bc6e3d872ea10b931dfee5b334a6412b25be0ce34d4fe2dfc701787289a294",
+          "bytes": 109138,
+          "git_blob": "448f1695aab323cfd73eaabb60f35524a657f431",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/index.ts"
+          }
+        },
+        "nz-routing.mjs": {
+          "sha256": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+          "bytes": 1422,
+          "git_blob": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/nz-routing.mjs"
+          }
+        },
+        "plus-categories.mjs": {
+          "sha256": "4ef5aff289505df0182d34ddd8a3e7293c71be07e2b0b0865bbdd0e12ae811c7",
+          "bytes": 5058,
+          "git_blob": "c8e9e24101f9465a80c90d3b674eed2ff15d841a",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/plus-categories.mjs"
+          }
+        },
+        "qa-247-groups.mjs": {
+          "sha256": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+          "bytes": 992,
+          "git_blob": "6d91531313f1dab23a7fd92f080e4220552f8667",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-247-groups.mjs"
+          }
+        },
+        "qa-au-duplicates.mjs": {
+          "sha256": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+          "bytes": 2523,
+          "git_blob": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-au-duplicates.mjs"
+          }
+        },
+        "qa-au-integrity.mjs": {
+          "sha256": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+          "bytes": 421,
+          "git_blob": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-au-integrity.mjs"
+          }
+        },
+        "qa-customer-live-presentation.mjs": {
+          "sha256": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+          "bytes": 2425,
+          "git_blob": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-customer-live-presentation.mjs"
+          }
+        },
+        "qa-epg-alias.mjs": {
+          "sha256": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+          "bytes": 2085,
+          "git_blob": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-epg-alias.mjs"
+          }
+        },
+        "qa-sky-fhd-primary.mjs": {
+          "sha256": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+          "bytes": 824,
+          "git_blob": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-sky-fhd-primary.mjs"
+          }
+        },
+        "qa-sky-hd-backups.mjs": {
+          "sha256": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+          "bytes": 1201,
+          "git_blob": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-sky-hd-backups.mjs"
+          }
+        },
+        "qa-sky-nz-loop-filter.mjs": {
+          "sha256": "65aba5ba33cbb6fd0841882182a0acd2ce32df14e48a00ee9025a4beaaa07d06",
+          "bytes": 1469,
+          "git_blob": "8eae8f3cad047dd8d37e55b3a1aa52140bf4f74e",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-sky-nz-loop-filter.mjs"
+          }
+        },
+        "qa-sky-regional-preferred.mjs": {
+          "sha256": "61385214d1305b038b6a2a38af65b2752b2a4f9f4b5641e5b44a7c6cf4826951",
+          "bytes": 697,
+          "git_blob": "f77bd9e2d34779c80c352e63f8a0b3d1ecacdf76",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-sky-regional-preferred.mjs"
+          }
+        },
+        "qa-stream-groups.mjs": {
+          "sha256": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+          "bytes": 1480,
+          "git_blob": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-stream-groups.mjs"
+          }
+        },
+        "qa-tvnz-xtream-drm.mjs": {
+          "sha256": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44",
+          "bytes": 1031,
+          "git_blob": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6",
+          "github": {
+            "branch": "qa/lounge-plus-20-20261119",
+            "commit": "db443bb775bea37a92339db2443b418ea8222386",
+            "path": "qa/lounge-plus-20/qa-tvnz-xtream-drm.mjs"
+          }
+        }
+      }
+    },
+    "lounge-shared-epg-sync": {
+      "version": 3,
+      "updated_at": "2026-11-13T01:08:33.172Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "50501c33d01e54dc5e548fb4891755f0129bfa4bf9d4fe8b7b637c948176801b",
+      "files": {
+        "index.ts": {
+          "sha256": "4da6bdfcc84cf43dd3d2d130d3b324a98497533728204e8921750ca2ce2102a5",
+          "bytes": 4947,
+          "private_archive": true
+        }
+      }
+    },
+    "n": {
+      "version": 37,
+      "updated_at": "2026-11-19T10:49:32.875Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "ea170d5bc88cb65cc58a46cd5172d352921c7f03eaa82a2b57f7f6ee62790e1c",
+      "files": {
+        "channel-priority.mjs": {
+          "sha256": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+          "bytes": 10480,
+          "git_blob": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/channel-priority.mjs"
+          }
+        },
+        "index.ts": {
+          "sha256": "1449d4a2181c5abadaa97175cb998526bfb1d1862c084870992ab72b7f91d7bf",
+          "bytes": 110518,
+          "git_blob": "e65bec750c4ab5a4d4daf03ab09f6d193d9d5bb8",
+          "github": {
+            "branch": "qa/n-loungetv-plus-link-20261119",
+            "commit": "589ecddb085352585d3f7d3b6a65ecc2ad444b68",
+            "path": "qa/lounge-plus-route/index.ts"
+          }
+        },
+        "nz-routing.mjs": {
+          "sha256": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+          "bytes": 1422,
+          "git_blob": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/nz-routing.mjs"
+          }
+        },
+        "plus-account-route.mjs": {
+          "sha256": "2ac9784163f033ecbaaa9f0d8acf206b2c4e92911c8a11496764778f3363386c",
+          "bytes": 3070,
+          "git_blob": "eb89e20642fe61a360296e44230eb22a400b2c37",
+          "github": {
+            "branch": "qa/n-loungetv-plus-link-20261119",
+            "commit": "589ecddb085352585d3f7d3b6a65ecc2ad444b68",
+            "path": "qa/lounge-plus-route/plus-account-route.mjs"
+          }
+        },
+        "qa-247-groups.mjs": {
+          "sha256": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+          "bytes": 992,
+          "git_blob": "6d91531313f1dab23a7fd92f080e4220552f8667",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-247-groups.mjs"
+          }
+        },
+        "qa-au-duplicates.mjs": {
+          "sha256": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+          "bytes": 2523,
+          "git_blob": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-au-duplicates.mjs"
+          }
+        },
+        "qa-au-integrity.mjs": {
+          "sha256": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+          "bytes": 421,
+          "git_blob": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-au-integrity.mjs"
+          }
+        },
+        "qa-customer-live-presentation.mjs": {
+          "sha256": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+          "bytes": 2425,
+          "git_blob": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-customer-live-presentation.mjs"
+          }
+        },
+        "qa-epg-alias.mjs": {
+          "sha256": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+          "bytes": 2085,
+          "git_blob": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-epg-alias.mjs"
+          }
+        },
+        "qa-sky-fhd-primary.mjs": {
+          "sha256": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+          "bytes": 824,
+          "git_blob": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-sky-fhd-primary.mjs"
+          }
+        },
+        "qa-sky-hd-backups.mjs": {
+          "sha256": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+          "bytes": 1201,
+          "git_blob": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-sky-hd-backups.mjs"
+          }
+        },
+        "qa-sky-nz-loop-filter.mjs": {
+          "sha256": "e5d9fd1e6f65d541961d5228eed5e9ee44e430634c2f860cada47c544321e4ee",
+          "bytes": 1277,
+          "git_blob": "43fee0655691a9ed519b1b4fd3da81da1e16b313",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-sky-nz-loop-filter.mjs"
+          }
+        },
+        "qa-stream-groups.mjs": {
+          "sha256": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+          "bytes": 1480,
+          "git_blob": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-stream-groups.mjs"
+          }
+        },
+        "qa-tvnz-xtream-drm.mjs": {
+          "sha256": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44",
+          "bytes": 1031,
+          "git_blob": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/qa-tvnz-xtream-drm.mjs"
+          }
+        }
+      }
+    },
+    "tvnz-license-qa": {
+      "version": 1,
+      "updated_at": "2026-11-16T21:03:03.596Z",
+      "entrypoint": "index.ts",
+      "verify_jwt": false,
+      "import_map": false,
+      "bundle_sha256": "3afc05bac8aebe0fb4a54473552beca65336ce0df65e754b7b49c0d15d454b4e",
+      "files": {
+        "index.ts": {
+          "sha256": "3d45a0ba5372beffc75aaa64e1a17c35a7563405c7f970b47fec6058f3e677cb",
+          "bytes": 4495,
+          "git_blob": "2564aa2d68981ee22ac77b478746c60d93340a3b",
+          "github": {
+            "branch": "fix/qa-sky-fhd-australia-dedup-20261118",
+            "commit": "68be2022dc70675c351a8a6fc5435ae1f4079efa",
+            "path": "qa/tvnz-license-qa/index.ts"
+          }
+        }
+      }
+    }
+  },
+  "archive_sha256": "a2ddc0bcd9021fe25dd4a4f49c9bad469cc2eb87187269aadb52132a1bfc7161"
+}
