@@ -42,3 +42,9 @@ Evidence combines deployed source, pinned Worker configuration, credential-free 
 Phase 2 branches from the Phase 1 source record. A fresh Supabase metadata read matched all 15 recorded bundle versions and hashes. The [offline suite and capture instructions](phase-2/REGRESSION.md) cover NZ/AU v37, Plus v5 and International Regional v4. Local checks passed 34 existing Node tests, 11 validator tests and all three synthetic gateway profiles. The suite exercises the intentional Xtream 503 and direct TVNZ DRM 422. CI runs the same contracts on proposals.
 
 The release gate is closed. Authenticated QA feed snapshots, actual Nuvio playlist/guide import and playback, and isolated rollback are still unverified. The `n` v37 source bundle remains the protected restore reference. See [Issue #10](https://github.com/Gazzamoo111/lounge-tv-feed/issues/10) for the current review and CI record.
+
+## Phase 3 release controls
+
+The [release process](phase-3/RELEASE.md) and [history](phase-3/HISTORY.md) are reviewable on the Phase 3 branch. This read-only recheck matched all 15 observed Edge Function versions and package hashes, plus all 45 deployed source file digests for the three protected gateway bundles. The two target manifests pin the source, routes, function settings, audited dependencies and rollback reference. The local rehearsal restored selected bundles byte for byte and reproduced the synthetic responses while preserving the peer target.
+
+The release gate remains closed for promotion. No isolated staging environment has been verified or authorised. Authenticated before/after captures, Nuvio playlist/guide import and protected playback, and a runtime rollback rehearsal remain pending. The current Cloudflare deployment identifiers require verification before a production promotion. International presently has a Regional v4 QA destination. Supabase and the customer-facing routes were untouched.
