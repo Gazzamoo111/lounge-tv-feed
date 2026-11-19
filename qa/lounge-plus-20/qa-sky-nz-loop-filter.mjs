@@ -16,7 +16,10 @@ export function qaSkyNzLoopFilter(rows) {
   const number=Number(matched[1]);
   const id=Number(row.provider_stream_id);
   if(category==="RAW" && id===HD_BY_NUMBER.get(number))return false;
-  if(category==="NEW ZEALAND" && id===HD_BY_NUMBER.get(number))return false;
+  // Keep curated Sky 1 and 9 where the checked HD source is selected.
+  // Still hide old HD backup rows with raw external IDs.
+  if(category==="NEW ZEALAND" && id===HD_BY_NUMBER.get(number))
+    return Number(row.external_id)>0 && Number(row.external_id)<2000000000;
   // The curated display entry uses the FHD provider ID and retains its
   // stable Lounge external ID, guide, artwork and category.
   if(category==="NEW ZEALAND" && id===FHD_BY_NUMBER.get(number))return true;
