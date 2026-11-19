@@ -52,7 +52,7 @@ export function plusCategory(row, original){
     if(g==="24/7 Series")return "24/7 Series";
     // Former "Movies & Series" is the mixed fallback bucket. File/actor-labelled
     // stations go to Movies, otherwise preserve them in Series.
-    return /MOVIE|FILM|CINEMA|HOLLYWOOD|ACTOR|ACTION & ADVENTURE/.test(source+" "+name)
+    return /MOVIE|FILM|CINEMA|HOLLYWOOD|ACTOR|ACTION & ADVENTURE/.test(name)
       ? "24/7 Movies":"24/7 Series";
   }
   // Live fixtures/PPV remain in Live Events, regardless of country.
