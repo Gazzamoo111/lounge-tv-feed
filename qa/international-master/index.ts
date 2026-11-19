@@ -11,7 +11,7 @@ import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
 import { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";
 import { masterVisibleOrder, masterSeaGroups, masterSeaGroup, masterRegionGroup, masterCategoryLabels } from "./qa-international-architecture.mjs";
-import { qaFilteredBestXmltv } from "./qa-best-epg-stream.mjs";
+import { qaFilteredBestXmltv,qaGuideScanner,qaGuideScanChunk } from "./qa-best-epg-stream.mjs";
 import postgres from "npm:postgres@3.4.7";
 
 // LOUNGE_SUPAVISOR_TRANSACTION_POOL
@@ -1998,6 +1998,46 @@ Deno.serve(async(req)=>{
   // Third-party players receive the same stable Xtream-compatible flat category list, while
   // the Lounge Android app re-groups those names into its richer section accordion.
   const loungeApp=true;
+  if(action==="qa_epg_live_probe"){
+    // Account-authenticated read-only diagnostic. No programme contents stored.
+    const rows=await nuvioFullRows();
+    const scan=qaGuideScanner(rows,effectiveLiveEpgId,[]);
+    const xmlUrl=new URL(base+"/xmltv.php");
+    xmlUrl.searchParams.set("username",u);
+    xmlUrl.searchParams.set("password",p);
+    let status=0,bytes=0,matchedXmlBlocks=0;
+    try{
+      const upstream=await fetch(xmlUrl,{headers:{Accept:"application/xml,text/xml,*/*",
+        "User-Agent":"LoungeTV-International-EPG-Probe/1.0"},signal:AbortSignal.timeout(45000)});
+      status=upstream.status;
+      if(!upstream.ok||!upstream.body){
+        await upstream.body?.cancel().catch(()=>{});
+        return json({mode:"qa_best_epg_probe",provider_http:status,error:"provider_not_available"},502);
+      }
+      const reader=upstream.body.getReader(),decoder=new TextDecoder();
+      try{
+        for(let i=0;i<3000&&bytes<8000000;i++){
+          const part=await reader.read();
+          if(part.done)break;
+          bytes+=part.value.byteLength;
+          matchedXmlBlocks+=qaGuideScanChunk(scan,decoder.decode(part.value,{stream:true})).length;
+        }
+      }finally{try{await reader.cancel()}catch{}}
+      return json({
+        mode:"qa_best_epg_probe",provider_http:status,scanned_bytes:bytes,
+        selected_epg_ids:scan.selected.size,correct_channel_ids:scan.valid.size,
+        contradictory_channel_ids:scan.conflicting.size,
+        current_programme_channels:scan.programmes.size,
+        current_programme_blocks:[...scan.programmes.values()].reduce((a,b)=>a+b,0),
+        programme_or_channel_blocks:matchedXmlBlocks,
+        full_guide_scanned:false,
+        warning:"8MB source sample only; these are real BEST programmes not inferred coverage"
+      });
+    }catch(err){
+      return json({mode:"qa_best_epg_probe",provider_http:status,
+        scanned_bytes:bytes,error:err instanceof Error?err.name:"provider_stream_error"},502);
+    }
+  }
   if(action==="qa_epg_summary"){
     const rows=await nuvioFullRows();
     const [current,matches]=await Promise.all([
