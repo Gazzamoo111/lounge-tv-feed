@@ -295,11 +295,12 @@ Deno.serve(async(req)=>{
     const start=Date.now();
     try{
       const res=await fetch(url,{signal:AbortSignal.timeout(15000),headers:{"Accept":"application/xml,text/xml,*/*"}});
-      let bytes=0,xmltv=false,html=false;
+      let bytes=0,xmltv=false,html=false,magic:number[]=[];
       if(res.body){
         const reader=res.body.getReader(),first=await reader.read();
         if(first.value){
           bytes=first.value.byteLength;
+          magic=Array.from(first.value.slice(0,8));
           const head=new TextDecoder().decode(first.value.slice(0,600)).trimStart();
           xmltv=/^<\\?xml|^<tv[\\s>]/i.test(head);
           html=/^<!doctype html|^<html/i.test(head);
@@ -307,7 +308,7 @@ Deno.serve(async(req)=>{
         try{await reader.cancel()}catch{}
       }
       return reply({mode,http_status:res.status,content_type:res.headers.get("content-type"),
-        reported_length:res.headers.get("content-length"),first_chunk_bytes:bytes,
+        reported_length:res.headers.get("content-length"),first_chunk_bytes:bytes,magic,
         xmltv,html,elapsed_ms:Date.now()-start});
     }catch(e){return reply({mode,error:e instanceof Error?e.name:"network_error"});}
   }
