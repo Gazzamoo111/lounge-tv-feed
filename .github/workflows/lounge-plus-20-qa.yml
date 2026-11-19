@@ -21,3 +21,24 @@ jobs:
           test "$code" = 404
           grep -q 'not_found' /tmp/plus-response.json
 
+      - name: Confirm actual M3U route reaches authentication gate
+        shell: bash
+        run: |
+          code=$(curl --silent --show-error --max-time 25 --output /tmp/plus-get-no-auth.json --write-out '%{http_code}' \
+            'https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-plus-qa/get.php')
+          test "$code" = 403
+          grep -q '"not_allowed"' /tmp/plus-get-no-auth.json
+      - name: Confirm Xtream live-categories route reaches authentication gate
+        shell: bash
+        run: |
+          code=$(curl --silent --show-error --max-time 25 --output /tmp/plus-xtream-no-auth.json --write-out '%{http_code}' \
+            'https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-plus-qa/player_api.php?action=get_live_categories')
+          test "$code" = 401
+          grep -q '"auth":0' /tmp/plus-xtream-no-auth.json
+      - name: Confirm Xtream live-stream route reaches authentication gate
+        shell: bash
+        run: |
+          code=$(curl --silent --show-error --max-time 25 --output /tmp/plus-xtream-live-no-auth.json --write-out '%{http_code}' \
+            'https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-plus-qa/player_api.php?action=get_live_streams')
+          test "$code" = 401
+          grep -q '"auth":0' /tmp/plus-xtream-live-no-auth.json
