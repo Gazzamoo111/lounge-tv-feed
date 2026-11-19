@@ -1,0 +1,806 @@
+{
+  "schema": 1,
+  "profile": "regional-v4",
+  "as_of": "2030-01-01T12:00:00+00:00",
+  "provenance": "synthetic",
+  "xtream": "503 nuvio_m3u_drm_fallback_required",
+  "groups": [
+    {
+      "id": "1800101",
+      "name": "01 🇳🇿 New Zealand",
+      "icon": false
+    },
+    {
+      "id": "1800102",
+      "name": "02 🇦🇺 Australia",
+      "icon": false
+    },
+    {
+      "id": "1800103",
+      "name": "03 🇬🇧 UK & Ireland",
+      "icon": false
+    },
+    {
+      "id": "1800104",
+      "name": "04 🇺🇸 USA & Canada",
+      "icon": false
+    },
+    {
+      "id": "1800105",
+      "name": "05 🏆 Worldwide Sports",
+      "icon": false
+    },
+    {
+      "id": "1800110",
+      "name": "06 🌍 Western Europe",
+      "icon": false
+    },
+    {
+      "id": "1800117",
+      "name": "07 🎬 Entertainment & Movies",
+      "icon": false
+    },
+    {
+      "id": "1800118",
+      "name": "08 🧸 Kids & Family",
+      "icon": false
+    },
+    {
+      "id": "1800121",
+      "name": "09 📺 24/7 Channels",
+      "icon": false
+    },
+    {
+      "id": "1800122",
+      "name": "10 🌍 Other International",
+      "icon": false
+    },
+    {
+      "id": "1800123",
+      "name": "11 🏟️ Live Events & PPV",
+      "icon": false
+    }
+  ],
+  "counts": {
+    "01 🇳🇿 New Zealand": 14,
+    "02 🇦🇺 Australia": 1,
+    "03 🇬🇧 UK & Ireland": 2,
+    "04 🇺🇸 USA & Canada": 2,
+    "05 🏆 Worldwide Sports": 1,
+    "06 🌍 Western Europe": 1,
+    "07 🎬 Entertainment & Movies": 1,
+    "08 🧸 Kids & Family": 1,
+    "09 📺 24/7 Channels": 2,
+    "10 🌍 Other International": 1,
+    "11 🏟️ Live Events & PPV": 1
+  },
+  "channels": [
+    {
+      "id": "ltv-100",
+      "name": "TVNZ 1",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "TVNZ1.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": true,
+      "transport": "dash"
+    },
+    {
+      "id": "ltv-101",
+      "name": "TVNZ 2",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "TVNZ2.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": true,
+      "transport": "dash"
+    },
+    {
+      "id": "ltv-102",
+      "name": "Three",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "Three.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "hls"
+    },
+    {
+      "id": "ltv-103",
+      "name": "Whakaata Māori",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "Maori.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "hls"
+    },
+    {
+      "id": "ltv-104",
+      "name": "Te Reo",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "TeReo.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "hls"
+    },
+    {
+      "id": "ltv-105",
+      "name": "Sky Sport 1",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport1.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-106",
+      "name": "Sky Sport 2",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport2.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-107",
+      "name": "Sky Sport 3",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport3.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-108",
+      "name": "Sky Sport 4",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport4.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-109",
+      "name": "Sky Sport 5",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport5.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-110",
+      "name": "Sky Sport 6",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport6.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-111",
+      "name": "Sky Sport 7",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport7.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-112",
+      "name": "Sky Sport 8",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport8.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-113",
+      "name": "Sky Sport 9",
+      "group": "01 🇳🇿 New Zealand",
+      "epg": "SkySport9.nz",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-114",
+      "name": "Example Seven Sydney",
+      "group": "02 🇦🇺 Australia",
+      "epg": "Seven.Sydney.au",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-117",
+      "name": "UK | Example UK",
+      "group": "03 🇬🇧 UK & Ireland",
+      "epg": "Example.uk",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-118",
+      "name": "UK | Example UK Variant",
+      "group": "03 🇬🇧 UK & Ireland",
+      "epg": "Example.uk",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-120",
+      "name": "US | Example US",
+      "group": "04 🇺🇸 USA & Canada",
+      "epg": "Example.us",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-119",
+      "name": "US | Example US Variant",
+      "group": "04 🇺🇸 USA & Canada",
+      "epg": "Example.us",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-116",
+      "name": "Example Sport",
+      "group": "05 🏆 Worldwide Sports",
+      "epg": "ExampleSports.au",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-2000000801",
+      "name": "FR | Example French",
+      "group": "06 🌍 Western Europe",
+      "epg": "Example.fr",
+      "logo": false,
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-121",
+      "name": "Example Movies",
+      "group": "07 🎬 Entertainment & Movies",
+      "epg": "MissingGuide.example",
+      "logo": "62eeea709d7eba1e",
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-122",
+      "name": "Example Kids",
+      "group": "08 🧸 Kids & Family",
+      "epg": "ltv-122",
+      "logo": false,
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-123",
+      "name": "Example Repeat Movie",
+      "group": "09 📺 24/7 Channels",
+      "epg": "ltv-123",
+      "logo": false,
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-124",
+      "name": "Example Repeat Comedy",
+      "group": "09 📺 24/7 Channels",
+      "epg": "ltv-124",
+      "logo": false,
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-2000000802",
+      "name": "Example India",
+      "group": "10 🌍 Other International",
+      "epg": "Example.in",
+      "logo": false,
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    },
+    {
+      "id": "ltv-125",
+      "name": "Example Event",
+      "group": "11 🏟️ Live Events & PPV",
+      "epg": "ltv-125",
+      "logo": false,
+      "group_icon": false,
+      "drm": false,
+      "transport": "ts"
+    }
+  ],
+  "duplicates": {
+    "duplicate_provider_ids": [],
+    "duplicates": [],
+    "regional_variants": [
+      [
+        "ltv-118",
+        "ltv-119"
+      ]
+    ],
+    "review": []
+  },
+  "guides": {
+    "primary": {
+      "eligible": 24,
+      "excluded_unscheduled": 3,
+      "mapped": 22,
+      "current": 20,
+      "next": 19,
+      "no_epg_id": [
+        "ltv-122"
+      ],
+      "missing_xmltv_id": [
+        "ltv-121"
+      ],
+      "invalid_xmltv_ids": 0,
+      "invalid_timestamps": 0,
+      "windows": {
+        "ltv-100": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-101": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-102": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-103": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-104": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-105": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-106": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-107": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-108": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-109": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-110": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-111": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-112": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-113": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-114": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": null
+        },
+        "ltv-117": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-118": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-120": {
+          "current": null,
+          "next": null
+        },
+        "ltv-119": {
+          "current": null,
+          "next": null
+        },
+        "ltv-116": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-2000000801": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-2000000802": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        }
+      }
+    },
+    "fallback": {
+      "eligible": 24,
+      "excluded_unscheduled": 3,
+      "mapped": 22,
+      "current": 20,
+      "next": 19,
+      "no_epg_id": [
+        "ltv-122"
+      ],
+      "missing_xmltv_id": [
+        "ltv-121"
+      ],
+      "invalid_xmltv_ids": 0,
+      "invalid_timestamps": 0,
+      "windows": {
+        "ltv-100": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-101": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-102": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-103": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-104": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-105": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-106": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-107": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-108": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-109": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-110": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-111": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-112": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-113": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-114": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": null
+        },
+        "ltv-117": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-118": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-120": {
+          "current": null,
+          "next": null
+        },
+        "ltv-119": {
+          "current": null,
+          "next": null
+        },
+        "ltv-116": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-2000000801": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        },
+        "ltv-2000000802": {
+          "current": [
+            "2030-01-01T11:30:00+00:00",
+            "2030-01-01T12:30:00+00:00"
+          ],
+          "next": [
+            "2030-01-01T12:30:00+00:00",
+            "2030-01-01T13:30:00+00:00"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,65 @@
+name: Playlist and EPG regression
+
+on:
+  pull_request:
+  push:
+    branches:
+      - ops/issue-10-phase-2-regression
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    name: Offline playlist and EPG contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Fetch the reviewed source references
+        env:
+          BASE_REVISION: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin \
+            68be2022dc70675c351a8a6fc5435ae1f4079efa \
+            589ecddb085352585d3f7d3b6a65ecc2ad444b68 \
+            db443bb775bea37a92339db2443b418ea8222386 \
+            f8bc7ab33542bda9daedf1839cd23d980f4b6a7c
+          if [[ -n "$BASE_REVISION" ]]; then
+            git fetch --no-tags --depth=1 origin "$BASE_REVISION"
+          fi
+      - name: Run validation and gateway replay
+        env:
+          BASE_REVISION: ${{ github.event.pull_request.base.sha }}
+        shell: bash
+        run: |
+          set +e
+          python -m unittest discover -s tests/playlist_regression -v 2>&1 | tee validator.log
+          validator_status=${PIPESTATUS[0]}
+          args=()
+          if [[ -n "$BASE_REVISION" ]]; then
+            args+=(--base-revision "$BASE_REVISION")
+          fi
+          python scripts/run_playlist_regression.py "${args[@]}" 2>&1 | tee regression.log
+          regression_status=${PIPESTATUS[0]}
+          {
+            echo '## Playlist and EPG regression'
+            echo
+            echo 'Synthetic offline checks. Authenticated QA, device playback and isolated rollback require separate verification.'
+            echo
+            echo '~~~text'
+            cat validator.log regression.log
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if (( validator_status || regression_status )); then exit 1; fi
