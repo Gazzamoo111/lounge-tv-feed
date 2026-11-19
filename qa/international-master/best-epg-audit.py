@@ -180,7 +180,7 @@ def audit_xmltv(source, selection, now=None):
         "programme_titles_stored": False,
     }
     metadata = [(epg_id, found[epg_id], counts[epg_id],
-                 latest[epg_id]) for epg_id in found if found[epg_id]]
+                 latest.get(epg_id)) for epg_id in found if found[epg_id]]
     return summary, metadata
 
 
