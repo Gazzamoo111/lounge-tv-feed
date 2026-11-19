@@ -8,11 +8,13 @@ test("QA edge serves its own /lounge-plus-qa prefix",()=>{
   assert(source.includes('const marker="/lounge-plus-qa";'));
   assert(!source.includes('const marker="/n";'));
 });
-test("Xtream live catalogue exposes the same 20 category IDs as M3U",()=>{
+test("Xtream login uses the proven 19 Nov Widevine-aware automatic fallback",()=>{
   assert(source.includes('if(action==="get_live_streams"){'));
-  assert(source.includes('const mapped=plusRows(await nuvioFullRows(),nuvioGroup);'));
-  assert(source.includes('category_id:PLUS_IDS[group]'));
-  assert(!source.includes('nuvio_m3u_drm_fallback_required'));
+  assert(source.includes('nuvio_m3u_drm_fallback_required'));
+  assert(source.includes('Retry get.php on this server'));
+  assert(source.includes('const rows=plusRows(await nuvioFullRows(),nuvioGroup);'));
+  assert(source.includes('const group=PLUS_LABELS[plusGroupName];'));
+  assert(source.includes('category_id:PLUS_IDS[g]'));
 });
 test("Sky Sport 1,2,3,9 use tested source IDs; unknown 4-8 unchanged",()=>{
  const known={1:636918,2:1424317,3:1424316,9:636926};
