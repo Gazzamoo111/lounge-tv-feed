@@ -35,29 +35,33 @@ jobs:
           python-version: "3.12"
       - run: python -m unittest discover -s qa/international-master -p 'test_best_epg_audit.py' -v
 
-  best-epg-metadata-probe:
-    # Opt-in ONLY: setting this repository variable to true is a deliberate QA action.
-    # Secrets are never used on PR jobs. No guide titles or URLs are uploaded.
-    if: github.event_name == 'push' && vars.RUN_BEST_EPG_AUDIT == 'true'
+  best-guide-private-qa:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/qa/international-master-unified-20261119'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     permissions:
       contents: read
-    env:
-      BEST_XMLTV_URL: ${{ secrets.BEST_XMLTV_URL }}
-      QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - name: Install pinned PostgreSQL client
-        run: python -m pip install 'psycopg[binary]==3.2.12'
-      - name: Stream BEST XMLTV on runner and persist metadata only
-        run: python qa/international-master/best-epg-audit.py --persist --out best-epg-qa-summary.json
-      - name: Upload counts-only audit artifact
-        uses: actions/upload-artifact@v4
+          python-version: '3.12'
+      - name: Authenticate GitHub job to private Lounge QA broker
+        uses: actions/github-script@v7
         with:
-          name: best-epg-qa-metadata
-          path: best-epg-qa-summary.json
-          retention-days: 3
+          script: |
+            const token = await core.getIDToken('loungetv-international-epg-qa');
+            core.setSecret(token);
+            core.exportVariable('LOUNGE_QA_OIDC', token);
+      - name: Build validated compressed International XMLTV from real programmes
+        run: python qa/international-master/build-best-epg-qa.py build
+      - name: Refresh short-lived OIDC token for private upload
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('loungetv-international-epg-qa');
+            core.setSecret(token);
+            core.exportVariable('LOUNGE_QA_OIDC', token);
+      - name: Upload compressed QA guide privately and verify
+        run: python qa/international-master/build-best-epg-qa.py upload
