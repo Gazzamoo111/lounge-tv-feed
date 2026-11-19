@@ -1,0 +1,237 @@
+# Lounge TV International Master: QA Build Status
+
+## International Regional Trial QA: 23-category customer view (19 November)
+
+This is a SEPARATE trial gateway. The previous International QA v15 and
+production NZ/AU n v36 have not been changed.
+
+- New Edge Function \`lounge-international-regional-qa\` v4 is ACTIVE.
+- The separate trial M3U uses \`/get.php?username=...&password=...\` and
+  embeds its own \`/xmltv.php\` x-tvg-url. Use M3U import in Nuvio + IPTV.
+- 16,012 visible channels retained exactly. Category count reduced 95 -> 23.
+  Flat Nuvio categories, countries distinguished within mixed regions by
+  two-letter/region channel prefixes. No nested country folders.
+- Live comparator verified the exact SAME channel IDs, source URLs,
+  guide IDs, logo URLs and DRM attributes as original International Master.
+  Channel presentation labels, country order and category grouping differ.
+- Legacy categories were mapped exhaustively to the 23 new buckets.
+  All groups have nonempty channel output. Country and subgenre sorting is
+  precomputed to stay below the Supabase Free CPU budget.
+- Sky Sport FHD 1-9 showed zero first-video bytes, despite HTTP 200.
+  QA-only four overrides based on MPEG-TS sample bytes:
+  Sky 1 -> 636918 (HD), Sky 2 -> 1424317 (NZ alternative),
+  Sky 3 -> 1424316 (NZ alternative), Sky 9 -> 636926 (HD).
+  The actual client-visible redirects returned HTTP 302 and precisely
+  those backing IDs. Sky 4-8 remain unverified across all tested sources.
+  Valid TS bytes do not prove correct programme content or stable viewing.
+- Regional authenticated XMLTV returned HTTP 200 with
+  \`compiled-private-qa\` source and XMLTV signature.
+- Reproducible live CI: <https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44481996549>
+  (newest checked run for routing). No subscriber credentials logged or
+  committed. The category/EPG/DRM equivalence contract passed.
+- The BEST trial credentials used by these diagnostics may expire. Each
+  external trialist must receive separate, active BEST credentials and
+  sufficient worldwide bouquet entitlements; do not reuse the developer QA
+  account. The Regional QA M3U does not provision BEST subscribers.
+- Commercial redistribution permissions, real Nuvio guide sync,
+  longer playback tests, Sky 4-8 recovery, and permanent unattended EPG
+  refresh remain unverified. Not a production/customer launch.
+
+---
+
+
+## CURRENT: BEST International EPG delivered to QA (19 November 2026)
+
+**This section supersedes older "not yet imported" / shared-only EPG statements below.**
+The International Master remains **QA-only** and is **not customer release-ready**.
+
+- A private GitHub Actions runner downloads the BEST full XMLTV through the
+  OIDC-authenticated `lounge-international-epg-broker-qa`, validates exact
+  provider ID + selected channel name, filters genuine current/upcoming
+  programme blocks and adds matched shared-guide fallbacks in 25-ID batches.
+- Successful full build [run 44469259564](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44469259564):
+  **9,217 BEST channel tags, 301,811 programme tags scanned**;
+  **3,393** selected guide IDs had confirmed channel identities;
+  **2,471** BEST guide IDs had **95,098** upcoming/current programme records;
+  shared guide contributed **141** more distinct IDs and **17,505**
+  programme records. **2,612 distinct EPG IDs** with programmes in output,
+  not the same as 2,612 unique visible Nuvio channels.
+- Generated valid XMLTV, gzip **9,048,070 bytes** in private Supabase
+  Storage bucket `lounge-international-epg-qa`. No programmes written to
+  PostgreSQL or committed publicly. A follow-up duplicate-channel protection
+  amendment is awaiting its own final build verification.
+- Deployed `lounge-international-master-v4-qa` **v15**: authenticated
+  `/xmltv.php` streams the compiled private guide. On missing/stale file,
+  safely falls back to the previous shared-guide endpoint. Nuvio M3U
+  `x-tvg-url` still targets that same route.
+- Verified via an authenticated live EPG probe in
+  [run 44469259564](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44469259564):
+  HTTP **200**, response scope `compiled-private-qa`, valid XML/gzip
+  signature, positive payload bytes. Parser, catalogue contract, upload and
+  delivery checks all passed.
+- Selected stream IDs with identified wrong-source EPG assignments are
+  suppressed in the QA M3U; original curated NZ/AU release remains unchanged.
+- Important remaining gates: real Nuvio + IPTV guide sync and visible-row
+  coverage measurement, confirmed 80% permanent-channel coverage, playback,
+  valid long-term BEST entitlements, refresh automation for commercial use,
+  and programme/stream redistribution rights. **Do not merge or release.**
+
+---
+
+
+**As of 19 November 2026: implemented in isolated QA, NOT ready for customer release.**
+**Production `n` v36 and original `lounge-international-master-qa` v3 are untouched.**
+
+## Implemented and verified
+
+- BEST International Master trial authenticated against the provider; returned all
+  **835** live category banks via `get_live_categories`.
+- Fixed HTTP 451 block on bulk inventory polling by category-scoped
+  `get_live_streams&category_id=<id>` queries using a bounded,
+  single-use-authenticated QA Supabase Edge importer.
+- Imported **54,971 unique provider live IDs from 835/835 banks** into
+  `lounge_sync.international_master_streams_qa_20261119`.
+  Two HTTP 503 categories succeeded on retry.
+- Preserved category metadata in
+  `lounge_sync.international_master_categories_qa_20261119`.
+- Generated a **16,910-source precomputed, balanced QA selection** using
+  `lounge_sync.international_master_selection_qa_20261119`. It removes radio,
+  adult and placeholder banks, prioritises observed video and existing guide
+  evidence, balances region/country coverage and keeps event overflow separate.
+  **This is selection, not playback proof.**
+- The QA-only `lounge-international-master-v4-qa` Edge Function serves this
+  shortlist with unchanged NZ/AU curated bindings and TVNZ Widevine M3U
+  metadata. The old Asian add-on overlay has been removed.
+- An authenticated `player_api.php?action=qa_summary` returned **16,012
+  customer-facing live entries across 95 populated categories**.
+- An authenticated `get.php?type=m3u_plus` returned HTTP **200**, a
+  **5,157,734-byte M3U** with **16,012 EXTINF channel entries**. Its
+  category numbering is contiguous from **01 to 95**. TVNZ 1/2 and
+  DRM metadata are present. Live Events and PPV Source Overflow are last.
+- Category-contract GitHub Actions tests passed prior to integration; changes
+  remain in draft pull request #9, not merged to the main branch.
+
+## Confirmed outstanding gates
+
+1. **EPG:** only **417 of 16,012** selected channel entries currently
+   have a guide with actual programmes through the shared guide table.
+   EPG IDs alone do not count. BEST provider `get_short_epg` returned zero
+   programmes for three sample IDs; `xmltv.php` HEAD returned HTTP 200
+   with an empty text/html response. Independent EPG sources require
+   exact ID matching, programme validation and commercial rights review.
+   Do not promise 80% EPG coverage.
+2. **Playback:** HTTP playlist generation and TVNZ DRM tags are confirmed;
+   long-duration channel playback and Nuvio + IPTV device behaviour have
+   not been verified. Test live streams on a real player and investigate
+   affected regional banks before promoting sources.
+3. **Delivery:** The BEST account is a short trial with provider-reported
+   expiration **2026-11-19 21:24:19 UTC** (20 Nov at 10:24 NZDT).
+   Future customer credentials must carry the correct entitlement for this
+   International Master template.
+4. **Performance:** 55k records loaded into the function directly caused
+   Supabase HTTP 546 WORKER_RESOURCE_LIMIT; a precomputed shortlist resolved
+   it. The 16k-entry 5.16 MB M3U still requires clean Nuvio sync timing,
+   memory, guide loading and stability tests.
+5. **Source reliability and commercial permission:** The importer retrieves
+   provider entries, not licensed or continuously verified channels.
+   Confirm rebroadcast and EPG redistribution rights before selling.
+
+## Safety boundaries
+
+- No edits or deployments to `n` v36, original International QA v3 or
+  active production catalogue tables.
+- No paid Supabase branch, extra project or recurring polling job.
+- All importer requests are rate-bounded and require single-use tokens;
+  trial credentials are loaded server-side from Supabase Vault.
+- Trial credentials and stream URLs are not committed to GitHub.
+- Never merge this PR or route customer devices to v4 QA until every
+  release gate above is met.
+
+## QA guide transport optimisation (19 Nov 2026)
+
+- The International QA XMLTV endpoint now streams only current programme records whose EPG IDs belong to the **selected customer-facing catalogue**; it does not download the entire active NZ/AU shared guide into memory.
+- An authenticated XMLTV GET returned **HTTP 200**, well-formed XMLTV wrapper, **15,768,924 bytes**. Before the QA-only optimisation, the same gateway returned **90,774,577 bytes** of full shared guide data, a measured **82.6% payload reduction**.
+- Optional HTTP gzip compression is implemented for requesting clients. Compressed output and actual Nuvio guide-sync time are **not tested**.
+- Smaller guide size does not prove higher coverage: the earlier raw-ID snapshot measured **417/16,012**; the newer permanent-channel diagnostic is documented below. No synthetic or guessed EPG was imported.
+- The bulky temporary HTTP responses from these checks have been deleted from the internal network-response table to avoid free-tier storage waste.
+
+## International EPG source/matching audit (19 Nov 2026)
+
+**Guide status: matching improved; programme ingestion and Nuvio EPG sync NOT complete.**
+
+- Indexed 20 country XMLTV feeds from `iptv-epg.org`, storing **6,397 guide
+  channel identities and upcoming-programme counts**, NOT programme titles
+  or schedules. This is private QA metadata only. Commercial redistribution
+  of third-party schedule data is **not yet authorised or verified**.
+- `lounge_sync.international_epg_matches_qa_20261119` contains:
+  **635** accepted exact provider-ID plus normalised channel-name matches;
+  **410** accepted unambiguous same-country name matches with blank provider
+  guide ID; and **391** conflicting populated provider IDs held for review.
+  Total **1,045** QA-accepted source mappings, **391** held.
+- BEST's original EPG ID can point to the wrong channel: e.g.
+  `AR| FRANCE 24` points to `01TV.fr`, whose external display name is
+  01TV. Never treat matching ID strings as valid without identity checks.
+- Added authenticated `player_api.php?action=qa_epg_summary` to
+  `lounge-international-master-v4-qa` (currently function v11), confirming
+  **16,012 visible channel rows**. Excluding **4,110** themed 24/7 and
+  event/PPV placeholder rows leaves **11,902 permanent candidates**.
+  Of those, **583** currently have an effective EPG ID with live
+  programme rows in the shared guide; a further **702** visible rows have
+  newly accepted **metadata-only** EPG match candidates, while **259**
+  visible conflicts require review.
+- Note historical count **417/16,012** used the raw `epg_id` property
+  without all gateway aliases and included an inappropriate denominator.
+  The new permanent-channel diagnostic is more relevant, but even its
+  583 matching IDs **do not independently prove correct programme titles**.
+  The 702 candidate matches have not been delivered to the player.
+- BEST's authenticated `xmltv.php` GET was confirmed to return XMLTV.
+  The first 4 MB contained **9,348 channel tags and 8,182 programme tags**,
+  proving it is not empty. Two attempts to fully index it via a Supabase
+  Edge Function failed with **HTTP 546 WORKER_RESOURCE_LIMIT**;
+  narrowing to selected channel IDs did not overcome this. The source
+  ignores the HTTP Range header (`200`, no `Content-Range`).
+  The complete BEST guide is **not imported**.
+- Keeping whole programme schedules off Postgres is important:
+  current total database size is approximately **489 MB**, near the
+  Supabase free-tier database limit. Newly indexed EPG source metadata
+  is approximately 1.5 MB.
+- The QA guide route currently returns **only shared guide programmes**.
+  External mappings are **not** silently inserted as invented listings.
+  No NZ/AU v36 code or release state has been modified.
+
+### Before release
+
+1. Ingest current programme data from a permitted source without exceeding
+   Supabase free-tier limits; avoid repeatedly loading the full BEST XMLTV
+   into an Edge Function.
+2. Validate exact EPG channel identities, time zones, refresh cadence and
+   programme freshness per country. Review conflicts manually with evidence.
+3. Serve validated EPG to a clean Nuvio + IPTV QA client and measure
+   genuine visible programme coverage, sync latency and stability.
+4. Confirm explicit commercial redistribution permission from each EPG
+   provider before shipping the data to paying subscribers.
+5. Exclude 24/7 and event/PPV placeholders from the 80% permanent-channel
+   coverage denominator. **Current results do NOT meet 80%.**
+
+## Free-tier BEST guide audit runner staged (19 Nov 2026)
+
+- Added `qa/international-master/best-epg-audit.py` to parse the complete
+  BEST XMLTV **on a GitHub-hosted runner**, not in a 256 MB Supabase Edge worker.
+  Parsing is bounded and streaming; programme titles, stream URLs and
+  customer credentials are never put in the audit output.
+- The audit checks actual programme freshness and **requires both the EPG ID
+  and normalised channel identity to match**. Wrong IDs such as France 24
+  pointing to 01TV are held, not auto-assigned.
+- Optional `--persist` stores only provider channel identities and programme
+  counts in the existing **isolated QA source-index tables**; it rejects writes
+  when PostgreSQL reaches 494 MiB, preserving headroom below Free's 500 MiB
+  size limit. No title/schedule records are written.
+- The workflow's live BEST audit job is **opt-in**, gated by repository variable
+  `RUN_BEST_EPG_AUDIT=true` and requires GitHub Actions secrets
+  `BEST_XMLTV_URL` and `QA_DATABASE_URL`. Those are not stored in the public
+  repository, and have **not** been configured or used in this task.
+- Confirmed GitHub Actions run `44453084695`: existing catalogue contracts
+  **passed**, four new XMLTV unit tests **passed**, provider audit **skipped**.
+- **Actual BEST full-guide coverage remains unmeasured**; neither the QA player
+  XMLTV endpoint nor NZ/AU v36 is changed. Commercial programme-data rights,
+  real Nuvio guide sync and stream playback remain release gates.
