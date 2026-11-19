@@ -78,6 +78,22 @@ Deno.serve(async(req)=>{
   const url=new URL(req.url);
   const path=url.pathname.split("/").filter(Boolean).slice(-1)[0]||"";
   try{
+    if(path==="legacy-playlist"&&req.method==="GET"){
+      const c=await credentials();
+      const target=new URL(SUPABASE_URL+"/functions/v1/lounge-international-master-v4-qa/get.php");
+      target.searchParams.set("username",c.username);
+      target.searchParams.set("password",c.password);
+      const res=await fetch(target,{headers:{"Accept":"application/x-mpegURL,text/plain,*/*"},
+        signal:AbortSignal.timeout(25000)});
+      if(!res.ok||!res.body){
+        try{await res.body?.cancel()}catch{}
+        return json({error:"legacy_playlist_unavailable",status:res.status},502);
+      }
+      return new Response(res.body,{status:200,headers:{
+        "Content-Type":"application/x-mpegURL; charset=utf-8",
+        "Cache-Control":"no-store"
+      }});
+    }
     if(path==="regional-playlist"&&req.method==="GET"){
       // OIDC-only temporary diagnostic; do not log credentials or response.
       const c=await credentials();
