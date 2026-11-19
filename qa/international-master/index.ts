@@ -1233,6 +1233,7 @@ function nuvioGood(r:any):boolean{
 function nuvioClean(n:string){return n.replace(/^\s*[A-Z]{2,5}\s*\|\s*/i,"").trim().replace(/\s+/g," ");}
 function nuvioIdentity(n:string){return nuvioClean(n).normalize("NFKC").replace(/[ᴿᴬᵂ⁶⁰ᶠᵖˢᴴᴰ]/g,"").replace(/\b(?:SD|HD|FHD|HEVC|UHD|4K|720P|1080P)\b/gi,"").replace(/[^\p{L}\p{N}]+/gu," ").trim().toLowerCase();}
 function nuvioLegacyGroup(r:any):string{
+ if(r?.__worldLegacy)return String(r.__worldLegacy);
  const t=String(r.category||"").toLowerCase(),v=String(r.subcategory||"").toUpperCase();
  if(t==="intl-qa")return masterSeaGroup(String(r.subcategory||""))||"International TV";
  const g247=nuvio247Group(t,v);
@@ -1282,7 +1283,7 @@ function nuvioLegacyGroup(r:any):string{
  if(t==="music")return "Music";
  return "International TV";
 }
-function nuvioGroup(r:any):string{return worldRegionFor(nuvioLegacyGroup(r));}
+function nuvioGroup(r:any):string{return r?.__worldRegion||worldRegionFor(nuvioLegacyGroup(r));}
 async function nuvioFullRows():Promise<any[]>{
  const k="nuvio:international:regional-selection-v1",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
@@ -1368,18 +1369,26 @@ async function nuvioFullRows():Promise<any[]>{
       if(alias&&ids.has(alias))row.epg_id=alias;
     }
   }catch(err){console.error("LOUNGE_NUVIO_QA_EPG_ALIAS_FALLBACK",String(err));}
-  rows.sort((a:any,b:any)=>{
-   const oldA=nuvioLegacyGroup(a),oldB=nuvioLegacyGroup(b);
-   const groupA=worldRegionFor(oldA),groupB=worldRegionFor(oldB);
-   const ga=NUVIO_VISIBLE_ORDER.indexOf(groupA),gb=NUVIO_VISIBLE_ORDER.indexOf(groupB);
-   if(ga!==gb)return ga-gb;
-   const ca=worldCountryOrder(oldA),cb=worldCountryOrder(oldB);
-   if(ca!==cb)return ca-cb;
-   const sa=nuvioChannelPriority(oldA,a,currentGuideIds.has(String(a.epg_id||"")));
-   const sb=nuvioChannelPriority(oldB,b,currentGuideIds.has(String(b.epg_id||"")));
-   if(sa!==sb)return sa-sb;
-   return String(a.display_name).localeCompare(String(b.display_name),undefined,{numeric:true,sensitivity:"base"});
-  });
+  // Compute each classification and priority just once: Supabase Edge has
+  // a hard CPU budget and comparing 16k rows must remain primitive-only.
+  for(const row of rows){
+    const legacy=nuvioLegacyGroup(row);
+    const region=worldRegionFor(legacy);
+    row.__worldLegacy=legacy;
+    row.__worldRegion=region;
+    row.__worldRank=NUVIO_VISIBLE_ORDER.indexOf(region);
+    row.__worldCountryRank=worldCountryOrder(legacy);
+    row.__worldPriority=nuvioChannelPriority(legacy,row,currentGuideIds.has(String(row.epg_id||"")));
+    row.__worldDisplay=worldDisplayName(row,legacy);
+    row.__worldNameKey=String(row.display_name||"").toLowerCase()
+      .replace(/\d+/g,(n:string)=>n.padStart(8,"0"));
+  }
+  rows.sort((a:any,b:any)=>
+    a.__worldRank-b.__worldRank||
+    a.__worldCountryRank-b.__worldCountryRank||
+    a.__worldPriority-b.__worldPriority||
+    (a.__worldNameKey<b.__worldNameKey?-1:a.__worldNameKey>b.__worldNameKey?1:0)
+  );
   catalogueCache.set(k,{until:Date.now()+120000,rows});
   return rows;
  });
@@ -1741,7 +1750,7 @@ async function releaseM3u(u:string,p:string,url:URL){
     // Match the existing Xtream category presentation in this single full M3U.
     const group=labels[nuvioGroup(r)]||nuvioGroup(r);
     const tvg=String(effectiveLiveEpgId(r)||("ltv-"+r.external_id));
-    const display=worldDisplayName(r,nuvioLegacyGroup(r));
+    const display=String(r.__worldDisplay||worldDisplayName(r,nuvioLegacyGroup(r)));
     lines.push(`#EXTINF:-1 channel-id="ltv-${r.external_id}" tvg-id="${xmlEsc(tvg)}" tvg-logo="${xmlEsc(r.logo_url||"")}" tvg-chno="${no++}" group-title="${xmlEsc(group)}",${display}`);
     const nz=nzSourceForBinding(r.provider_name,r.provider_stream_id);
     if(nz) lines.push(...nzPlaylistLines(nz));
@@ -2100,7 +2109,7 @@ Deno.serve(async(req)=>{
       // Live Events are already alphabetised within their group upstream.
       const visible=filtered;
       return json(visible.map((r:any,i:number)=>({
-        num:i+1,name:worldDisplayName(r,nuvioLegacyGroup(r)),stream_type:"live",stream_id:Number(r.external_id),
+        num:i+1,name:String(r.__worldDisplay||worldDisplayName(r,nuvioLegacyGroup(r))),stream_type:"live",stream_id:Number(r.external_id),
         stream_icon:r.logo_url||"",epg_channel_id:effectiveLiveEpgId(r)||("ltv-"+r.external_id),
         added:"0",category_id:nuvioGroupId(nuvioGroup(r)),
         custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0,
@@ -2111,7 +2120,7 @@ Deno.serve(async(req)=>{
     const wanted=Number.isFinite(wantedRaw)&&wantedRaw>0?wantedRaw:null;
     const rows=await releaseLiveRows(wanted);
     return json(rows.map((r:any,i:number)=>({
-      num:i+1,name:worldDisplayName(r,nuvioLegacyGroup(r)),stream_type:"live",stream_id:Number(r.external_id),
+      num:i+1,name:String(r.__worldDisplay||worldDisplayName(r,nuvioLegacyGroup(r))),stream_type:"live",stream_id:Number(r.external_id),
       stream_icon:r.logo_url||"",epg_channel_id:effectiveLiveEpgId(r)||("ltv-"+r.external_id),
       added:"0",category_id:r.category_id?String(r.category_id):"0",custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0
     })));
