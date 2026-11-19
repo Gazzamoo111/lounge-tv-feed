@@ -145,7 +145,7 @@ def build():
                         if elem.tag == "channel":
                             stats["shared_channel_tags"] += 1
                             cid = elem.get("id", "")
-                            if not provider_programs.get(cid):
+                            if not provider_programs.get(cid) and cid not in confirmed:
                                 channels_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
                         else:
                             stats["shared_programme_tags"] += 1
