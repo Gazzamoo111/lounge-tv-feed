@@ -295,21 +295,25 @@ Deno.serve(async(req)=>{
     const start=Date.now();
     try{
       const res=await fetch(url,{signal:AbortSignal.timeout(15000),headers:{"Accept":"application/xml,text/xml,*/*"}});
-      let bytes=0,xmltv=false,html=false,magic:number[]=[];
+      let bytes=0,xmltv=false,html=false,magic:number[]=[],sample="",eof=false;
       if(res.body){
-        const reader=res.body.getReader(),first=await reader.read();
-        if(first.value){
-          bytes=first.value.byteLength;
-          magic=Array.from(first.value.slice(0,8));
-          const head=new TextDecoder().decode(first.value.slice(0,600)).trimStart();
-          xmltv=/^<\\?xml|^<tv[\\s>]/i.test(head);
-          html=/^<!doctype html|^<html/i.test(head);
+        const reader=res.body.getReader(),decoder=new TextDecoder();
+        for(let i=0;i<24 && bytes<262144;i++){
+          const chunk=await reader.read();if(chunk.done){eof=true;break;}
+          if(i===0)magic=Array.from(chunk.value.slice(0,8));
+          bytes+=chunk.value.byteLength;
+          sample+=decoder.decode(chunk.value,{stream:true});
         }
-        try{await reader.cancel()}catch{}
+        if(!eof)try{await reader.cancel()}catch{}
+        const head=sample.trimStart();
+        xmltv=head.startsWith("<?xml")||head.startsWith("<tv");
+        html=head.toLowerCase().startsWith("<!doctype html")||head.toLowerCase().startsWith("<html");
       }
+      const channel_tags=(sample.match(/<channel\\b/g)||[]).length;
+      const programme_tags=(sample.match(/<programme\\b/g)||[]).length;
       return reply({mode,http_status:res.status,content_type:res.headers.get("content-type"),
-        reported_length:res.headers.get("content-length"),first_chunk_bytes:bytes,magic,
-        xmltv,html,elapsed_ms:Date.now()-start});
+        reported_length:res.headers.get("content-length"),sample_bytes:bytes,magic,eof,
+        xmltv,html,channel_tags,programme_tags,elapsed_ms:Date.now()-start});
     }catch(e){return reply({mode,error:e instanceof Error?e.name:"network_error"});}
   }
   if(mode==="epg_index"){
