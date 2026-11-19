@@ -1,5 +1,5 @@
 import { nzSourceForBinding, nzPlaylistLines } from "./nz-routing.mjs";
-import { qaEpgAlias } from "./qa-epg-alias.mjs";
+import { qaEpgAlias, tenPerthGuideId, verifiedLiveEpgAlias } from "./qa-epg-alias.mjs";
 import { nuvioChannelPriority } from "./channel-priority.mjs";
 import { nuvio247Group } from "./qa-247-groups.mjs";
 import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
@@ -1019,8 +1019,10 @@ function shortEpgFileKey(raw:string){
 }
 function effectiveLiveEpgId(row:any){
   // Ten is not 10 Bold. Do not display another network’s programmes.
-  if(qaAuWrongGuide(row))return "";
   const supplied=String(row?.epg_id||"").trim();
+  if(qaAuWrongGuide(row)||(!supplied&&row?.canonical_key==="live:au-ten"))return tenPerthGuideId(row)||"";
+  const verifiedAlias=verifiedLiveEpgAlias(row);
+  if(verifiedAlias)return verifiedAlias;
   if(supplied)return supplied;
   const name=String(row?.display_name||"").trim().toUpperCase().replace(/\s+/g," ");
   const sky=name.match(/^SKY SPORT ([1-9])$/);
@@ -1772,8 +1774,11 @@ async function releaseShortEpg(base:string,u:string,p:string,externalId:number,l
     return [];
   }
   const mapped:any=await releaseLivePlayback(externalId); if(!mapped)return [];
-  if(qaAuWrongGuide(mapped))return []; // no Ten->10 Bold nor unverified provider fallback
   const epgId=effectiveLiveEpgId(mapped);
+  if(qaAuWrongGuide(mapped)||verifiedLiveEpgAlias(mapped)){
+    // These corrected bindings use the published guide and never the old provider mapping.
+    return epgId ? (await staticShortEpg(epgId,limit,externalId))||[] : [];
+  }
   // The curated short-EPG path must use the same verified alias as
   // get_live_streams. Previously Seven and AU Fox Sports showed a valid
   // EPG channel ID in the list but get_short_epg stayed empty.

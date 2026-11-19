@@ -4,6 +4,14 @@ Audit date 20 November 2026 NZDT. Tracking [Issue #10](https://github.com/Gazzam
 
 Phase 1 established a recoverable source baseline and the routes below. Phase 2 offline checks can begin. A release gate still needs authenticated feed exports, measured playback and guide baselines, and a rollback rehearsal against an isolated environment.
 
+## EPG coverage candidate, 20 November 2026 NZDT
+
+Phase 4A is paused. The current work is targeted EPG repair on the existing NZ/AU and Plus services. See Issue #10 for the proposed release scope and evidence. No production change has been made.
+
+The replay combined 3,003 admitted source-bound rows, 16,140 BEST inventory rows and the complete pinned canonical XMLTV. At 11:20 NZDT the offline candidate added current and next listings for 11 rows in each profile (NZ/AU 605 → 616 and Plus 609 → 620). It retained every channel identity, source binding, group and position. Live renderer captures returned the canonical branch header but ended before XMLTV's closing tag in this workspace. Coverage therefore uses the canonical guide input. The launch audit remains the independent delivered-guide reference. Authenticated customer exports and Nuvio acceptance are still pending.
+
+International Regional v4 remains separate. Its shared fallback was measured in the launch audit. Its private compiled guide coverage remains unmeasured. Recover NZ/AU v37 and Plus v5 via the Phase 1 manifest and retain the pre-release guide artifact as a separate rollback reference.
+
 ## Serving paths
 
 | Path | Function | Evidence and behaviour |

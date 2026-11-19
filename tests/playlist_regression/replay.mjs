@@ -77,6 +77,13 @@ async function sql(parts, ...values) {
   if (query.includes("from lounge_delivery.item_ids") && query.includes("live_source_bindings")) {
     return structuredClone(rows.filter(row => row.external_id === values.at(-1)));
   }
+  if (query.includes("select listings from lounge_delivery.shared_epg_channels")) {
+    assert.equal(values[0], "live:au-ten", "Ten may only request its verified Perth schedule");
+    return [{ listings: [{
+      title: Buffer.from("Perth programme").toString("base64"),
+      start_timestamp: 1893497400, stop_timestamp: 1893501000,
+    }] }];
+  }
   if (query.includes("select xmltv from lounge_delivery.shared_epg_channels")) {
     return [{ xmltv: guideParts(values[0]) }];
   }
@@ -144,13 +151,14 @@ const profiles = [
   ["nz-au", "n", standard], ["plus", "n", plus],
   ["regional-v4", "lounge-international-regional-qa", standard],
 ];
-function request(slug, account, path, action) {
+function request(slug, account, path, action, streamId) {
   const url = new URL(origin + "/functions/v1/" + slug + "/" + path);
   if (account) {
     url.searchParams.set("username", account[0]);
     url.searchParams.set("password", account[1]);
   }
   if (action) url.searchParams.set("action", action);
+  if (streamId) url.searchParams.set("stream_id", String(streamId));
   return handlers[slug](new Request(url));
 }
 for (const [profile, slug, account] of profiles) {
@@ -233,5 +241,28 @@ assert.equal((await request("n", [plus[0], "wrong"], "get.php")).status, 403);
 const before = calls.length;
 assert.equal((await request("n", plus, "movie/" + plus.join("/") + "/123.mp4")).headers.has("x-lounge-catalogue"), false);
 assert.equal(calls.length, before, "Plus VOD must stay on the standard gateway");
+channel("Ten", "Australia", 1789688, "10Bold.au");
+const perth = rows.at(-1);
+perth.canonical_key = "live:au-ten";
+for (const [profile, slug, account] of profiles.slice(0, 2)) {
+  const short = async () => {
+    const response = await request(slug, account, "player_api.php", "get_short_epg", perth.external_id);
+    assert.equal(response.status, 200, profile + " Perth short guide");
+    return (await response.json()).epg_listings;
+  };
+  const listings = await short();
+  assert.equal(Buffer.from(listings[0].title, "base64").toString(), "Perth programme");
+  assert.equal(listings[0].channel_id, "ltv-" + perth.external_id);
+  perth.provider_stream_id = 999;
+  assert.deepEqual(await short(), [], profile + " unknown Ten binding continues to suppress 10 Bold");
+  perth.provider_stream_id = 1789688;
+}
+for (const slug of ["n", "lounge-plus-qa"]) {
+  const { verifiedLiveEpgAlias } = await import(pathToFileURL(resolve(source, slug, "qa-epg-alias.mjs")).href);
+  const uk = { provider_name: "BEST", provider_stream_id: 30556, epg_id: "CartoonNetwork.uk" };
+  assert.equal(verifiedLiveEpgAlias(uk), "uk.Cartoon Network");
+  assert.equal(verifiedLiveEpgAlias({ ...uk, epg_id: "CartoonNetwork.us" }), null);
+  assert.equal(verifiedLiveEpgAlias({ ...uk, provider_stream_id: 999 }), null);
+}
 assert.deepEqual(unexpected, [], "Unmocked dependency calls");
 console.log("PASS gateway replay: NZ/AU, Plus, Regional v4, TVNZ 1/2, Sky Sport 1–9, guide fallback and route isolation");
