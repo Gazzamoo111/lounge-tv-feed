@@ -67,3 +67,26 @@ jobs:
         run: python qa/international-master/build-best-epg-qa.py upload
       - name: Verify live Nuvio QA XMLTV delivery
         run: python qa/international-master/build-best-epg-qa.py probe
+
+
+  regional-live-qa:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/qa/international-master-unified-20261119'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Authorise one-time QA diagnostics without storing BEST credentials
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('loungetv-international-epg-qa');
+            core.setSecret(token);
+            core.exportVariable('LOUNGE_QA_OIDC', token);
+      - name: Confirm 23 regions, unchanged EPG/media/DRM, and Sky source health
+        run: python qa/international-master/qa-world-regional-live-test.py
