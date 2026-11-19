@@ -1,0 +1,20 @@
+name: Account-scoped Lounge Plus n gateway test
+on:
+  push:
+    branches:
+      - qa/n-loungetv-plus-link-20261119
+  workflow_dispatch:
+jobs:
+  route-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test qa/lounge-plus-route/*.test.mjs
+      - name: Check existing public n.loungetv.nz auth gate
+        run: |
+          code=$(curl --silent --show-error --max-time 25 --output /tmp/n-gate.json --write-out '%{http_code}' 'https://n.loungetv.nz/player_api.php?action=get_live_categories')
+          test "$code" = 401
+          grep -q '"auth":0' /tmp/n-gate.json
