@@ -314,7 +314,7 @@ Deno.serve(async(req)=>{
     url.searchParams.set("username",c.username);url.searchParams.set("password",c.password);
     const start=Date.now();
     try{
-      const res=await fetch(url,{signal:AbortSignal.timeout(15000),headers:{"Accept":"application/xml,text/xml,*/*"}});
+      const res=await fetch(url,{signal:AbortSignal.timeout(15000),headers:{"Accept":"application/xml,text/xml,*/*","Range":"bytes=0-65535"}});
       let bytes=0,xmltv=false,html=false,magic:number[]=[],sample="",eof=false;
       if(res.body){
         const reader=res.body.getReader(),decoder=new TextDecoder();
@@ -332,7 +332,7 @@ Deno.serve(async(req)=>{
       const channel_tags=(sample.match(/<channel\b/g)||[]).length;
       const programme_tags=(sample.match(/<programme\b/g)||[]).length;
       return reply({mode,http_status:res.status,content_type:res.headers.get("content-type"),
-        reported_length:res.headers.get("content-length"),sample_bytes:bytes,magic,eof,
+        reported_length:res.headers.get("content-length"),content_range:res.headers.get("content-range"),sample_bytes:bytes,magic,eof,
         xmltv,html,channel_tags,programme_tags,elapsed_ms:Date.now()-start});
     }catch(e){return reply({mode,error:e instanceof Error?e.name:"network_error"});}
   }
