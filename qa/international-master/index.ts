@@ -11,6 +11,7 @@ import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
 import { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";
 import { masterVisibleOrder, masterSeaGroups, masterSeaGroup, masterRegionGroup, masterCategoryLabels } from "./qa-international-architecture.mjs";
+import { qaFilteredBestXmltv } from "./qa-best-epg-stream.mjs";
 import postgres from "npm:postgres@3.4.7";
 
 // LOUNGE_SUPAVISOR_TRANSACTION_POOL
@@ -1337,6 +1338,17 @@ async function nuvioFullRows():Promise<any[]>{
   rows.splice(0,rows.length,...qaCustomerLiveRows(rows,nuvioGroup));
   // QA v29: strip the provably wrong Ten->10 Bold guide in the customer list.
   for(const row of rows)if(qaAuWrongGuide(row))row.epg_id="";
+  // Do not let known provider-ID mistakes display another channel's guide.
+  const badGuide=await sql`SELECT provider_stream_id,original_epg_id
+    FROM lounge_sync.international_epg_matches_qa_20261119
+    WHERE decision='review_required'`;
+  const conflicts=new Map(badGuide.map((x:any)=>[Number(x.provider_stream_id),String(x.original_epg_id||"")]));
+  for(const row of rows){
+    const conflict=conflicts.get(Number(row.provider_stream_id));
+    if(conflict&&conflict===String(row.epg_id||"")){
+      row.epg_id="";row.qaEpgRejected=true;
+    }
+  }
   // QA EPG recovery: assign only current, verified EPG IDs to exact NZ/AU
   // and selected Sports Networks alternatives. Never guess regional schedules.
   // Rank four customer categories against available programme metadata only:
@@ -1735,45 +1747,64 @@ async function releaseM3u(u:string,p:string,url:URL){
  * the selected catalogue. Stream XMLTV in batches; avoid pulling the 90 MB
  * production guide into this free-tier Edge Function's memory.
  */
-async function internationalQaXmltv(req:Request){
+async function internationalQaXmltv(req:Request,u:string,p:string,providerBase:string){
  const rows=await nuvioFullRows();
  const candidateIds=[...new Set(rows.map((r:any)=>String(effectiveLiveEpgId(r)||"")).filter(Boolean))];
  const eligible=await sql`
    SELECT epg_id FROM lounge_delivery.shared_epg_channels
-   WHERE epg_id=any(${candidateIds}::text[])
-     AND programme_count>0 AND expires_at>now()
-   ORDER BY epg_id
- `;
- const ids=eligible.map((x:any)=>String(x.epg_id));
+   WHERE epg_id=any(${candidateIds}::text[]) AND programme_count>0 AND expires_at>now()
+   ORDER BY epg_id`;
+ const sharedIds=eligible.map((x:any)=>String(x.epg_id));
+ const guideUrl=new URL(providerBase+"/xmltv.php");
+ guideUrl.searchParams.set("username",u);
+ guideUrl.searchParams.set("password",p);
+ let providerBody:ReadableStream<Uint8Array>|null=null;
+ try{
+   const upstream=await fetch(guideUrl,{headers:{Accept:"application/xml,text/xml,*/*",
+     "User-Agent":"LoungeTV-International-Guide-QA/1.0"},signal:AbortSignal.timeout(130000)});
+   if(upstream.ok&&upstream.body)providerBody=upstream.body;
+   else await upstream.body?.cancel().catch(()=>{});
+ }catch{ /* BEST outage must not erase the shared guide. */ }
+ const source=providerBody;
+ const feed=(async function*(){
+   yield '<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Lounge TV International QA">\n';
+   if(source){
+     try{
+       for await(const block of qaFilteredBestXmltv(source,rows,effectiveLiveEpgId,sharedIds))yield block;
+     }catch{
+       // Filter emits only complete XML elements; shared guide can follow safely.
+       try{await source.cancel()}catch{}
+     }
+   }
+   for(let start=0;start<sharedIds.length;start+=25){
+     const batch=sharedIds.slice(start,start+25);
+     const parts=await sql`SELECT xmltv FROM lounge_delivery.shared_epg_channels
+       WHERE epg_id=any(${batch}::text[]) AND programme_count>0 AND expires_at>now()
+       ORDER BY epg_id`;
+     for(const item of parts)if(item.xmltv)yield String(item.xmltv)+"\n";
+   }
+   yield "</tv>\n";
+ })()[Symbol.asyncIterator]();
  const encoder=new TextEncoder();
  const xml=new ReadableStream<Uint8Array>({
-   async start(controller){
+   async pull(controller){
      try{
-       controller.enqueue(encoder.encode('<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Lounge TV International QA">\n'));
-       for(let start=0;start<ids.length;start+=25){
-         const batch=ids.slice(start,start+25);
-         const parts=await sql`SELECT xmltv FROM lounge_delivery.shared_epg_channels
-           WHERE epg_id=any(${batch}::text[]) AND programme_count>0 AND expires_at>now()
-           ORDER BY epg_id`;
-         for(const p of parts){
-           if(p.xmltv)controller.enqueue(encoder.encode(String(p.xmltv)+"\n"));
-         }
-       }
-       controller.enqueue(encoder.encode("</tv>\n"));
-       controller.close();
+       const part=await feed.next();
+       if(part.done)controller.close();
+       else controller.enqueue(encoder.encode(part.value));
      }catch(e){controller.error(e);}
-   }
+   },
+   async cancel(){try{await feed.return?.()}catch{}}
  });
  const canGzip=/\bgzip\b/i.test(req.headers.get("accept-encoding")||"");
  const headers:Record<string,string>={
    "Content-Type":"application/xml; charset=utf-8",
    "Cache-Control":"private, max-age=300",
    "Access-Control-Allow-Origin":"*",
-   "X-Lounge-Guide-Scope":"selected-qa"
+   "X-Lounge-Guide-Scope":"best-plus-shared-qa"
  };
  if(canGzip)headers["Content-Encoding"]="gzip";
- return new Response(canGzip?xml.pipeThrough(new CompressionStream("gzip")):xml,
-   {status:200,headers});
+ return new Response(canGzip?xml.pipeThrough(new CompressionStream("gzip")):xml,{status:200,headers});
 }
 let skyNzShortCache:{until:number,body:string}|null=null;
 async function skyNzShortEpg(epgId:string,limit:number,externalId:number){
@@ -1947,7 +1978,7 @@ Deno.serve(async(req)=>{
     const auth=await accountState(base,u,p);
     if(!auth.ok)return json({error:"not_allowed"},403);
     if(RECOVERY_MODE)return await providerXmltv(base,u,p);
-    return await internationalQaXmltv(req);
+    return await internationalQaXmltv(req,u,p,base);
   }
   if(parts[0]==="get.php"){const {u,p}=credentials(url,parts);const auth=await accountState(base,u,p);if(!auth.ok)return json({error:"not_allowed"},403);if(RECOVERY_MODE)return await providerM3u(base,u,p);return await releaseM3u(u,p,url);}
 
