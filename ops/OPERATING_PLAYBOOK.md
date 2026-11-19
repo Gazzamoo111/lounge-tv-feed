@@ -48,3 +48,7 @@ When ending a chat or reaching context limits: update the GitHub issue and state
 
 ## Required response after execution
 Target and version; implemented changes; automated check results; real device confirmation or not tested; production status; rollback reference; unresolved risks; the next necessary action. Never report a pass without evidence.
+
+## Controlled release records
+
+Use the [Phase 3 release process](phase-3/RELEASE.md) for single-target candidate manifests, approval, staging and promotion gates, and rollback. Log every attempt in [release history](phase-3/HISTORY.md), the relevant issue and [CURRENT_STATE.md](CURRENT_STATE.md).

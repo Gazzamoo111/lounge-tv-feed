@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "project": "liqocisegeqzbyuqloql",
+  "source_baseline": "ac6b50abf10af3831b3eeb937354f9abac7e36c4",
+  "issue": 10,
+  "approval_owner": "Gazzamoo111",
+  "targets": {
+    "nz-au": {
+      "profiles": {
+        "nz-au": "n",
+        "plus": "lounge-plus-qa"
+      },
+      "current_routes": {
+        "nz-au": "https://n.loungetv.nz",
+        "plus": "https://n.loungetv.nz"
+      },
+      "promotion_project": "liqocisegeqzbyuqloql",
+      "dependencies": [
+        "Cloudflare custom-domain Worker and route",
+        "BEST account assignments and Vault Plus verifier",
+        "player epg-data and shared guide tables"
+      ],
+      "edge_dependencies": [
+        "lounge-core-live-m3u",
+        "lounge-core-live-xmltv",
+        "lounge-core-epg",
+        "lounge-core-sky-nz-epg",
+        "lounge-core-xtream",
+        "lounge-shared-epg-sync",
+        "lounge-customer-playlist-qa",
+        "tvnz-license-qa"
+      ]
+    },
+    "international": {
+      "profiles": {
+        "regional-v4": "lounge-international-regional-qa"
+      },
+      "current_routes": {
+        "regional-v4": "https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-international-regional-qa"
+      },
+      "promotion_project": null,
+      "dependencies": [
+        "dedicated BEST QA account and Vault bindings",
+        "private compiled guide storage"
+      ],
+      "edge_dependencies": [
+        "lounge-international-epg-broker-qa",
+        "lounge-international-ingest-qa",
+        "lounge-shared-epg-sync",
+        "lounge-core-live-m3u",
+        "lounge-core-live-xmltv",
+        "lounge-core-xtream"
+      ]
+    }
+  }
+}

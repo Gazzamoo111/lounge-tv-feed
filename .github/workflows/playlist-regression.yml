@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - ops/issue-10-phase-2-regression
+      - ops/issue-10-phase-3-releases
 
 permissions:
   contents: read
@@ -35,7 +36,8 @@ jobs:
             68be2022dc70675c351a8a6fc5435ae1f4079efa \
             589ecddb085352585d3f7d3b6a65ecc2ad444b68 \
             db443bb775bea37a92339db2443b418ea8222386 \
-            f8bc7ab33542bda9daedf1839cd23d980f4b6a7c
+            f8bc7ab33542bda9daedf1839cd23d980f4b6a7c \
+            ac6b50abf10af3831b3eeb937354f9abac7e36c4
           if [[ -n "$BASE_REVISION" ]]; then
             git fetch --no-tags --depth=1 origin "$BASE_REVISION"
           fi
@@ -63,3 +65,13 @@ jobs:
             echo '~~~'
           } >> "$GITHUB_STEP_SUMMARY"
           if (( validator_status || regression_status )); then exit 1; fi
+      - name: Check release manifests and rehearse scoped rollback
+        run: |
+          set -eu
+          for target in nz-au international; do
+            manifest="ops/phase-3/${target}-baseline.json"
+            revision="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_commit"])' "$manifest")"
+            python scripts/playlist_release.py plan "$target" "$revision" > "$RUNNER_TEMP/${target}-baseline.json"
+            diff -u "$manifest" "$RUNNER_TEMP/${target}-baseline.json"
+          done
+          python scripts/playlist_release.py rehearse

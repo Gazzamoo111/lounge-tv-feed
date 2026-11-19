@@ -1,0 +1,139 @@
+{
+  "changes": [],
+  "current_routes": {
+    "regional-v4": "https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-international-regional-qa"
+  },
+  "dependencies": [
+    "dedicated BEST QA account and Vault bindings",
+    "private compiled guide storage"
+  ],
+  "edge_dependencies": {
+    "lounge-core-live-m3u": {
+      "bundle_sha256": "ed70f249370195170493482fca08175f1ff97daaef292bd56c55e9a068674e2e",
+      "import_map": false,
+      "verify_jwt": false,
+      "version": 35
+    },
+    "lounge-core-live-xmltv": {
+      "bundle_sha256": "07c924e3d609ad4ff4d34a5b7e89376f95865246ab122cb7e447c196de65adbc",
+      "import_map": false,
+      "verify_jwt": false,
+      "version": 24
+    },
+    "lounge-core-xtream": {
+      "bundle_sha256": "e26caa36474542ad075ef2d1b8f33f2c5d0b5a0920e5f8f477572f06c012f3fa",
+      "import_map": false,
+      "verify_jwt": false,
+      "version": 52
+    },
+    "lounge-international-epg-broker-qa": {
+      "bundle_sha256": "8130eb3379e7034a8f6742169906879889b917c2024000b98a6961ee0f3aae0e",
+      "import_map": false,
+      "verify_jwt": false,
+      "version": 8
+    },
+    "lounge-international-ingest-qa": {
+      "bundle_sha256": "20b77d19f9e989dd2720a6586830914bff15c1eca4e9274bde9b3a50f714cc2b",
+      "import_map": false,
+      "verify_jwt": false,
+      "version": 14
+    },
+    "lounge-shared-epg-sync": {
+      "bundle_sha256": "50501c33d01e54dc5e548fb4891755f0129bfa4bf9d4fe8b7b637c948176801b",
+      "import_map": false,
+      "verify_jwt": false,
+      "version": 3
+    }
+  },
+  "functions": {
+    "lounge-international-regional-qa": {
+      "candidate_files_sha256": {
+        "channel-priority.mjs": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+        "index.ts": "99cedb76414f1ecccd3cf14615bf9e923bcae669a9627d2a9fc00fa4d21c8063",
+        "nz-routing.mjs": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+        "qa-247-groups.mjs": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+        "qa-au-duplicates.mjs": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+        "qa-au-integrity.mjs": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+        "qa-customer-live-presentation.mjs": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+        "qa-epg-alias.mjs": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+        "qa-international-architecture.mjs": "372c34ed457c0fe9942a834c327be98b9eac2d25d8f794a244c0c8da43a8392a",
+        "qa-sky-fhd-primary.mjs": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+        "qa-sky-hd-backups.mjs": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+        "qa-sky-nz-loop-filter.mjs": "e5d9fd1e6f65d541961d5228eed5e9ee44e430634c2f860cada47c544321e4ee",
+        "qa-sky-regional-preferred.mjs": "5b1e0b56dab6c30f7b11c4abc4e3a2e9d8ed65af27a0f47bc122fd57d6b1725e",
+        "qa-stream-groups.mjs": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+        "qa-tvnz-xtream-drm.mjs": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44",
+        "qa-world-regions.mjs": "2694b85923850b6e593c92f51fb21f5e8a053332fcc35a126f2e56880c3f8dc1"
+      },
+      "entrypoint": "index.ts",
+      "import_map": false,
+      "observed_bundle_sha256": "9a7baef4c8f17dcbbe91642f1bfa459e75ff4d527069e81c9adf7f9c3becdffc",
+      "observed_version": 4,
+      "verify_jwt": false
+    },
+    "lounge-plus-qa": {
+      "candidate_files_sha256": {
+        "channel-priority.mjs": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+        "index.ts": "75bc6e3d872ea10b931dfee5b334a6412b25be0ce34d4fe2dfc701787289a294",
+        "nz-routing.mjs": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+        "plus-categories.mjs": "4ef5aff289505df0182d34ddd8a3e7293c71be07e2b0b0865bbdd0e12ae811c7",
+        "qa-247-groups.mjs": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+        "qa-au-duplicates.mjs": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+        "qa-au-integrity.mjs": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+        "qa-customer-live-presentation.mjs": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+        "qa-epg-alias.mjs": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+        "qa-sky-fhd-primary.mjs": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+        "qa-sky-hd-backups.mjs": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+        "qa-sky-nz-loop-filter.mjs": "65aba5ba33cbb6fd0841882182a0acd2ce32df14e48a00ee9025a4beaaa07d06",
+        "qa-sky-regional-preferred.mjs": "61385214d1305b038b6a2a38af65b2752b2a4f9f4b5641e5b44a7c6cf4826951",
+        "qa-stream-groups.mjs": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+        "qa-tvnz-xtream-drm.mjs": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44"
+      },
+      "entrypoint": "index.ts",
+      "import_map": false,
+      "observed_bundle_sha256": "9820504273ca9e5676fc30bcc9fbe7a6e11ecf6640e7e014db30381af37ee39b",
+      "observed_version": 5,
+      "verify_jwt": false
+    },
+    "n": {
+      "candidate_files_sha256": {
+        "channel-priority.mjs": "2e6e94d1d76114d7e24515a41632ac39a17d8642b7d655e3a194f223a4c8c096",
+        "index.ts": "1449d4a2181c5abadaa97175cb998526bfb1d1862c084870992ab72b7f91d7bf",
+        "nz-routing.mjs": "08a982fb901f31b4e610bcfa8c8a626ff1b1279895c8c32566257571108de0c6",
+        "plus-account-route.mjs": "2ac9784163f033ecbaaa9f0d8acf206b2c4e92911c8a11496764778f3363386c",
+        "qa-247-groups.mjs": "f17a7ff6b0df94930bf5ed27070f80221119bb1b59a104b97d3ecc59705cb664",
+        "qa-au-duplicates.mjs": "01944b2c252e2a05b6287ff20498bcc891c0d03be19802537b2b6f225f2b22cf",
+        "qa-au-integrity.mjs": "b46495383cfe6e439d1f5765160408ea13001811066c7a4a2843f1d1f2505f44",
+        "qa-customer-live-presentation.mjs": "133ec9a223061842c3ede404c44a04d09d9932f0ed48a239adabbd95b76fffc6",
+        "qa-epg-alias.mjs": "fb546913cb463a259af78b511be7b964496b25b5d298d33f3284db3c8cd8fac1",
+        "qa-sky-fhd-primary.mjs": "2adccb077a000d2a4ae705a5e26262f15d7cbd21e8b86561ce3d0bedf6a1c654",
+        "qa-sky-hd-backups.mjs": "068b77f807af4516ac164c415eea494f3f666538670c5fc66c5dc1112619198a",
+        "qa-sky-nz-loop-filter.mjs": "e5d9fd1e6f65d541961d5228eed5e9ee44e430634c2f860cada47c544321e4ee",
+        "qa-stream-groups.mjs": "299f3d1b25cddcfdcb6f367beb43ba77fbf5757aa8602f4fbab0d67f2af40820",
+        "qa-tvnz-xtream-drm.mjs": "28e2ad69086c300ed041603d5c3f9174daf18dd3552e2847454bf098302f6c44"
+      },
+      "entrypoint": "index.ts",
+      "import_map": false,
+      "observed_bundle_sha256": "ea170d5bc88cb65cc58a46cd5172d352921c7f03eaa82a2b57f7f6ee62790e1c",
+      "observed_version": 37,
+      "verify_jwt": false
+    }
+  },
+  "issue": 10,
+  "production_project": null,
+  "profiles": {
+    "regional-v4": "lounge-international-regional-qa"
+  },
+  "regression_base": "ac6b50abf10af3831b3eeb937354f9abac7e36c4",
+  "rollback": {
+    "functions": [
+      "lounge-international-regional-qa"
+    ],
+    "manifest_sha256": "7f384e3f309358c6efaf81e0e7709407e5058f6bf4882423c16e0063690c80fb",
+    "revision": "ac6b50abf10af3831b3eeb937354f9abac7e36c4"
+  },
+  "schema": 1,
+  "source_commit": "ac6b50abf10af3831b3eeb937354f9abac7e36c4",
+  "target": "international",
+  "targets_config_sha256": "ff8cdd17421cbb8ae0c28e399b8c8f8a0ae6e63b00039e0350a739de542dc3b1"
+}
