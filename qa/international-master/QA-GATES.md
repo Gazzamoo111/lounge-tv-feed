@@ -1,5 +1,45 @@
 # Lounge TV International Master: QA Build Status
 
+## International Regional Trial QA: 23-category customer view (19 November)
+
+This is a SEPARATE trial gateway. The previous International QA v15 and
+production NZ/AU n v36 have not been changed.
+
+- New Edge Function \`lounge-international-regional-qa\` v4 is ACTIVE.
+- The separate trial M3U uses \`/get.php?username=...&password=...\` and
+  embeds its own \`/xmltv.php\` x-tvg-url. Use M3U import in Nuvio + IPTV.
+- 16,012 visible channels retained exactly. Category count reduced 95 -> 23.
+  Flat Nuvio categories, countries distinguished within mixed regions by
+  two-letter/region channel prefixes. No nested country folders.
+- Live comparator verified the exact SAME channel IDs, source URLs,
+  guide IDs, logo URLs and DRM attributes as original International Master.
+  Channel presentation labels, country order and category grouping differ.
+- Legacy categories were mapped exhaustively to the 23 new buckets.
+  All groups have nonempty channel output. Country and subgenre sorting is
+  precomputed to stay below the Supabase Free CPU budget.
+- Sky Sport FHD 1-9 showed zero first-video bytes, despite HTTP 200.
+  QA-only four overrides based on MPEG-TS sample bytes:
+  Sky 1 -> 636918 (HD), Sky 2 -> 1424317 (NZ alternative),
+  Sky 3 -> 1424316 (NZ alternative), Sky 9 -> 636926 (HD).
+  The actual client-visible redirects returned HTTP 302 and precisely
+  those backing IDs. Sky 4-8 remain unverified across all tested sources.
+  Valid TS bytes do not prove correct programme content or stable viewing.
+- Regional authenticated XMLTV returned HTTP 200 with
+  \`compiled-private-qa\` source and XMLTV signature.
+- Reproducible live CI: <https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44481996549>
+  (newest checked run for routing). No subscriber credentials logged or
+  committed. The category/EPG/DRM equivalence contract passed.
+- The BEST trial credentials used by these diagnostics may expire. Each
+  external trialist must receive separate, active BEST credentials and
+  sufficient worldwide bouquet entitlements; do not reuse the developer QA
+  account. The Regional QA M3U does not provision BEST subscribers.
+- Commercial redistribution permissions, real Nuvio guide sync,
+  longer playback tests, Sky 4-8 recovery, and permanent unattended EPG
+  refresh remain unverified. Not a production/customer launch.
+
+---
+
+
 ## CURRENT: BEST International EPG delivered to QA (19 November 2026)
 
 **This section supersedes older "not yet imported" / shared-only EPG statements below.**
