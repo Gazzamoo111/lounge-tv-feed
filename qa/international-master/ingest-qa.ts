@@ -214,7 +214,7 @@ Deno.serve(async(req)=>{
   if(!(await permit(req)))return reply({error:"not_found"},404);
   const body=await req.json().catch(()=>null);
   const mode=String(body?.mode||"probe");
-  if(!["probe","ingest","account","probe_all","epg_probe","playback_probe","epg_index"].includes(mode))return reply({error:"mode_not_allowed"},400);
+  if(!["probe","ingest","account","probe_all","epg_probe","playback_probe","epg_index","provider_guide_probe"].includes(mode))return reply({error:"mode_not_allowed"},400);
   const c=await loadCredentials();
   if(mode==="account"){
    const url=new URL(c.base+"/player_api.php");
@@ -288,6 +288,28 @@ Deno.serve(async(req)=>{
        first_data_ms:ms,transport_kind:kind,verdict});
    }
    return reply({mode,results});
+  }
+  if(mode==="provider_guide_probe"){
+    const url=new URL(c.base+"/xmltv.php");
+    url.searchParams.set("username",c.username);url.searchParams.set("password",c.password);
+    const start=Date.now();
+    try{
+      const res=await fetch(url,{signal:AbortSignal.timeout(15000),headers:{"Accept":"application/xml,text/xml,*/*"}});
+      let bytes=0,xmltv=false,html=false;
+      if(res.body){
+        const reader=res.body.getReader(),first=await reader.read();
+        if(first.value){
+          bytes=first.value.byteLength;
+          const head=new TextDecoder().decode(first.value.slice(0,600)).trimStart();
+          xmltv=/^<\\?xml|^<tv[\\s>]/i.test(head);
+          html=/^<!doctype html|^<html/i.test(head);
+        }
+        try{await reader.cancel()}catch{}
+      }
+      return reply({mode,http_status:res.status,content_type:res.headers.get("content-type"),
+        reported_length:res.headers.get("content-length"),first_chunk_bytes:bytes,
+        xmltv,html,elapsed_ms:Date.now()-start});
+    }catch(e){return reply({mode,error:e instanceof Error?e.name:"network_error"});}
   }
   if(mode==="epg_index"){
     const country=String(body?.country||"").toLowerCase();
