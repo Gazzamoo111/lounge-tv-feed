@@ -13,6 +13,8 @@ import importlib.util
 import io
 import json
 import os
+import shutil
+import tempfile
 from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
@@ -102,7 +104,7 @@ def build():
     stats = {"selected_id_count": len(selected), "selected_source_entries": sum(id_counts.values()),
              "provider_channel_tags": 0, "provider_programme_tags": 0,
              "shared_channel_tags": 0, "shared_programme_tags": 0}
-    with gzip.open(OUT, "wb", compresslevel=6) as out:
+    with tempfile.TemporaryFile(mode="w+b") as channels_spool, tempfile.TemporaryFile(mode="w+b") as programmes_spool, gzip.open(OUT, "wb", compresslevel=6) as out:
         out.write(b'<?xml version="1.0" encoding="UTF-8"?>\n<tv generator-info-name="Lounge TV International QA">\n')
         with urlopen(authenticated_request("best"), timeout=140) as response:
             if response.status != 200:
@@ -115,13 +117,13 @@ def build():
                         names = [best.norm(n.text or "") for n in elem.findall("display-name")]
                         if any(n and n in selected[cid] for n in names):
                             confirmed.add(cid)
-                            out.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                            channels_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
                 else:
                     stats["provider_programme_tags"] += 1
                     cid = elem.get("channel", "")
                     if cid in confirmed and has_current_programme(elem, current, horizon):
                         provider_programs[cid] += 1
-                        out.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                        programmes_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
         # The current shared guide preserves NZ/AU and known accurate channels.
         # Only supplement IDs where the verified BEST feed has no programmes.
         with urlopen(authenticated_request("shared"), timeout=140) as response:
@@ -132,13 +134,18 @@ def build():
                     stats["shared_channel_tags"] += 1
                     cid = elem.get("id", "")
                     if not provider_programs.get(cid):
-                        out.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                        channels_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
                 else:
                     stats["shared_programme_tags"] += 1
                     cid = elem.get("channel", "")
                     if not provider_programs.get(cid) and has_current_programme(elem, current, horizon):
                         shared_programs[cid] += 1
-                        out.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                        programmes_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+        # XMLTV requires all channel records before programme records.
+        channels_spool.seek(0)
+        programmes_spool.seek(0)
+        shutil.copyfileobj(channels_spool, out, length=1_048_576)
+        shutil.copyfileobj(programmes_spool, out, length=1_048_576)
         out.write(b"</tv>\n")
     size = OUT.stat().st_size
     unique_ids = set(provider_programs) | set(shared_programs)
@@ -159,8 +166,15 @@ def build():
     if size <= 200 or size > MAX_COMPRESSED:
         raise ValueError("compressed XMLTV size outside limits")
     with gzip.open(OUT, "rb") as guide:
-        count = sum(1 for _, elem in ET.iterparse(guide, events=("end",))
-                    if elem.tag == "programme")
+        count = 0
+        programme_section = False
+        for _, elem in ET.iterparse(guide, events=("end",)):
+            if elem.tag == "programme":
+                programme_section = True
+                count += 1
+            elif elem.tag == "channel" and programme_section:
+                raise ValueError("XMLTV channel order invalid")
+            elem.clear()
     if count != sum(provider_programs.values())+sum(shared_programs.values()):
         raise ValueError("output verification count mismatch")
     Path("international-epg-metrics-qa.json").write_text(
