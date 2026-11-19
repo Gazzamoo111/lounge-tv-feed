@@ -1903,26 +1903,16 @@ Deno.serve(async(req)=>{
     return json(await nuvioLiveCategories());
   }
   if(action==="get_live_streams"){
-    // Plus QA Xtream import. TVNZ 1/2 require M3U for Widevine-capable
-    // clients; extra Xtream DRM fields are non-standard and may be ignored.
-    const wanted=url.searchParams.get("category_id");
-    const mapped=plusRows(await nuvioFullRows(),nuvioGroup);
-    const visible=wanted?mapped.filter(x=>PLUS_IDS[x.group]===wanted):mapped;
-    return json(visible.map(({row:r,group},i)=>({
-      num:i+1,
-      name:String(r.display_name),
-      stream_type:"live",
-      stream_id:Number(r.external_id),
-      stream_icon:r.logo_url||"",
-      epg_channel_id:effectiveLiveEpgId(r)||("ltv-"+r.external_id),
-      added:"0",
-      category_id:PLUS_IDS[group],
-      custom_sid:"",
-      tv_archive:0,
-      direct_source:"",
-      tv_archive_duration:0,
-      ...qaTvnzXtreamDrmFields(r)
-    })));
+    // Restore the proven 19 Nov NZ/AU Nuvio Xtream-only customer workflow.
+    // Nuvio retries this same Xtream server through get.php internally when
+    // the live-streams action returns 503. The customer never adds another
+    // playlist. This preserves TVNZ 1/2 Widevine metadata (#KODIPROP) and
+    // the 20-category Lounge Plus presentation from releaseM3u().
+    // Do not change Sky Sport sources, stream IDs or EPG bindings here.
+    return json({
+      error:"nuvio_m3u_drm_fallback_required",
+      detail:"Retry get.php on this server for Widevine-aware live playback"
+    },503);
   }
   if(action==="get_vod_categories") return json(await releaseCategories("movie"));
   if(action==="get_series_categories") return json(await releaseCategories("series"));
