@@ -143,6 +143,16 @@ async function indexCountry(country:string, provider?:ProviderCredentials){
  }
  const begin=Date.now();let status=0,wireBytes=0,events=0;
  const channelMap=new Map<string,string>();
+ let wanted:Set<string>|null=null;
+ if(providerGuide){
+   const ids=await sql`
+    SELECT DISTINCT s.epg_channel_id AS epg_id
+    FROM lounge_sync.international_master_selection_qa_20261119 sel
+    JOIN lounge_sync.international_master_streams_qa_20261119 s USING(provider_stream_id)
+    WHERE sel.tier='primary' AND s.epg_channel_id NOT IN ('','0')
+   `;
+   wanted=new Set(ids.map((row:any)=>String(row.epg_id)));
+ }
  const programs=new Map<string,{count:number,last:number}>();
  try{
   const response=await fetch(src,{headers:{Accept:"application/gzip,application/octet-stream,*/*","User-Agent":"LoungeTV-Guide-QA-Audit/1.0"},signal:AbortSignal.timeout(providerGuide?100000:45000)});
@@ -176,10 +186,11 @@ async function indexCountry(country:string, provider?:ProviderCredentials){
       if(tag.startsWith("<channel")){
         const open=tag.slice(0,tag.indexOf(">")+1),id=epgAttr(open,"id");
         const label=/<display-name(?:\s[^>]*)?>([\s\S]*?)<\/display-name>/i.exec(tag)?.[1]||"";
-        if(id&&label)channelMap.set(id,decodeEpg(label));
+        if(id&&label&&(!wanted||wanted.has(id)))channelMap.set(id,decodeEpg(label));
       }else{
         const id=epgAttr(tag,"channel"),start=epgStamp(epgAttr(tag,"start")),stop=epgStamp(epgAttr(tag,"stop"));
         if(!id||!start||!stop||stop<=now||start>=until||stop<=start)continue;
+        if(wanted&&!wanted.has(id))continue;
         const old=programs.get(id)||{count:0,last:0};old.count++;old.last=Math.max(old.last,stop);programs.set(id,old);
       }
     }
@@ -213,7 +224,7 @@ async function indexCountry(country:string, provider?:ProviderCredentials){
        http_status=excluded.http_status,scanned_channels=excluded.scanned_channels,
        with_upcoming=excluded.with_upcoming,bytes_processed=excluded.bytes_processed,
        status=excluded.status,notes=excluded.notes`;
-  return {country,http_status:status,channels:entries.length,with_upcoming:active,wire_bytes:wireBytes,
+  return {country,http_status:status,channels:entries.length,with_upcoming:active,eligible_ids:wanted?.size||null,wire_bytes:wireBytes,
     event_tags:events,elapsed_ms:Date.now()-begin};
  }catch(e){return {country,http_status:status,error:e instanceof Error?e.name:"epg_error",wire_bytes:wireBytes,elapsed_ms:Date.now()-begin};}
 }
