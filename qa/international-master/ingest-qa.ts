@@ -117,13 +117,104 @@ async function writeCategory(id:string, result:{http:number;elapsed:number;items
  `;
  return rows;
 }
+function epgAttr(tag:string,field:string){
+ const m=new RegExp("\\b"+field+"=[\"\x27]([^\"\x27]+)[\"\x27]","i").exec(tag);
+ return m?.[1]||"";
+}
+function epgStamp(value:string):number{
+ const m=/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*([+-])(\d{2})(\d{2})/.exec(value);
+ if(!m)return 0;
+ const ms=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]);
+ const off=(+m[8]*60 + +m[9])*60000;
+ return ms+(m[7]==="+"?-off:off);
+}
+function decodeEpg(v:string){return v.replace(/&amp;/g,"&").replace(/&quot;/g,\"\").replace(/&apos;/g,"\x27").replace(/&lt;/g,"<").replace(/&gt;/g,">").trim().slice(0,200);}
+async function indexCountry(country:string){
+ const valid=new Set(["nz","au","gb","us","ca","fr","de","in","id","my","sg","nl","it","es","pt","br","za","mx","pl","il","tr"]);
+ if(!valid.has(country))return {error:"country_not_allowlisted"};
+ const origin="iptv-epg.org",src="https://iptv-epg.org/files/epg-"+country+".xml.gz";
+ const begin=Date.now();let status=0,wireBytes=0,events=0;
+ const channelMap=new Map<string,string>();
+ const programs=new Map<string,{count:number,last:number}>();
+ try{
+  const response=await fetch(src,{headers:{Accept:"application/gzip,application/octet-stream,*/*","User-Agent":"LoungeTV-Guide-QA-Audit/1.0"},signal:AbortSignal.timeout(45000)});
+  status=response.status;
+  if(!response.ok||!response.body){try{await response.body?.cancel()}catch{}return {country,http_status:status,error:"source_http_error"};}
+  const rawReader=response.body.getReader(); const first=await rawReader.read();
+  if(first.done||!first.value)return {country,http_status:status,error:"no_bytes"};
+  let pending:Uint8Array|null=first.value;
+  const source=new ReadableStream<Uint8Array>({
+    async pull(ctl){
+      if(pending){wireBytes+=pending.byteLength;ctl.enqueue(pending);pending=null;return;}
+      const x=await rawReader.read();
+      if(x.done){ctl.close();return;}
+      wireBytes+=x.value.byteLength;ctl.enqueue(x.value);
+    },
+    async cancel(reason){try{await rawReader.cancel(reason)}catch{}}
+  });
+  const gzip=first.value[0]===31&&first.value[1]===139;
+  const decoded=(gzip?source.pipeThrough(new DecompressionStream("gzip")):source).getReader();
+  const decoder=new TextDecoder();
+  let buffer="";const now=Date.now(),until=now+7*86400000;
+  while(true){
+    const part=await decoded.read();if(part.done)break;
+    buffer+=decoder.decode(part.value,{stream:true});
+    const re=/<channel\b[^>]*>[\s\S]*?<\/channel>|<programme\b[^>]*>/gi;
+    let last=0,m:RegExpExecArray|null;
+    while((m=re.exec(buffer))!==null){
+      last=re.lastIndex;events++;
+      const tag=m[0];
+      if(tag.startsWith("<channel")){
+        const open=tag.slice(0,tag.indexOf(">")+1),id=epgAttr(open,"id");
+        const label=/<display-name(?:\s[^>]*)?>([\s\S]*?)<\/display-name>/i.exec(tag)?.[1]||"";
+        if(id&&label)channelMap.set(id,decodeEpg(label));
+      }else{
+        const id=epgAttr(tag,"channel"),start=epgStamp(epgAttr(tag,"start")),stop=epgStamp(epgAttr(tag,"stop"));
+        if(!id||!start||!stop||stop<=now||start>=until||stop<=start)continue;
+        const old=programs.get(id)||{count:0,last:0};old.count++;old.last=Math.max(old.last,stop);programs.set(id,old);
+      }
+    }
+    buffer=buffer.slice(last);
+    if(buffer.length>64000){
+      const pos=Math.max(buffer.lastIndexOf("<channel"),buffer.lastIndexOf("<programme"));
+      buffer=pos>=0&&buffer.length-pos<64000?buffer.slice(pos):buffer.slice(-4000);
+    }
+  }
+  if(channelMap.size===0) return {country,http_status:status,error:"no_xmltv_channels",bytes:wireBytes};
+  const entries=[...channelMap].map(([xmltv_id,display_name])=>{
+    const pr=programs.get(xmltv_id);return {xmltv_id,display_name,upcoming_programmes:pr?.count||0,latest_stop_utc:pr?new Date(pr.last).toISOString():null};
+  });
+  await sql`DELETE FROM lounge_sync.international_epg_source_channels_qa_20261119 WHERE source_key=${origin} AND country_code=${country}`;
+  for(let i=0;i<entries.length;i+=150){
+    const part=entries.slice(i,i+150);
+    await sql`INSERT INTO lounge_sync.international_epg_source_channels_qa_20261119
+       (source_key,country_code,xmltv_id,display_name,upcoming_programmes,latest_stop_utc,sampled_at)
+     SELECT ${origin},${country},x.xmltv_id,x.display_name,x.upcoming_programmes,x.latest_stop_utc,now()
+     FROM jsonb_to_recordset(${sql.json(part)}::jsonb)
+       AS x(xmltv_id text,display_name text,upcoming_programmes integer,latest_stop_utc timestamptz)
+     ON CONFLICT(source_key,country_code,xmltv_id) DO UPDATE SET
+       display_name=excluded.display_name,upcoming_programmes=excluded.upcoming_programmes,
+       latest_stop_utc=excluded.latest_stop_utc,sampled_at=now()`;
+  }
+  const active=entries.filter(x=>x.upcoming_programmes>0).length;
+  await sql`INSERT INTO lounge_sync.international_epg_source_checks_qa_20261119
+      (source_key,country_code,http_status,scanned_channels,with_upcoming,bytes_processed,status,notes)
+    VALUES(${origin},${country},${status},${entries.length},${active},${wireBytes},'complete',${"metadata-only, no EPG content redistributed"})
+    ON CONFLICT(source_key,country_code) DO UPDATE SET checked_at=now(),
+       http_status=excluded.http_status,scanned_channels=excluded.scanned_channels,
+       with_upcoming=excluded.with_upcoming,bytes_processed=excluded.bytes_processed,
+       status=excluded.status,notes=excluded.notes`;
+  return {country,http_status:status,channels:entries.length,with_upcoming:active,wire_bytes:wireBytes,
+    event_tags:events,elapsed_ms:Date.now()-begin};
+ }catch(e){return {country,http_status:status,error:e instanceof Error?e.name:"epg_error",wire_bytes:wireBytes,elapsed_ms:Date.now()-begin};}
+}
 Deno.serve(async(req)=>{
  if(req.method!=="POST")return reply({error:"not_found"},404);
  try{
   if(!(await permit(req)))return reply({error:"not_found"},404);
   const body=await req.json().catch(()=>null);
   const mode=String(body?.mode||"probe");
-  if(!["probe","ingest","account","probe_all","epg_probe","playback_probe"].includes(mode))return reply({error:"mode_not_allowed"},400);
+  if(!["probe","ingest","account","probe_all","epg_probe","playback_probe","epg_index"].includes(mode))return reply({error:"mode_not_allowed"},400);
   const c=await loadCredentials();
   if(mode==="account"){
    const url=new URL(c.base+"/player_api.php");
@@ -197,6 +288,10 @@ Deno.serve(async(req)=>{
        first_data_ms:ms,transport_kind:kind,verdict});
    }
    return reply({mode,results});
+  }
+  if(mode==="epg_index"){
+    const country=String(body?.country||"").toLowerCase();
+    return reply({mode,...await indexCountry(country)});
   }
   if(mode==="epg_probe"){
    const xmlUrl=new URL(c.base+"/xmltv.php");
