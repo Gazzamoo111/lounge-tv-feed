@@ -1,5 +1,44 @@
 # Lounge TV International Master: QA Build Status
 
+## CURRENT: BEST International EPG delivered to QA (19 November 2026)
+
+**This section supersedes older "not yet imported" / shared-only EPG statements below.**
+The International Master remains **QA-only** and is **not customer release-ready**.
+
+- A private GitHub Actions runner downloads the BEST full XMLTV through the
+  OIDC-authenticated `lounge-international-epg-broker-qa`, validates exact
+  provider ID + selected channel name, filters genuine current/upcoming
+  programme blocks and adds matched shared-guide fallbacks in 25-ID batches.
+- Successful full build [run 44469259564](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44469259564):
+  **9,217 BEST channel tags, 301,811 programme tags scanned**;
+  **3,393** selected guide IDs had confirmed channel identities;
+  **2,471** BEST guide IDs had **95,098** upcoming/current programme records;
+  shared guide contributed **141** more distinct IDs and **17,505**
+  programme records. **2,612 distinct EPG IDs** with programmes in output,
+  not the same as 2,612 unique visible Nuvio channels.
+- Generated valid XMLTV, gzip **9,048,070 bytes** in private Supabase
+  Storage bucket `lounge-international-epg-qa`. No programmes written to
+  PostgreSQL or committed publicly. A follow-up duplicate-channel protection
+  amendment is awaiting its own final build verification.
+- Deployed `lounge-international-master-v4-qa` **v15**: authenticated
+  `/xmltv.php` streams the compiled private guide. On missing/stale file,
+  safely falls back to the previous shared-guide endpoint. Nuvio M3U
+  `x-tvg-url` still targets that same route.
+- Verified via an authenticated live EPG probe in
+  [run 44469259564](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44469259564):
+  HTTP **200**, response scope `compiled-private-qa`, valid XML/gzip
+  signature, positive payload bytes. Parser, catalogue contract, upload and
+  delivery checks all passed.
+- Selected stream IDs with identified wrong-source EPG assignments are
+  suppressed in the QA M3U; original curated NZ/AU release remains unchanged.
+- Important remaining gates: real Nuvio + IPTV guide sync and visible-row
+  coverage measurement, confirmed 80% permanent-channel coverage, playback,
+  valid long-term BEST entitlements, refresh automation for commercial use,
+  and programme/stream redistribution rights. **Do not merge or release.**
+
+---
+
+
 **As of 19 November 2026: implemented in isolated QA, NOT ready for customer release.**
 **Production `n` v36 and original `lounge-international-master-qa` v3 are untouched.**
 
