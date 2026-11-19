@@ -116,7 +116,7 @@ Deno.serve(async(req)=>{
       const number=Number(url.searchParams.get("channel")||0);
       if(!Number.isInteger(number)||number<1||number>9)return json({error:"channel_invalid"},400);
       const c=await credentials();
-      const ids={FHD:2024779-number,HD:636917+number};
+      const ids={FHD:2024779-number,HD:636917+number,NZ_ALTERNATE:1424319-number};
       async function check(quality:string,id:number){
         const dest=c.base+"/live/"+encodeURIComponent(c.username)+"/"+encodeURIComponent(c.password)+"/"+id+".ts";
         const start=Date.now();
