@@ -6,6 +6,7 @@ import { nuvioStreamingGroup } from "./qa-stream-groups.mjs";
 import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaAuWrongGuide } from "./qa-au-integrity.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
+import { regionalSkyPreferredSource } from "./qa-sky-regional-preferred.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
@@ -1285,7 +1286,7 @@ function nuvioGroup(r:any):string{
  return "International TV";
 }
 async function nuvioFullRows():Promise<any[]>{
- const k="nuvio:full:qa:v11-fhd-au-single",cache=catalogueCache.get(k);
+ const k="nuvio:full:qa:plus-20-xtream-sky-preferred-v1",cache=catalogueCache.get(k);
  if(cache&&cache.until>Date.now())return cache.rows;
  return await shareCatalogue(k,async()=>{
   const old=catalogueCache.get(k);if(old&&old.until>Date.now())return old.rows;
@@ -1295,7 +1296,7 @@ async function nuvioFullRows():Promise<any[]>{
   ]);
   // Customer NZ Sky Sport 1-9: the curated main must remain FHD. The subsequent
   // QA visibility rule removes unreliable HD duplicates and looping sources.
-  const rows:any[]=[...curated.map((r:any)=>qaSkySwapPrimary({...r}))],identities=new Set<string>();
+  const rows:any[]=[...curated.map((r:any)=>regionalSkyPreferredSource(qaSkySwapPrimary({...r})))],identities=new Set<string>();
   const used=new Set(rows.filter((r:any)=>r.provider_name==="BEST").map((r:any)=>Number(r.provider_stream_id)));
   for(const row of rows){const group=nuvioGroup(row),n=nuvioIdentity(String(row.display_name));if(group!=="Live Events"&&n)identities.add(group+"|"+n);}
   for(const r of inventory){
@@ -1529,7 +1530,7 @@ async function releaseLivePlayback(externalId:number){
     where i.item_kind='live' and i.external_id=${externalId}
     limit 1
   `;
-  return rows.length?qaSkySwapPrimary(rows[0]):null;
+  return rows.length?regionalSkyPreferredSource(qaSkySwapPrimary(rows[0])):null;
 }
 async function releaseMoviePlayback(externalId:number){
   const rel=await activeRelease(); if(!rel)return null;
@@ -1816,8 +1817,9 @@ async function allowed(kind:"live"|"movie"|"series",id:string){
 Deno.serve(async(req)=>{
   if(req.method==="OPTIONS") return new Response(null,{status:204,headers:{"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"*"}});
   const url=new URL(req.url);
-  const marker="/n";
-  const rest=url.pathname.includes(marker)?url.pathname.split(marker)[1]||"/":url.pathname;
+  const marker="/lounge-plus-qa";
+  const markerAt=url.pathname.indexOf(marker);
+  const rest=markerAt>=0?(url.pathname.slice(markerAt+marker.length)||"/"):url.pathname;
   const parts=rest.split("/").filter(Boolean);
   const base=await bestBase();
 
@@ -1901,36 +1903,25 @@ Deno.serve(async(req)=>{
     return json(await nuvioLiveCategories());
   }
   if(action==="get_live_streams"){
-    // NZ/AU Nuvio gateway: send every authenticated account through the proven
-    // get.php fallback so M3U DRM metadata reaches TVNZ 1 and TVNZ 2.
-    // Account authentication occurs above this branch. Other action routes
-    // and the separate production lounge-core-xtream function are unchanged.
-    return json({error:"nuvio_m3u_drm_fallback_required",detail:"Retry get.php for DRM-aware M3U playlist"},503);
-    if(loungeApp){
-      const wanted=url.searchParams.get("category_id");
-      const rows=await nuvioFullRows();
-      const filtered=wanted
-        ? rows.filter((r:any)=>nuvioGroupId(nuvioGroup(r))===wanted)
-        : rows;
-      // The full Xtream import contains PPV rows. Never let their presence
-      // alphabetise every group and override nuvioFullRows() priority ranking.
-      // Live Events are already alphabetised within their group upstream.
-      const visible=filtered;
-      return json(visible.map((r:any,i:number)=>({
-        num:i+1,name:String(r.display_name),stream_type:"live",stream_id:Number(r.external_id),
-        stream_icon:r.logo_url||"",epg_channel_id:effectiveLiveEpgId(r)||("ltv-"+r.external_id),
-        added:"0",category_id:nuvioGroupId(nuvioGroup(r)),
-        custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0,
-        ...qaTvnzXtreamDrmFields(r)
-      })));
-    }
-    const wantedRaw=Number(url.searchParams.get("category_id")||0);
-    const wanted=Number.isFinite(wantedRaw)&&wantedRaw>0?wantedRaw:null;
-    const rows=await releaseLiveRows(wanted);
-    return json(rows.map((r:any,i:number)=>({
-      num:i+1,name:String(r.display_name),stream_type:"live",stream_id:Number(r.external_id),
-      stream_icon:r.logo_url||"",epg_channel_id:effectiveLiveEpgId(r)||("ltv-"+r.external_id),
-      added:"0",category_id:r.category_id?String(r.category_id):"0",custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0
+    // Plus QA Xtream import. TVNZ 1/2 require M3U for Widevine-capable
+    // clients; extra Xtream DRM fields are non-standard and may be ignored.
+    const wanted=url.searchParams.get("category_id");
+    const mapped=plusRows(await nuvioFullRows(),nuvioGroup);
+    const visible=wanted?mapped.filter(x=>PLUS_IDS[x.group]===wanted):mapped;
+    return json(visible.map(({row:r,group},i)=>({
+      num:i+1,
+      name:String(r.display_name),
+      stream_type:"live",
+      stream_id:Number(r.external_id),
+      stream_icon:r.logo_url||"",
+      epg_channel_id:effectiveLiveEpgId(r)||("ltv-"+r.external_id),
+      added:"0",
+      category_id:PLUS_IDS[group],
+      custom_sid:"",
+      tv_archive:0,
+      direct_source:"",
+      tv_archive_duration:0,
+      ...qaTvnzXtreamDrmFields(r)
     })));
   }
   if(action==="get_vod_categories") return json(await releaseCategories("movie"));
