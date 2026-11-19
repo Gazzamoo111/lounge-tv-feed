@@ -298,7 +298,7 @@ Deno.serve(async(req)=>{
       let bytes=0,xmltv=false,html=false,magic:number[]=[],sample="",eof=false;
       if(res.body){
         const reader=res.body.getReader(),decoder=new TextDecoder();
-        for(let i=0;i<24 && bytes<262144;i++){
+        for(let i=0;i<1500 && bytes<4000000;i++){
           const chunk=await reader.read();if(chunk.done){eof=true;break;}
           if(i===0)magic=Array.from(chunk.value.slice(0,8));
           bytes+=chunk.value.byteLength;
