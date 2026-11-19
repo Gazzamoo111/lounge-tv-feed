@@ -1,0 +1,15 @@
+name: Lounge TV Plus 20-category QA
+on:
+  push:
+    branches:
+      - qa/lounge-plus-20-20261119
+  workflow_dispatch:
+jobs:
+  plus-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test qa/lounge-plus-20/*.test.mjs
