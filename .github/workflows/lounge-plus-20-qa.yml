@@ -42,3 +42,12 @@ jobs:
             'https://liqocisegeqzbyuqloql.supabase.co/functions/v1/lounge-plus-qa/player_api.php?action=get_live_streams')
           test "$code" = 401
           grep -q '"auth":0' /tmp/plus-xtream-live-no-auth.json
+
+      - name: Confirm existing n.loungetv.nz routes to the v36 authentication gateway
+        shell: bash
+        run: |
+          code=$(curl --silent --show-error --max-time 25 --output /tmp/n-live-no-auth.json --write-out '%{http_code}' \
+            'https://n.loungetv.nz/player_api.php?action=get_live_categories')
+          printf 'n.loungetv.nz auth-gate response: %s\n' "$code"
+          test "$code" = 401
+          grep -q '"auth":0' /tmp/n-live-no-auth.json
