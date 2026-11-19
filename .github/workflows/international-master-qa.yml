@@ -22,3 +22,42 @@ jobs:
         with:
           node-version: "22"
       - run: node --test qa/international-master/qa-international-architecture.test.mjs
+
+  xmltv-audit-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s qa/international-master -p 'test_best_epg_audit.py' -v
+
+  best-epg-metadata-probe:
+    # Opt-in ONLY: setting this repository variable to true is a deliberate QA action.
+    # Secrets are never used on PR jobs. No guide titles or URLs are uploaded.
+    if: github.event_name == 'push' && vars.RUN_BEST_EPG_AUDIT == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    env:
+      BEST_XMLTV_URL: ${{ secrets.BEST_XMLTV_URL }}
+      QA_DATABASE_URL: ${{ secrets.QA_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned PostgreSQL client
+        run: python -m pip install 'psycopg[binary]==3.2.12'
+      - name: Stream BEST XMLTV on runner and persist metadata only
+        run: python qa/international-master/best-epg-audit.py --persist --out best-epg-qa-summary.json
+      - name: Upload counts-only audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: best-epg-qa-metadata
+          path: best-epg-qa-summary.json
+          retention-days: 3
