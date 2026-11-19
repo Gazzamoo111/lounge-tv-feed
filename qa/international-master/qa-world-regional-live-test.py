@@ -135,6 +135,10 @@ def main():
         print("SKY_SOURCE_PROBE "+json.dumps(sky,sort_keys=True))
         final=json.loads(fetch("regional-final-check",limit=10000))
         print("REGIONAL_FINAL_CHECK "+json.dumps(final,sort_keys=True))
+        recent=json.loads(fetch("recent-playback-audit",limit=15000))
+        # Never report subscriber URLs or credentials. These are source IDs only.
+        print("RECENT_BEST_PLAYBACK_PROBE "+json.dumps(recent,sort_keys=True))
+
         if not final.get("all_passed",False):
             raise ValueError("live regional Sky redirects or XMLTV delivery not verified")
 
