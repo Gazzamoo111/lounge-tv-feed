@@ -18,6 +18,7 @@ import tempfile
 from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
@@ -126,21 +127,34 @@ def build():
                         programmes_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
         # The current shared guide preserves NZ/AU and known accurate channels.
         # Only supplement IDs where the verified BEST feed has no programmes.
-        with urlopen(authenticated_request("shared"), timeout=140) as response:
+        with urlopen(authenticated_request("shared-index"), timeout=30) as response:
             if response.status != 200:
-                raise ValueError("shared XMLTV request failed")
-            for elem in stream_parsed(response):
-                if elem.tag == "channel":
-                    stats["shared_channel_tags"] += 1
-                    cid = elem.get("id", "")
-                    if not provider_programs.get(cid):
-                        channels_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
-                else:
-                    stats["shared_programme_tags"] += 1
-                    cid = elem.get("channel", "")
-                    if not provider_programs.get(cid) and has_current_programme(elem, current, horizon):
-                        shared_programs[cid] += 1
-                        programmes_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                raise ValueError("shared_index_unavailable")
+            shared_ids = json.load(response).get("ids", [])
+            if not 100 <= len(shared_ids) <= 5000:
+                raise ValueError("shared_index_incomplete")
+        stats["shared_source_batches"] = (len(shared_ids) + 24) // 25
+        for first in range(0, len(shared_ids), 25):
+            batch = shared_ids[first:first+25]
+            query = urlencode([("id", cid) for cid in batch])
+            with urlopen(authenticated_request("shared-batch?" + query), timeout=45) as response:
+                if response.status != 200:
+                    raise ValueError("shared_batch_unavailable")
+                try:
+                    for elem in stream_parsed(response):
+                        if elem.tag == "channel":
+                            stats["shared_channel_tags"] += 1
+                            cid = elem.get("id", "")
+                            if not provider_programs.get(cid):
+                                channels_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                        else:
+                            stats["shared_programme_tags"] += 1
+                            cid = elem.get("channel", "")
+                            if not provider_programs.get(cid) and has_current_programme(elem, current, horizon):
+                                shared_programs[cid] += 1
+                                programmes_spool.write(ET.tostring(elem, encoding="utf-8") + b"\n")
+                except ET.ParseError:
+                    raise ValueError("shared_batch_invalid_xml")
         # XMLTV requires all channel records before programme records.
         channels_spool.seek(0)
         programmes_spool.seek(0)
