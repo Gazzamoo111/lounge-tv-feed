@@ -78,6 +78,61 @@ Deno.serve(async(req)=>{
   const url=new URL(req.url);
   const path=url.pathname.split("/").filter(Boolean).slice(-1)[0]||"";
   try{
+    if(path==="regional-playlist"&&req.method==="GET"){
+      // OIDC-only temporary diagnostic; do not log credentials or response.
+      const c=await credentials();
+      const target=new URL(SUPABASE_URL+"/functions/v1/lounge-international-regional-qa/get.php");
+      target.searchParams.set("username",c.username);
+      target.searchParams.set("password",c.password);
+      const res=await fetch(target,{headers:{"Accept":"application/x-mpegURL,text/plain,*/*"},
+        signal:AbortSignal.timeout(25000)});
+      if(!res.ok||!res.body){
+        try{await res.body?.cancel()}catch{}
+        return json({error:"regional_playlist_unavailable",status:res.status},502);
+      }
+      return new Response(res.body,{status:200,headers:{
+        "Content-Type":"application/x-mpegURL; charset=utf-8",
+        "Cache-Control":"no-store"
+      }});
+    }
+    if(path==="sky-health"&&req.method==="GET"){
+      // Real byte-level provider check, private to this GitHub QA workflow.
+      const number=Number(url.searchParams.get("channel")||0);
+      if(!Number.isInteger(number)||number<1||number>9)return json({error:"channel_invalid"},400);
+      const c=await credentials();
+      const ids={FHD:2024779-number,HD:636917+number};
+      async function check(quality:string,id:number){
+        const dest=c.base+"/live/"+encodeURIComponent(c.username)+"/"+encodeURIComponent(c.password)+"/"+id+".ts";
+        const start=Date.now();
+        const ctrl=new AbortController();
+        const timeout=setTimeout(()=>ctrl.abort(),10000);
+        try{
+          const result=await fetch(dest,{
+            headers:{"Range":"bytes=0-4095","User-Agent":"LoungeTV-Stream-Health-QA/1.0"},
+            signal:ctrl.signal
+          });
+          let first=new Uint8Array(0);
+          if(result.body){
+            const reader=result.body.getReader();
+            try{
+              const r=await reader.read();
+              if(!r.done&&r.value)first=r.value.slice(0,4096);
+            }finally{try{await reader.cancel()}catch{}}
+          }
+          const ts=first.length>376&&first[0]===0x47&&first[188]===0x47;
+          const hls=new TextDecoder().decode(first.slice(0,12)).startsWith("#EXTM3U");
+          return {quality,id,http:result.status,bytes:first.length,ts_sync:ts,
+            hls_manifest:hls,elapsed_ms:Date.now()-start};
+        }catch(e){
+          return {quality,id,http:0,bytes:0,ts_sync:false,hls_manifest:false,
+            error:e instanceof Error?e.name:"fetch_error",
+            elapsed_ms:Date.now()-start};
+        }finally{clearTimeout(timeout);}
+      }
+      const result=await Promise.all(Object.entries(ids).map(([quality,id])=>check(quality,id)));
+      return json({channel:number,source:"BEST",sample_only:true,
+        results:result,full_playback_verified:false});
+    }
     if(path==="selection"&&req.method==="GET"){
       const rows=await sql`
         SELECT s.provider_stream_id::text AS stream_id,
