@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {regionalSkyPreferredSource} from "./qa-sky-regional-preferred.mjs";
+import {qaSkyNzLoopFilter} from "./qa-sky-nz-loop-filter.mjs";
 const source=readFileSync(new URL("./index.ts",import.meta.url),"utf8");
 test("QA edge serves its own /lounge-plus-qa prefix",()=>{
   assert(source.includes('const marker="/lounge-plus-qa";'));
@@ -27,4 +28,14 @@ test("TVNZ M3U DRM and active NZ/AU routing preserved",()=>{
  assert(source.includes('nzPlaylistLines(nz)'));
  assert(source.includes('qaTvnzXtreamDrmFields(r)'));
  assert(source.includes('if(nz.drm) return json({error:"drm_client_required"'));
+});
+
+test("Sky Sport 1 and 9 source substitution stays visible, raw HD backup hidden",()=>{
+ for(const n of [1,9]){
+  const source=n===1?636918:636926;
+  const curated={provider_name:"BEST",category:"New Zealand",subcategory:"Sports",display_name:"SKY SPORT "+n,external_id:1900+n,provider_stream_id:source};
+  const backup={...curated,display_name:"SKY SPORT "+n+" HD BACKUP",external_id:2000000000+source};
+  const shown=qaSkyNzLoopFilter([curated,backup]);
+  assert.deepEqual(shown,[curated]);
+ }
 });
