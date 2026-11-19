@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - run: node --test qa/international-master/qa-international-architecture.test.mjs
+      - run: node --test qa/international-master/*.test.mjs
 
   xmltv-audit-unit:
     runs-on: ubuntu-latest
