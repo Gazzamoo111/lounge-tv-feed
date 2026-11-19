@@ -92,6 +92,46 @@ Deno.serve(async(req)=>{
       `;
       return json(rows);
     }
+    if(path==="shared-index"&&req.method==="GET"){
+      // DB-only lookup avoids streaming the complete ~90MB shared XMLTV
+      // and avoids worker wall-time failures on large selected XMLTV.
+      const ids=await sql`
+        SELECT DISTINCT guide.epg_id
+        FROM lounge_delivery.shared_epg_channels guide
+        WHERE guide.programme_count>0 AND guide.expires_at>now()
+          AND (
+            EXISTS (
+              SELECT 1 FROM lounge_sync.international_master_streams_qa_20261119 s
+              JOIN lounge_sync.international_master_selection_qa_20261119 chosen
+                USING(provider_stream_id)
+              WHERE chosen.tier='primary'
+                AND s.epg_channel_id=guide.epg_id
+            )
+            OR EXISTS(
+              SELECT 1 FROM lounge_delivery.live_release_items l
+              WHERE l.epg_id=guide.epg_id AND l.admission='keep'
+            )
+          )
+        ORDER BY guide.epg_id
+      `;
+      return json({ids:ids.map((x:any)=>String(x.epg_id)),scope:"selected-qa-shared"});
+    }
+    if(path==="shared-batch"&&req.method==="GET"){
+      const ids=url.searchParams.getAll("id");
+      if(ids.length<1||ids.length>25||ids.some(x=>x.length<1||x.length>200))
+        return json({error:"bad_ids"},400);
+      const chunks=await sql`
+        SELECT xmltv FROM lounge_delivery.shared_epg_channels
+        WHERE epg_id=any(${ids}::text[])
+          AND programme_count>0 AND expires_at>now()
+        ORDER BY epg_id
+      `;
+      const xml='<?xml version="1.0" encoding="UTF-8"?>\n<tv>\n'
+        +chunks.map((x:any)=>String(x.xmltv||"")).join("\n")+'\n</tv>';
+      return new Response(xml,{status:200,headers:{
+        "Content-Type":"application/xml; charset=utf-8",...noStore
+      }});
+    }
     if((path==="best"||path==="shared")&&req.method==="GET"){
       const c=await credentials();
       const target=path==="best"
