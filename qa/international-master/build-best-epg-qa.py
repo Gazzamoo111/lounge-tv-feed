@@ -215,12 +215,20 @@ def upload():
                       "storage_bytes":result.get("bytes")}, sort_keys=True))
 
 
+def probe():
+    with urlopen(authenticated_request("gateway-probe"), timeout=40) as response:
+        outcome = json.load(response)
+    print(json.dumps(outcome, sort_keys=True))
+    if not outcome.get("compiled_private_qa"):
+        raise ValueError("live_qa_xmltv_delivery_not_confirmed")
+
+
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("action", choices=("build", "upload"))
+    p.add_argument("action", choices=("build", "upload", "probe"))
     args = p.parse_args()
     try:
-        (build if args.action == "build" else upload)()
+        {"build": build, "upload": upload, "probe": probe}[args.action]()
     except Exception as exc:
         # Never print credential-bearing URLs or bearer tokens in logs.
         print("International EPG QA " + args.action + " failed: " +
