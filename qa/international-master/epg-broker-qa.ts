@@ -89,10 +89,14 @@ async function storageVersion(connection:any,name=OBJECT){
   return String(rows[0]?.version||"");
 }
 
-async function writeGuide(req:Request,name=OBJECT,replace=true){
+function validGzip(req:Request){
   const type=req.headers.get("content-type")||"";
   const len=Number(req.headers.get("content-length")||0);
-  if(type!=="application/gzip"||!Number.isSafeInteger(len)||len<1||len>49000000||!req.body)
+  return type==="application/gzip"&&Number.isSafeInteger(len)&&len>=1&&len<=49000000&&!!req.body;
+}
+
+async function writeGuide(req:Request,name=OBJECT,replace=true){
+  if(!validGzip(req))
     return json({error:"compressed_xmltv_required"},400);
   const resp=await fetch(privateStorage("POST",name),{
     method:"POST",
@@ -124,12 +128,17 @@ async function replaceVersioned(req:Request,name:string,allowCreate:boolean){
   const expected=req.headers.get("x-lounge-guide-version")||"";
   if(!/^[a-f0-9-]{36}$/i.test(expected)&&!(allowCreate&&expected==="missing"))
     return json({error:"expected_version_required"},400);
-  return await sql.begin(async(tx:any)=>{
+  if(!validGzip(req))return json({error:"compressed_xmltv_required"},400);
+  const result=await sql.begin(async(tx:any)=>{
     await tx`select pg_advisory_xact_lock(794288661)`;
-    if((await storageVersion(tx,name)||"missing")!==expected)
-      return json({error:"guide_version_changed"},409);
+    if((await storageVersion(tx,name)||"missing")!==expected)return null;
     return await writeGuide(req,name,expected!=="missing");
   });
+  if(result)return result;
+  // Drain the bounded request after releasing the lock. Returning while a
+  // client is still uploading can prevent the gateway relaying the conflict.
+  await req.body!.pipeTo(new WritableStream());
+  return json({error:"guide_version_changed"},409);
 }
 
 Deno.serve(async(req)=>{
