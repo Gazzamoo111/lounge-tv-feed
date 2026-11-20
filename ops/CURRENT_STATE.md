@@ -16,6 +16,14 @@ International Regional v4 remains separate. Its shared fallback was measured in 
 
 [Feed #15](https://github.com/Gazzamoo111/lounge-tv-feed/pull/15) and [player #80](https://github.com/Gazzamoo111/lounge-tv-player/pull/80) now include the aggregate generator, guarded publishing, bulk guide selection and eligible short-guide retrieval. Authenticated full-catalogue evidence confirms gains of 333 NZ/AU rows, 333 Plus rows and 1,134 International rows with both current and next programmes, using the actual compiled International baseline. The shared and private compiled candidates contain 101,268 and 254,247 programme records respectively. No candidate source or data was deployed. See the [bulk guide evidence and promotion procedure](BULK_EPG_RELEASE.md).
 
+## Controlled bulk EPG preparation, 20 November 2026 NZDT
+
+**Publication gate closed.** Player PR #80 head `27d66b51faff962a0974b0ae9c01ee2157dd8b34` preserves existing canonical 24/7 labels in the next bulk build, pins the pre-candidate generator for the continuing canonical AU workflow, and records aggregate authenticated candidate evidence in the Actions summary. The existing package remains evidence of the earlier build. Its XMLTV files parse fully with no duplicate channel declarations, dangling programmes or overlapping windows. The shared file omitted currently active 24/7 labels on 672 declared IDs. Rebuild with the corrected generator before promotion. The compiled International artifact retains a current programme on every baseline ID that had one, with the documented three lost next listings on eligible rows after legacy overlap cleanup.
+
+The measured canonical guide at `76a85f22babacc16656b0bdb0a9eb32f94ad62a2` is byte-identical to the canonical file at the observed `epg-data` revision `d3d8e77d1942f21be1e74f94aa0bc6565e70b30d`. The deployed public renderer reported the canonical branch; this workspace's response ended before the closing XML tag. Private International storage still reported version `fe83a033-5900-418b-8f6f-24b17b134945`, and its size and ETag match the packaged rollback. Deployed `n` v37, Plus v5, renderer v24, Regional v4 and broker v8 bundle hashes match the Phase 1 manifest. No live settings, delivery bindings or guide objects were changed.
+
+An authenticated candidate run requires Actions admin access to verify the two dedicated QA M3U secrets and set `LOUNGE_EPG_BULK_MODE=candidate`, release review of the broker's read-only OIDC addition with `LOUNGE_BULK_EPG_WRITE` disabled, and a manual dispatch from reviewed player main. Complete the authenticated XMLTV and short-guide comparisons before authorising guide writes. See Issue #10 for the exact release scopes and rollback sequence.
+
 ## Serving paths
 
 | Path | Function | Evidence and behaviour |
