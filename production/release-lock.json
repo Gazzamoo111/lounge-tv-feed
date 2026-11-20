@@ -87,8 +87,9 @@
     "production/plus/qa-tvnz-xtream-drm.mjs": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6"
   },
   "deployment_source": "PR #19 head 2d729001115c04fb3402f31359696bb164f8d81a",
-  "device_acceptance": "unverified_after_v39_deployment",
+  "device_acceptance": "owner_reported_working_on_Nuvio_2026-11-21",
   "commercial_epg_permissions": "unconfirmed",
   "release_notes": "Category presentation only: add Movie Streams, send explicit UK/US sport events to Live Events, use 'and' in visible Plus labels, keep previous category IDs/stream identity and exact EPG mappings.",
-  "regression_checks": "19/19 direct JavaScript checks passed; 31/31 deployed source file readback verified; actual Nuvio still pending"
+  "regression_checks": "19/19 direct JavaScript checks passed; 31/31 deployed source file readback verified; actual Nuvio still pending",
+  "device_acceptance_note": "User reports all working perfectly after v39 category/EPG changes. Physical device observed by user, not independently tested. No new stream or EPG mapping changes implied."
 }
