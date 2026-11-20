@@ -11,6 +11,7 @@ import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
 import { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";
 import { routeLoungePlus } from "./plus-account-route.mjs";
+import { addDirectEpg } from "./direct-epg-fallback.mjs";
 import postgres from "npm:postgres@3.4.7";
 
 // LOUNGE_SUPAVISOR_TRANSACTION_POOL
@@ -1700,7 +1701,7 @@ async function releaseM3u(u:string,p:string,url:URL){
     if(nz) lines.push(...nzPlaylistLines(nz));
     else lines.push(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(r.external_id)+"."+String(r.source_format||"ts"));
   }
-  return new Response(lines.join("\n")+"\n",{status:200,headers:{"Content-Type":"application/x-mpegURL; charset=utf-8","Cache-Control":"private, max-age=120","Access-Control-Allow-Origin":"*"}});
+  return new Response(addDirectEpg(lines.join("\n")+"\n"),{status:200,headers:{"Content-Type":"application/x-mpegURL; charset=utf-8","Cache-Control":"private, max-age=120","Access-Control-Allow-Origin":"*"}});
 }
 let skyNzShortCache:{until:number,body:string}|null=null;
 async function skyNzShortEpg(epgId:string,limit:number,externalId:number){
