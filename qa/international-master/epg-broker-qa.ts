@@ -12,7 +12,8 @@ const BULK_REPO="Gazzamoo111/lounge-tv-player";
 const BULK_REPO_ID="1429254511";
 const BULK_REF="refs/heads/main";
 const BULK_WORKFLOW=BULK_REPO+"/.github/workflows/epg-rolling7-au-247.yml@"+BULK_REF;
-// The candidate transport is read-only. The legacy workflow retains its writer.
+const INTERNATIONAL_RELEASE_ENABLED=Deno.env.get("LOUNGE_BULK_EPG_WRITE")==="1"&&
+  Deno.env.get("LOUNGE_INTERNATIONAL_BULK_RELEASE")==="approved";
 const REF="refs/heads/qa/international-master-unified-20261119";
 const WORKFLOW=REPO+"/.github/workflows/international-master-qa.yml@"+REF;
 const BUCKET="lounge-international-epg-qa";
@@ -76,27 +77,27 @@ async function credentials(){
   return {base:String(c.server_url).replace(/\/+$/,""),
           username:String(c.username),password:String(c.password)};
 }
-function privateStorage(method:string){
-  return SUPABASE_URL+"/storage/v1/object/"+BUCKET+"/"+OBJECT;
+function privateStorage(_method:string,name=OBJECT){
+  return SUPABASE_URL+"/storage/v1/object/"+BUCKET+"/"+name;
 }
 function storageHeaders(){
   return {"Authorization":"Bearer "+srk,"apikey":srk};
 }
-async function storageVersion(connection:any){
+async function storageVersion(connection:any,name=OBJECT){
   const rows=await connection`select version from storage.objects
-    where bucket_id=${BUCKET} and name=${OBJECT} limit 1`;
+    where bucket_id=${BUCKET} and name=${name} limit 1`;
   return String(rows[0]?.version||"");
 }
 
-async function writeGuide(req:Request){
+async function writeGuide(req:Request,name=OBJECT,replace=true){
   const type=req.headers.get("content-type")||"";
   const len=Number(req.headers.get("content-length")||0);
   if(type!=="application/gzip"||!Number.isSafeInteger(len)||len<1||len>49000000||!req.body)
     return json({error:"compressed_xmltv_required"},400);
-  const resp=await fetch(privateStorage("POST"),{
+  const resp=await fetch(privateStorage("POST",name),{
     method:"POST",
     headers:{...storageHeaders(),"Content-Type":"application/gzip",
-      "Cache-Control":"max-age=600","x-upsert":"true"},
+      "Cache-Control":"max-age=600","x-upsert":String(replace)},
     body:req.body,signal:AbortSignal.timeout(100000)
   });
   if(!resp.ok)return json({error:"storage_upload_failed",status:resp.status},502);
@@ -104,27 +105,65 @@ async function writeGuide(req:Request){
   return json({stored:true,status:resp.status});
 }
 
+async function readVersioned(name:string){
+  const before=await storageVersion(sql,name);
+  if(!before)return json({error:"guide_missing"},404);
+  const response=await fetch(privateStorage("GET",name),{
+    headers:storageHeaders(),signal:AbortSignal.timeout(60000)
+  });
+  if(!response.ok||!response.body||before!==await storageVersion(sql,name)){
+    await response.body?.cancel();
+    return json({error:"guide_version_changed_or_unavailable"},409);
+  }
+  return new Response(response.body,{headers:{
+    "Content-Type":"application/gzip","X-Lounge-Guide-Version":before,...noStore
+  }});
+}
+
+async function replaceVersioned(req:Request,name:string,allowCreate:boolean){
+  const expected=req.headers.get("x-lounge-guide-version")||"";
+  if(!/^[a-f0-9-]{36}$/i.test(expected)&&!(allowCreate&&expected==="missing"))
+    return json({error:"expected_version_required"},400);
+  return await sql.begin(async(tx:any)=>{
+    await tx`select pg_advisory_xact_lock(794288661)`;
+    if((await storageVersion(tx,name)||"missing")!==expected)
+      return json({error:"guide_version_changed"},409);
+    return await writeGuide(req,name,expected!=="missing");
+  });
+}
+
 Deno.serve(async(req)=>{
   const url=new URL(req.url);
   const path=url.pathname.split("/").filter(Boolean).slice(-1)[0]||"";
-  const bulk=["bulk-baseline","bulk-regional-playlist","bulk-catalogue","bulk-upload"].includes(path);
+  const prepObjects:Record<string,string>={
+    "bulk-stage-shared":"shared.tar.gz",
+    "bulk-stage-international":"international-candidate.xml.gz",
+    "bulk-stage-international-rollback":"international-backup.xml.gz",
+    "bulk-restore-rehearsal":"international-restore.xml.gz"
+  };
+  const prep=Object.hasOwn(prepObjects,path);
+  const bulk=prep||["bulk-baseline","bulk-regional-playlist","bulk-catalogue","bulk-upload","bulk-release-status"].includes(path);
   if(!await authorize(req,bulk))return fail();
   try{
-    if(path==="bulk-baseline"&&req.method==="GET"){
-      const before=await storageVersion(sql);
-      if(!before)return json({error:"compiled_baseline_missing"},404);
-      const response=await fetch(privateStorage("GET"),{
-        headers:storageHeaders(),signal:AbortSignal.timeout(60000)
-      });
-      if(!response.ok||!response.body||before!==await storageVersion(sql)){
-        await response.body?.cancel();
-        return json({error:"compiled_baseline_unavailable"},409);
-      }
-      return new Response(response.body,{headers:{
-        "Content-Type":"application/gzip","X-Lounge-Guide-Version":before,...noStore
-      }});
+    if(path==="bulk-baseline"&&req.method==="GET")return await readVersioned(OBJECT);
+    if(path==="bulk-release-status"&&req.method==="GET")
+      return json({international_release_enabled:INTERNATIONAL_RELEASE_ENABLED});
+    if(path==="bulk-upload"){
+      // International has a separate approval switch. The shared release
+      // workflow has no invocation of this endpoint.
+      if(req.method!=="PUT"||!INTERNATIONAL_RELEASE_ENABLED)return fail();
+      return await replaceVersioned(req,OBJECT,false);
     }
-    if(path==="bulk-upload")return fail();
+    if(prep){
+      const run=url.searchParams.get("run")||"";
+      if(!/^[1-9][0-9]{5,15}-[1-9][0-9]{0,3}$/.test(run))return fail();
+      const rehearsal=path==="bulk-restore-rehearsal";
+      const name="release-prep/"+run+"/"+prepObjects[path];
+      if(req.method==="GET")return await readVersioned(name);
+      if(!rehearsal&&req.method==="POST")return await writeGuide(req,name,false);
+      if(rehearsal&&req.method==="PUT")return await replaceVersioned(req,name,true);
+      return fail();
+    }
     if(path==="bulk-catalogue"&&req.method==="GET"){
       // One statement captures the inputs used by the pinned gateway replay.
       // Exclude logos, account information, URLs and programme data.
@@ -401,6 +440,7 @@ Deno.serve(async(req)=>{
       }});
     }
     if(path==="upload"&&req.method==="PUT"){
+      if(INTERNATIONAL_RELEASE_ENABLED)return json({error:"legacy_writer_disabled"},409);
       return await writeGuide(req);
     }
     if(path==="gateway-probe"&&req.method==="GET"){
