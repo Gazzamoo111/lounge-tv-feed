@@ -2,6 +2,17 @@
 
 20 November 2026 NZDT. Tracking [Issue #10](https://github.com/Gazzamoo111/lounge-tv-feed/issues/10) and [Issue #6](https://github.com/Gazzamoo111/lounge-tv-feed/issues/6).
 
+## Production release: 20 November 2026 NZDT
+
+- **Production n v38 is ACTIVE** at the existing Supabase function `n`, deployed following explicit owner approval to apply PR #16 at `n.loungetv.nz`. New package SHA-256: `c67dd009bd4089e3897d6921063c8608353293de8b39bc7450e84344a6a8637e`. The direct-EPG patch source is PR #16 head `e4c758bb4c866c8ba8786681c105742ab48a3188`.
+- Deployment readback confirmed all 16 source files: the two modified files matched PR #16 exactly; the two added files matched PR #16 exactly; all 12 unaffected files matched the previously deployed v37 source byte for byte. `verify_jwt=false` was preserved. The 967 guarded mappings and canonical, epg66, epg64 ordering are included.
+- Existing Plus `lounge-plus-qa` v5 was **not redeployed**; `n` v38 transforms the delegated Plus M3U fallback response. Authentication, Sky routing and TVNZ licence paths were not intentionally changed.
+- **Rollback:** redeploy the original 14-file `n` v37 source pinned at `589ecddb085352585d3f7d3b6a65ecc2ad444b68` with the same Edge settings; the previous bundle SHA-256 was `ea170d5bc88cb65cc58a46cd5172d352921c7f03eaa82a2b57f7f6ee62790e1c`. This is a source recovery reference, not a claim that a runtime rollback was rehearsed.
+- **Not yet verified:** public custom-domain HTTP request after deployment (external DNS access unavailable to operator runtime), Nuvio native Xtream login guide auto-loading, physical TVNZ/Sky/international playback, and fresh customer setup. The approved deployment proceeded despite older Phase 3/4 staging and rollback gates being incomplete. Commercial permission to bundle EPGenius URLs in a paid service remains unconfirmed. Do not claim device or broader launch acceptance.
+- PR #16 was deployed directly from its reviewed candidate code and remains a draft GitHub PR until separately merged. Do not overwrite v38 with the older draft base.
+
+---
+
 ## Serving status
 
 - The isolated Plus account QA function `lounge-xtream-direct-epg-qa` v3 is active. Source was read back byte for byte after deployment. Bundle SHA-256 `481932c45d2b2b524132b28383218509f8cc849fdb11dc55adc0ce3e6e4ae1cb`.
