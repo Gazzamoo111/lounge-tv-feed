@@ -8,7 +8,8 @@ export function nuvioStreamingGroup(category,subcategory,displayName='') {
   // unchanged so apps can still discover every sports event automatically.
   const n=String(displayName||"").trim().toUpperCase();
   // Group unscheduled movie banks separately, retaining provider/stream/EPG IDs.
-  if(t==="RAW" && /^(?:UK\|\s*SKY STORE|US\|\s*CINEMANIA HOLLYWOOD)$/.test(v))
+  if(t==="RAW" && (/^(?:UK\|\s*SKY STORE|US\|\s*CINEMANIA HOLLYWOOD)$/.test(v)
+    || (v==="UK| MOVIES" && /CINEMANIA HOLLYWOOD/.test(n))))
     return "Movie Streams";
   // Specific event feeds, not permanent sports services, belong in Live Events.
   const event=/\b(?:PPV|EVENTS?|RED BUTTON|MATCH FEEDS?|GAME FEEDS?|ESPN PLAY)\b/.test(n)

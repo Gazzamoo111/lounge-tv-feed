@@ -5,6 +5,7 @@ import {PLUS_ORDER,PLUS_IDS,PLUS_LABELS,plusCategory} from "../production/plus/p
 test("movie banks isolate, standard movie channels remain",()=>{
  assert.equal(nuvioStreamingGroup("RAW","UK| SKY STORE","Sky Store Premiere 1"),"Movie Streams");
  assert.equal(nuvioStreamingGroup("RAW","US| CINEMANIA HOLLYWOOD","CM Hollywood Premiere 1"),"Movie Streams");
+ assert.equal(nuvioStreamingGroup("RAW","UK| MOVIES","Cinemania Hollywood 4K"),"Movie Streams");
  assert.equal(nuvioStreamingGroup("RAW","UK| MOVIES","Sky Cinema Premiere"),null);
 });
 test("explicit event streams only",()=>{
