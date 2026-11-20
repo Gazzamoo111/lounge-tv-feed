@@ -1,3 +1,5 @@
+import { addDirectEpgToPlus } from "./direct-epg-fallback.mjs";
+
 /**
  * Account-scoped route for Lounge TV Plus QA.
  * SHA-256 credential verifier resides in Supabase Vault, never in source.
@@ -70,9 +72,10 @@ export async function routeLoungePlus(req,url,rest,parts,sql,supabaseUrl,options
   const responseHeaders=new Headers(upstream.headers);
   responseHeaders.set("Access-Control-Allow-Origin","*");
   responseHeaders.set("X-Lounge-Catalogue","plus-qa");
-  return new Response(req.method==="HEAD"?null:upstream.body,{
+  const response=new Response(req.method==="HEAD"?null:upstream.body,{
    status:upstream.status,statusText:upstream.statusText,headers:responseHeaders
   });
+  return req.method==="GET"&&resource==="get.php" ? await addDirectEpgToPlus(response) : response;
  }catch{
   return Response.json({error:"plus_catalogue_temporarily_unavailable"},{status:502,headers:{"Cache-Control":"no-store"}});
  }
