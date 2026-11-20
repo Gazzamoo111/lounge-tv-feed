@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "release": "lounge-tv-xtream-v38-2026-11-20",
+  "runtime": {
+    "project": "liqocisegeqzbyuqloql",
+    "route": "https://n.loungetv.nz",
+    "function": "n",
+    "version": 38,
+    "code_bundle_sha256": "c67dd009bd4089e3897d6921063c8608353293de8b39bc7450e84344a6a8637e",
+    "verify_jwt": false,
+    "files": 16
+  },
+  "plus": {
+    "function": "lounge-plus-qa",
+    "version": 5,
+    "code_bundle_sha256": "9820504273ca9e5676fc30bcc9fbe7a6e11ecf6640e7e014db30381af37ee39b",
+    "files": 15
+  },
+  "rollback": {
+    "function": "n",
+    "version": 37,
+    "code_bundle_sha256": "ea170d5bc88cb65cc58a46cd5172d352921c7f03eaa82a2b57f7f6ee62790e1c",
+    "source_snapshot_commit": "166d8eaee86cf8e3462fa70e781263290de867cb",
+    "source_path": "n-v37-rollback/",
+    "previous_source_commit": "589ecddb085352585d3f7d3b6a65ecc2ad444b68"
+  },
+  "archive": {
+    "repo": "Gazzamoo111/lounge-tv-feed",
+    "branch": "release/locked-xtream-20261120",
+    "commit": "166d8eaee86cf8e3462fa70e781263290de867cb"
+  },
+  "epg": {
+    "canonical_first": true,
+    "extra_sources": [
+      "epg66",
+      "epg64"
+    ],
+    "pinned_remappings": 967,
+    "player_data_branch": "epg-data",
+    "frozen_player_data_commit": "4df2d2ab90e8fb739fd68132553f1144a9d64a41"
+  },
+  "source_files": {
+    "production/n/channel-priority.mjs": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+    "production/n/direct-epg-fallback.mjs": "c2649c06421ad2b6a51db692162589c75b6aea6a",
+    "production/n/direct-epg.json": "6bd00b5e31417c29f2ad733724307d3cee7e6ee3",
+    "production/n/index.ts": "8c89a722eb37bfbe096c91fb2c687ce245ed79e0",
+    "production/n/nz-routing.mjs": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+    "production/n/plus-account-route.mjs": "245d1d68b95d94d8481596015e751629b016f256",
+    "production/n/qa-247-groups.mjs": "6d91531313f1dab23a7fd92f080e4220552f8667",
+    "production/n/qa-au-duplicates.mjs": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+    "production/n/qa-au-integrity.mjs": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+    "production/n/qa-customer-live-presentation.mjs": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+    "production/n/qa-epg-alias.mjs": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+    "production/n/qa-sky-fhd-primary.mjs": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+    "production/n/qa-sky-hd-backups.mjs": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+    "production/n/qa-sky-nz-loop-filter.mjs": "43fee0655691a9ed519b1b4fd3da81da1e16b313",
+    "production/n/qa-stream-groups.mjs": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+    "production/n/qa-tvnz-xtream-drm.mjs": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6",
+    "production/plus/channel-priority.mjs": "ccd7f30f9205c6cd28646bf3d4f361a8e3dffe5b",
+    "production/plus/index.ts": "448f1695aab323cfd73eaabb60f35524a657f431",
+    "production/plus/nz-routing.mjs": "82124e6c435ca65c8d29ff717b3ca04f0a43ed75",
+    "production/plus/plus-categories.mjs": "c8e9e24101f9465a80c90d3b674eed2ff15d841a",
+    "production/plus/qa-247-groups.mjs": "6d91531313f1dab23a7fd92f080e4220552f8667",
+    "production/plus/qa-au-duplicates.mjs": "e8c45a10187e4a1d95072dd22e2ed881bd2f309c",
+    "production/plus/qa-au-integrity.mjs": "8da42221a2f9d3968b358c0cd9ba4c1aca9bcf05",
+    "production/plus/qa-customer-live-presentation.mjs": "e0e2ec128c43ee18b0c82d94a0727a34f7ac576f",
+    "production/plus/qa-epg-alias.mjs": "de23abaa7bb081150b9b2d04aa5be8563fb11698",
+    "production/plus/qa-sky-fhd-primary.mjs": "c7d79fd77a7e8593669e840d7c4a8990a3272d2e",
+    "production/plus/qa-sky-hd-backups.mjs": "b3af85d05313b4f7090f9e7bcef33c961a0ed193",
+    "production/plus/qa-sky-nz-loop-filter.mjs": "8eae8f3cad047dd8d37e55b3a1aa52140bf4f74e",
+    "production/plus/qa-sky-regional-preferred.mjs": "f77bd9e2d34779c80c352e63f8a0b3d1ecacdf76",
+    "production/plus/qa-stream-groups.mjs": "8cbd88c082fa4f9d7f5152e1f1f76764b0febca3",
+    "production/plus/qa-tvnz-xtream-drm.mjs": "e8bd09f280cf92ddc94b3dcb1106ed3652cea2e6"
+  },
+  "deployment_source": "PR #16 head e4c758bb4c866c8ba8786681c105742ab48a3188",
+  "device_acceptance": "unverified_after_v38_deployment",
+  "commercial_epg_permissions": "unconfirmed"
+}

@@ -1,48 +1,15 @@
-# Lounge TV Playlist and EPG: Current State
+# Lounge TV production state | 20 November 2026
 
-Last metadata check: 2026-11-20 (NZ date).
-Status: INITIAL INVENTORY ONLY. This document does NOT certify playlist playback, current domain routing, code parity or production readiness.
+**Authoritative serving source:** `production/n/` copied from ACTIVE Supabase Edge Function `n` v38, bundle digest `c67dd009bd4089e3897d6921063c8608353293de8b39bc7450e84344a6a8637e`. The authenticated public hostname is `https://n.loungetv.nz` (historically confirmed via Worker/origin logs). Post-release custom-domain and physical-device checks are not yet independently recorded.
 
-## Infrastructure
-- GitHub: Gazzamoo111/lounge-tv-feed (public), default branch main.
-- Supabase project: liqocisegeqzbyuqloql.
-- Supabase list returned 71 Edge Functions. This is a count of installed functions, not evidence that all are in use.
-- Deployment versions observed in Supabase list_edge_functions on 2026-11-20:
-  - n: v37, ACTIVE.
-  - lounge-core-xtream: v52, ACTIVE.
-  - lounge-international-master-qa: v3, ACTIVE.
-  - lounge-international-master-v4-qa: v15, ACTIVE.
-  - lounge-international-epg-broker-qa: v8, ACTIVE.
-  - lounge-core-epg: v1, ACTIVE.
-- ACTIVE means the function is deployed; it does not confirm which public domain routes to it or whether it works end to end.
+**Plus:** `lounge-plus-qa` v5 (digest `9820504273ca9e5676fc30bcc9fbe7a6e11ecf6640e7e014db30381af37ee39b`) remains a separate deployed function; `n` v38 delegates the assigned Plus subscription and decorates its existing internal M3U fallback. Plus v5 was not redeployed for this update.
 
-## Known source and automation
-- GitHub README describes a legacy/October pipeline and cannot be trusted as current deployment documentation.
-- .github/workflows/refresh-fast-epg.yml runs hourly at minute 7, rebuilds documents and may commit refreshed guide assets to main.
-- The above GitHub workflow is not verified to be the source of the current Nuvio Xtream EPG. Map its consumers before changing it.
-- Full correspondence between deployed Supabase Edge Function source and committed GitHub source is NOT YET VERIFIED.
-- The NZ/AU customer-facing endpoint, International QA endpoint, domain aliases, paths, and credential model must be individually verified without committing private URLs or secrets.
+**Working EPG candidate deployed:** PR [#16](https://github.com/Gazzamoo111/lounge-tv-feed/pull/16), SHA `e4c758bb4c866c8ba8786681c105742ab48a3188`, with 967 guarded remappings, canonical guide then epg66 and epg64, and `&amp;` category-label correction. Existing stream URLs, IDs, category order, authentication and TVNZ DRM paths were preserved in source; the pre-release authenticated QA comparison passed. The production source was read back after deployment and matched PR #16.
 
-## User-reported playback history, not a current pass
-- On 2026-11-19 the user reported Sky Sport working and TVNZ 1/2 had previously worked with a corrected routing path.
-- A later reported Xtream URL update was followed by TVNZ failure; the latest TVNZ playback result is unverified in this inventory.
-- Do not treat either TVNZ or Fox/Kayo AU as passed until a current controlled test.
-- Preserve working NZ/AU behaviour and customer credentials while investigating.
-- Issue #4 and issue #6 contain historically useful QA and customer setup details but their old version references are superseded by current deployed function inventory.
+**Rollback:** frozen `n` v37 (14 source files, digest `ea170d5bc88cb65cc58a46cd5172d352921c7f03eaa82a2b57f7f6ee62790e1c`), [snapshot commit `166d8eae`](https://github.com/Gazzamoo111/lounge-tv-feed/tree/166d8eaee86cf8e3462fa70e781263290de867cb/n-v37-rollback). Preserve current bindings and `lounge-plus-qa` v5. This is source recoverability, not a completed rollback rehearsal. Never restore v36 in place of v37.
 
-## Current release designation
-- Protected baseline: the serving NZ/AU customer configuration as verified through read-only inspection and device playback, NOT simply the highest-numbered function.
-- International: QA-only until its source, domain routing, feature completeness and device playback pass the release checklist.
-- Production change authorisation: not granted by creation of these documents.
-- Last known-good deployable source snapshot: NOT YET CAPTURED.
-- Last verified rollback artifact: NOT YET CAPTURED.
-- EPG coverage baseline: NOT YET MEASURED.
+**Core dependencies:** Supabase `liqocisegeqzbyuqloql` schemas, Vault and account entitlements, `lounge-core-xtream`, `lounge-core-live-m3u`, `lounge-core-live-xmltv`, `lounge-core-sky-nz-epg`, `lounge-shared-epg-sync`, `tvnz-license-qa`, BEST provider bindings, Cloudflare domain worker and relevant scheduled jobs. The player repo `epg-data` head was frozen at `4df2d2ab90e8fb739fd68132553f1144a9d64a41` under `release/locked-epg-data-20261120`. **Keep the actively updated `epg-data` branch.**
 
-## Required next audit
-1. Resolve public endpoints/domain-to-function mapping and distinguish QA from customer traffic, without exposing secrets.
-2. Export or reproduce current function sources in GitHub using secret-free configuration, with immutable release identifiers.
-3. Capture protected NZ/AU metadata baseline: groups, order, icons, source choices, channel IDs, TVNZ and Sky routes, EPG IDs.
-4. Audit EPG input, aggregation, refresh cadence and Nuvio guide selection.
-5. Record a verified rollback procedure before the first production release.
-6. Implement automated compare-and-regression checks, then validate on a Nuvio + IPTV device.
-7. Update this snapshot after checks; never overwrite a problem with an untested success assertion.
+**Cleanup facts:** 73 Edge Functions, 22 active scheduled jobs, 128 application tables, one private international EPG bucket, and no Supabase hosted dev branches observed on 20 November. The last 24-hour Edge logs showed 21 called functions, but inactivity alone does not justify deletion. See [Issue #17](https://github.com/Gazzamoo111/lounge-tv-feed/issues/17).
+
+**Outstanding:** post-deploy physical Nuvio native Xtream guide import and protected playback, fresh customer acceptance, EPGenius paid-service permissions, private DB/secrets/Cloudflare backups. Do not claim full product acceptance. No data/table/cron/function deletion authorised solely by their age.
