@@ -12,7 +12,7 @@ const BULK_REPO="Gazzamoo111/lounge-tv-player";
 const BULK_REPO_ID="1429254511";
 const BULK_REF="refs/heads/main";
 const BULK_WORKFLOW=BULK_REPO+"/.github/workflows/epg-rolling7-au-247.yml@"+BULK_REF;
-const BULK_WRITER_ENABLED=Deno.env.get("LOUNGE_BULK_EPG_WRITE")==="1";
+// The candidate transport is read-only. The legacy workflow retains its writer.
 const REF="refs/heads/qa/international-master-unified-20261119";
 const WORKFLOW=REPO+"/.github/workflows/international-master-qa.yml@"+REF;
 const BUCKET="lounge-international-epg-qa";
@@ -107,7 +107,7 @@ async function writeGuide(req:Request){
 Deno.serve(async(req)=>{
   const url=new URL(req.url);
   const path=url.pathname.split("/").filter(Boolean).slice(-1)[0]||"";
-  const bulk=["bulk-baseline","bulk-regional-playlist","bulk-upload"].includes(path);
+  const bulk=["bulk-baseline","bulk-regional-playlist","bulk-catalogue","bulk-upload"].includes(path);
   if(!await authorize(req,bulk))return fail();
   try{
     if(path==="bulk-baseline"&&req.method==="GET"){
@@ -124,15 +124,39 @@ Deno.serve(async(req)=>{
         "Content-Type":"application/gzip","X-Lounge-Guide-Version":before,...noStore
       }});
     }
-    if(path==="bulk-upload"&&req.method==="PUT"){
-      if(!BULK_WRITER_ENABLED)return fail();
-      const expected=req.headers.get("x-lounge-guide-version")||"";
-      if(!/^[a-f0-9-]{36}$/i.test(expected))return json({error:"expected_version_required"},400);
-      return await sql.begin(async(tx:any)=>{
-        await tx`select pg_advisory_xact_lock(794288661)`;
-        if(expected!==await storageVersion(tx))return json({error:"compiled_guide_changed"},409);
-        return await writeGuide(req);
-      });
+    if(path==="bulk-upload")return fail();
+    if(path==="bulk-catalogue"&&req.method==="GET"){
+      // One statement captures the inputs used by the pinned gateway replay.
+      // Exclude logos, account information, URLs and programme data.
+      const [snapshot]=await sql`
+        with active as (
+          select id,release_key from lounge_delivery.catalogue_releases
+          where state='active' order by activated_at desc nulls last limit 1
+        ), curated as (
+          select i.external_id,l.live_channel_id,l.canonical_key,l.display_name,l.category,l.subcategory,
+                 l.epg_id,l.sort_order,b.provider_stream_id,coalesce(b.source_format,'ts') source_format,
+                 p.name provider_name
+          from active a join lounge_delivery.live_release_items l on l.release_id=a.id
+          join lounge_delivery.item_ids i on i.item_kind='live' and i.canonical_id=l.live_channel_id
+          join lounge_delivery.live_source_bindings b
+            on b.release_id=l.release_id and b.live_channel_id=l.live_channel_id and b.source_role='primary'
+          join public.providers p on p.id=b.provider_id
+          where l.admission='keep'
+        ), inventory as (
+          select i.provider_item_id,i.name,i.epg_channel_id,i.is_adult,coalesce(c.category_name,'') provider_group
+          from lounge_sync.best_inventory_items i left join lounge_sync.best_categories c
+            on c.kind='live' and c.category_id=i.category_id
+          where i.kind='live' and i.is_present=true and i.provider_item_id>0
+        )
+        select a.id::text,a.release_key,
+          (select json_agg(c order by c.sort_order,c.external_id) from curated c) as curated,
+          (select json_agg(i order by i.provider_item_id) from inventory i) as inventory,
+          (select json_agg(epg_id order by epg_id) from lounge_delivery.shared_epg_channels
+           where expires_at>now() and programme_count>0) as guide_ids
+        from active a`;
+      if(!snapshot?.curated?.length||!snapshot?.inventory?.length||!snapshot?.guide_ids?.length)
+        return json({error:"catalogue_snapshot_unavailable"},503);
+      return json(snapshot);
     }
     if(path==="recent-playback-audit"&&req.method==="GET"){
       // Diagnostic only. Fixed IDs selected from actual QA playback attempts.
@@ -377,7 +401,6 @@ Deno.serve(async(req)=>{
       }});
     }
     if(path==="upload"&&req.method==="PUT"){
-      if(BULK_WRITER_ENABLED)return json({error:"legacy_writer_disabled"},409);
       return await writeGuide(req);
     }
     if(path==="gateway-probe"&&req.method==="GET"){

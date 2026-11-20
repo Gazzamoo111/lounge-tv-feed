@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { registerHooks } from "node:module";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
-const [source, output] = process.argv.slice(2);
+const [source, output, snapshotPath] = process.argv.slice(2);
+const snapshot = snapshotPath ? JSON.parse(readFileSync(snapshotPath, "utf8")) : null;
 const origin = "https://edge.invalid";
 const best = "https://provider.invalid";
 const standard = ["offline-standard", "sample-only"];
@@ -47,6 +48,10 @@ const guideIds = [...new Set([
   ...rows.filter(row => row.epg_id && row.provider_stream_id !== 706).map(row => row.epg_id),
   ...internationalInventory.map(row => row.epg_channel_id),
 ])];
+if (snapshot) {
+  assert.ok(snapshot.release_key && snapshot.id);
+  assert.ok(snapshot.curated?.length && snapshot.inventory?.length && snapshot.guide_ids?.length);
+}
 function guideParts(ids) {
   return ids.map(id => [
     `<channel id="${id}"><display-name>Example</display-name></channel>`,
@@ -70,10 +75,12 @@ const digest = Buffer.from(await crypto.subtle.digest(
 async function sql(parts, ...values) {
   const query = parts.join("?").toLowerCase();
   if (query.includes("legacy_xtream_auth_cache")) return [];
-  if (query.includes("catalogue_releases")) return [{ id: "10000000-0000-4000-8000-000000000001", release_key: "offline" }];
+  if (query.includes("catalogue_releases")) return [snapshot
+    ? { id: snapshot.id, release_key: snapshot.release_key }
+    : { id: "10000000-0000-4000-8000-000000000001", release_key: "offline" }];
   if (query.includes("international_master_streams_qa")) return structuredClone(internationalInventory);
   if (query.includes("international_epg_matches_qa")) return [];
-  if (query.includes("from lounge_delivery.live_release_items")) return structuredClone(rows);
+  if (query.includes("from lounge_delivery.live_release_items")) return structuredClone(snapshot?.curated ?? rows);
   if (query.includes("from lounge_delivery.item_ids") && query.includes("live_source_bindings")) {
     return structuredClone(rows.filter(row => row.external_id === values.at(-1)));
   }
@@ -88,14 +95,15 @@ async function sql(parts, ...values) {
     return [{ xmltv: guideParts(values[0]) }];
   }
   if (query.includes("from lounge_delivery.shared_epg_channels") && query.includes("select epg_id")) {
-    return guideIds.filter(id => !Array.isArray(values[0]) || values[0].includes(id)).map(epg_id => ({ epg_id }));
+    return (snapshot?.guide_ids ?? guideIds)
+      .filter(id => !Array.isArray(values[0]) || values[0].includes(id)).map(epg_id => ({ epg_id }));
   }
   if (query.includes("release_vod_items") || query.includes("vod_release_items")) return [];
   return reject("SQL query");
 }
 sql.unsafe = async query => {
   if (query.includes("lounge_plus_route_account_sha256")) return [{ digest }];
-  if (query.includes("best_inventory_items")) return [];
+  if (query.includes("best_inventory_items")) return structuredClone(snapshot?.inventory ?? []);
   return reject("SQL unsafe query");
 };
 
@@ -115,7 +123,8 @@ const env = {
   SUPABASE_SERVICE_ROLE_KEY: "offline-role",
 };
 const handlers = {};
-for (const slug of ["n", "lounge-plus-qa", "lounge-international-regional-qa"]) {
+const slugs = snapshot ? ["n", "lounge-plus-qa"] : ["n", "lounge-plus-qa", "lounge-international-regional-qa"];
+for (const slug of slugs) {
   globalThis.Deno = { env: { get: key => env[key] }, serve: handler => { handlers[slug] = handler; } };
   // The entrypoint and its local imports are the only code under test.
   await import(pathToFileURL(resolve(source, slug, "index.ts")).href);
@@ -160,6 +169,27 @@ function request(slug, account, path, action, streamId) {
   if (action) url.searchParams.set("action", action);
   if (streamId) url.searchParams.set("stream_id", String(streamId));
   return handlers[slug](new Request(url));
+}
+if (snapshot) {
+  mkdirSync(output, { recursive: true, mode: 0o700 });
+  for (const [profile, slug, account] of profiles.slice(0, 2)) {
+    const playlist = await request(slug, account, "get.php");
+    assert.equal(playlist.status, 200, profile);
+    assert.equal(playlist.headers.get("X-Lounge-Catalogue"), profile === "plus" ? "plus-qa" : null);
+    // Keep only catalogue metadata. The renderer used local fixture accounts.
+    const entries = [];
+    for (const line of (await playlist.text()).split("\n")) {
+      if (!line.startsWith("#EXTINF:")) continue;
+      const metadata = line.match(/^#EXTINF:-1 channel-id="ltv-\d+" tvg-id="[^"]*"/);
+      const group = line.match(/ group-title="[^"]*",.*$/);
+      assert.ok(metadata && group, "Missing catalogue identity or group");
+      entries.push(metadata[0] + group[0]);
+    }
+    assert.ok(entries.length >= 10000, profile + " catalogue is incomplete");
+    writeFileSync(resolve(output, profile + ".m3u"), ["#EXTM3U", ...entries, ""].join("\n"), { mode: 0o600 });
+  }
+  assert.deepEqual(unexpected, []);
+  process.exit(0);
 }
 for (const [profile, slug, account] of profiles) {
   const dir = resolve(output, profile);
