@@ -5,7 +5,7 @@
  */
 export const PLUS_ORDER=Object.freeze([
   "New Zealand","Australia","UK TV","UK Sports","US TV","US Sports",
-  "Sports Networks","Streaming Services","Movie Channels","Kids & Family",
+  "Sports Networks","Streaming Services","Movie Channels","Movie Streams","Kids & Family",
   "Documentaries & Lifestyle","FAST TV","Music",
   "24/7 Movies","24/7 Series","24/7 Comedy & Reality",
   "24/7 Drama & Crime","24/7 Streaming & OnePlay",
@@ -14,26 +14,32 @@ export const PLUS_ORDER=Object.freeze([
 export const PLUS_LABELS=Object.freeze({
   "New Zealand":"01 🇳🇿 New Zealand",
   "Australia":"02 🇦🇺 Australia",
-  "UK TV":"03 🇬🇧 UK TV & Entertainment",
+  "UK TV":"03 🇬🇧 UK TV and Entertainment",
   "UK Sports":"04 🇬🇧 ⚽ UK Sports",
-  "US TV":"05 🇺🇸 US TV & Entertainment",
+  "US TV":"05 🇺🇸 US TV and Entertainment",
   "US Sports":"06 🇺🇸 🏀 US Sports",
   "Sports Networks":"07 🏆 Sports Networks",
   "Streaming Services":"08 ▶️ Streaming Services",
   "Movie Channels":"09 🎬 Movie Channels",
-  "Kids & Family":"10 🧸 Kids and Family",
-  "Documentaries & Lifestyle":"11 🌿 Documentaries and Lifestyle",
-  "FAST TV":"12 📡 FAST TV",
-  "Music":"13 🎵 Music",
-  "24/7 Movies":"14 🍿 24/7 Movies",
-  "24/7 Series":"15 📺 24/7 Series",
-  "24/7 Comedy & Reality":"16 🎭 24/7 Comedy & Reality",
-  "24/7 Drama & Crime":"17 🎬 24/7 Drama and Crime",
-  "24/7 Streaming & OnePlay":"18 ▶️ 24/7 Streaming & OnePlay",
-  "24/7 Kids & Cartoons":"19 🎨 24/7 Kids and Cartoons",
-  "Live Events":"20 🏟️ Live Events"
+ "Movie Streams":"10 🎞️ Movie Streams",
+  "Kids & Family":"11 🧸 Kids and Family",
+  "Documentaries & Lifestyle":"12 🌿 Documentaries and Lifestyle",
+  "FAST TV":"13 📡 FAST TV",
+  "Music":"14 🎵 Music",
+  "24/7 Movies":"15 🍿 24/7 Movies",
+  "24/7 Series":"16 📺 24/7 Series",
+  "24/7 Comedy & Reality":"17 🎭 24/7 Comedy and Reality",
+  "24/7 Drama & Crime":"18 🎬 24/7 Drama and Crime",
+  "24/7 Streaming & OnePlay":"19 ▶️ 24/7 Streaming and OnePlay",
+  "24/7 Kids & Cartoons":"20 🎨 24/7 Kids and Cartoons",
+  "Live Events":"21 🏟️ Live Events"
 });
-export const PLUS_IDS=Object.freeze(Object.fromEntries(PLUS_ORDER.map((g,i)=>[g,String(2800101+i)])));
+// Pin the original 20 IDs; new Movie Streams receives only the next free ID.
+const LEGACY_PLUS_ORDER=PLUS_ORDER.filter(g=>g!=="Movie Streams");
+export const PLUS_IDS=Object.freeze({
+ ...Object.fromEntries(LEGACY_PLUS_ORDER.map((g,i)=>[g,String(2800101+i)])),
+ "Movie Streams":"2800121"
+});
 const has=(text,re)=>re.test(String(text||"").toUpperCase());
 
 export function plusCategory(row, original){
@@ -61,6 +67,7 @@ export function plusCategory(row, original){
   if(g==="Australia")return "Australia";
   if(g==="FAST TV")return "FAST TV";
   if(g==="Movie Channels")return "Movie Channels";
+  if(g==="Movie Streams")return "Movie Streams";
   if(g==="Kids & Family")return "Kids & Family";
   if(g==="Documentaries & Lifestyle")return "Documentaries & Lifestyle";
   if(g==="Music")return "Music";

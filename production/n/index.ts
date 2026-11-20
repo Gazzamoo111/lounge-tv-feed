@@ -1220,11 +1220,11 @@ const NUVIO_GROUPS=["New Zealand","Australia","Sports Networks","UK TV","US TV",
  "Kids & Family","Music","24/7 Movies & Series","24/7 Kids & Cartoons",
  "24/7 OnePlay","International TV","Live Events",
  "24/7 Movies","24/7 Series","24/7 Comedy","24/7 Drama & Crime",
- "24/7 Reality","24/7 Streaming","FAST TV"];
+ "24/7 Reality","24/7 Streaming","FAST TV","Movie Streams"];
 // Browse order may change; numeric category IDs must not.
 const NUVIO_VISIBLE_ORDER=[
  "New Zealand","Australia","Sports Networks","UK TV","US TV",
- "Entertainment & Streaming","FAST TV","Movie Channels","Kids & Family",
+ "Entertainment & Streaming","FAST TV","Movie Channels","Movie Streams","Kids & Family",
  "Documentaries & Lifestyle","News","24/7 Movies & Series","24/7 Movies",
  "24/7 Series","24/7 Comedy","24/7 Drama & Crime","24/7 Reality",
  "24/7 Streaming","24/7 Kids & Cartoons","24/7 OnePlay","Music",
