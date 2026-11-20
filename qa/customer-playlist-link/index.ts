@@ -59,19 +59,18 @@ async function access(token:string){
  if(!TOKEN_RE.test(token))return null;
  const sha=await hash(token);
  const rows=await sql`
- select l.id,l.provider_account_id
+ select l.id,pa.id as provider_account_id
  from lounge_delivery.qa_customer_playlist_links l
  join public.service_assignments sa on sa.id=l.service_assignment_id and sa.status='active'
  join public.subscriptions s on s.id=sa.subscription_id and s.status='active'
- join public.service_assignment_internal sia
-   on sia.service_assignment_id=sa.id and sia.provider_account_id=l.provider_account_id
- join public.provider_accounts pa on pa.id=l.provider_account_id and pa.status in ('assigned','active')
+ join public.service_assignment_internal sia on sia.service_assignment_id=sa.id
+ join public.provider_accounts pa on pa.id=sia.provider_account_id and pa.status in ('assigned','active')
  join public.providers p on p.id=pa.provider_id and p.name='BEST'
  where l.token_hash=${sha} and l.status='active' and l.revoked_at is null and l.expires_at>now()
    and (sa.expires_at is null or sa.expires_at>now())
    and (s.current_period_end is null or s.current_period_end>now())
    and (pa.expires_at is null or pa.expires_at>now())
- limit 1`;
+ order by sia.assigned_at desc limit 1`;
  return rows[0]||null;
 }
 async function getCreds(id:string){
@@ -87,18 +86,26 @@ async function admin(req:Request,action:string){
  if(!who)return json({error:"Admin authentication required"},401);
  const body=await req.json().catch(()=>null);
  if(!body||typeof body!=="object")return json({error:"Invalid request"},400);
+ if(action==="check"){
+  const sid=String(body.service_assignment_id||"");
+  if(!UUID.test(sid))return json({error:"Service assignment ID required"},400);
+  const svc=await eligibleService(sid);
+  if(!svc)return json({ready:false,reason:"No current active service, subscription and assigned BEST account"},200);
+  const hasCredentials=!!(await getCreds(svc.provider_account_id));
+  return json({ready:hasCredentials,reason:hasCredentials?null:"Provider credentials are not provisioned"});
+ }
  if(action==="issue"){
   const sid=String(body.service_assignment_id||"");
   if(!UUID.test(sid))return json({error:"Service assignment ID required"},400);
   const svc=await eligibleService(sid);
   if(!svc)return json({error:"Active assigned customer service not found"},409);
   if(!(await getCreds(svc.provider_account_id)))return json({error:"Provider credentials not provisioned"},409);
-  const days=Number(body.expires_in_days??30);
-  if(!Number.isInteger(days)||days<1||days>90)return json({error:"Expiry must be 1–90 days"},400);
-  const dates=[Date.now()+days*86400000,svc.service_expiry,svc.subscription_expiry,svc.provider_expiry]
-   .filter(x=>x!==null&&x!==undefined)
-   .map(x=>typeof x==="number"?x:new Date(x).getTime()).filter(Number.isFinite);
-  const expires=Math.min(...dates);
+  // Playlist-token lifetime is independent of the paid service period.
+  // Every actual request rechecks active assignment, subscription and BEST account.
+  // This keeps the same customer playlist URL working after a normal paid renewal.
+  const days=Number(body.expires_in_days??365);
+  if(!Number.isInteger(days)||days<1||days>365)return json({error:"Link lifetime must be 1–365 days"},400);
+  const expires=Date.now()+days*86400000;
   if(expires<=Date.now()+60000)return json({error:"Service expires too soon"},409);
   const key=randomLinkKey(),sha=await hash(key);
   const label=String(body.label||"Lounge TV").trim().slice(0,64)||"Lounge TV";

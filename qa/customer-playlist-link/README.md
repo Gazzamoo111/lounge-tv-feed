@@ -12,15 +12,24 @@ Headers: `Authorization: Bearer <admin_supabase_access_token>` and `Content-Type
 
 Body:
 ```json
-{"service_assignment_id":"<active-service-assignment-uuid>","label":"Lounge TV","expires_in_days":30}
+{"service_assignment_id":"<active-service-assignment-uuid>","label":"Lounge TV","expires_in_days":365}
 ```
 The response contains `link_id`, `url`, and `expires_at`. The URL contains a random
 32-byte bearer token, shown only once. **Never paste customer tokens in public issues,
 analytics, logs, or source code.** Store the returned `link_id` for future revocation.
 
 The issue handler checks the active service and subscription, its matching assigned
-BEST provider account, and the account's Vault credentials. The expiry is bounded by
-all three account/subscription expirations.
+BEST provider account, and the account's Vault credentials. The token has an independent maximum lifetime of 365 days. Access is checked against the
+CURRENT subscription, service expiry and assigned BEST account on every request,
+so ordinary renewal of the same service assignment does not require reinstalling the playlist.
+
+Preflight before issuing a link:
+
+`POST /functions/v1/lounge-customer-playlist-qa/admin/check`
+```json
+{"service_assignment_id":"<active-service-assignment-uuid>"}
+```
+The response contains `ready` and, when blocked, a non-secret reason.
 
 `POST /functions/v1/lounge-customer-playlist-qa/admin/list`
 ```json
@@ -57,6 +66,8 @@ This is a QA mechanism, not automated onboarding through a single Xtream login.
 - Nuvio's free-to-air direct stream links remain publicly accessible upstream.
   The token protects our playlist and TVNZ licence route, not public third-party URLs.
 - Expired/stale subscriptions fail closed even when the database status says `active`.
+- Renewals work with the same playlist link only when the service assignment ID is retained.
+  A new service assignment ID or expiry of the link itself requires a new token.
 - This function proxies **only guide and licence data**. It redirects video; it does
   not relay video bandwidth through Supabase.
 - Do not distribute until a *fresh active customer* has completed a full-device test
