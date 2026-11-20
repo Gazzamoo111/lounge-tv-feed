@@ -1,5 +1,7 @@
 import postgres from "npm:postgres@3.4.7";
 import {rewriteLoungeM3u,TOKEN_RE} from "./link-core.mjs";
+import directEpg from "./direct-epg.json" with {type:"json"};
+const directEpgEnabled=Deno.env.get("LOUNGE_CUSTOMER_DIRECT_EPG_QA")==="1";
 const base=(Deno.env.get("SUPABASE_URL")||"https://liqocisegeqzbyuqloql.supabase.co").replace(/\/+$/,"");
 const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
 const rawDbUrl=Deno.env.get("SUPABASE_DB_URL");
@@ -44,7 +46,10 @@ async function eligibleService(id:string){
         pa.id provider_account_id,pa.expires_at provider_expiry
  from public.service_assignments sa
  join public.subscriptions s on s.id=sa.subscription_id and s.status='active'
- join public.service_assignment_internal sia on sia.service_assignment_id=sa.id
+ join lateral (
+   select provider_account_id from public.service_assignment_internal
+   where service_assignment_id=sa.id order by assigned_at desc, provider_account_id limit 1
+ ) sia on true
  join public.provider_accounts pa on pa.id=sia.provider_account_id
  join public.providers p on p.id=pa.provider_id and p.name='BEST'
  where sa.id=${id}::uuid and sa.status='active'
@@ -52,7 +57,7 @@ async function eligibleService(id:string){
    and (s.current_period_end is null or s.current_period_end>now())
    and pa.status in ('assigned','active')
    and (pa.expires_at is null or pa.expires_at>now())
- order by sia.assigned_at desc limit 1`;
+ limit 1`;
  return rows[0]||null;
 }
 async function access(token:string){
@@ -63,14 +68,17 @@ async function access(token:string){
  from lounge_delivery.qa_customer_playlist_links l
  join public.service_assignments sa on sa.id=l.service_assignment_id and sa.status='active'
  join public.subscriptions s on s.id=sa.subscription_id and s.status='active'
- join public.service_assignment_internal sia on sia.service_assignment_id=sa.id
+ join lateral (
+   select provider_account_id from public.service_assignment_internal
+   where service_assignment_id=sa.id order by assigned_at desc, provider_account_id limit 1
+ ) sia on true
  join public.provider_accounts pa on pa.id=sia.provider_account_id and pa.status in ('assigned','active')
  join public.providers p on p.id=pa.provider_id and p.name='BEST'
  where l.token_hash=${sha} and l.status='active' and l.revoked_at is null and l.expires_at>now()
    and (sa.expires_at is null or sa.expires_at>now())
    and (s.current_period_end is null or s.current_period_end>now())
    and (pa.expires_at is null or pa.expires_at>now())
- order by sia.assigned_at desc limit 1`;
+ limit 1`;
  return rows[0]||null;
 }
 async function getCreds(id:string){
@@ -115,6 +123,7 @@ async function admin(req:Request,action:string){
            ${new Date(expires).toISOString()}::timestamptz,${who}::uuid)
    returning id,expires_at`;
   return json({ok:true,link_id:rows[0].id,url:publicBase+"/playlist/"+key,
+               guide_urls:[publicBase+"/epg/"+key,...(directEpgEnabled ? directEpg.guides : [])],
                expires_at:rows[0].expires_at,note:"This revocable link is a bearer secret"},201);
  }
  if(action==="revoke"){
@@ -166,7 +175,7 @@ async function serve(req:Request,parts:string[]){
   const source=await r.text();
   if(source.length>16000000)return json({error:"Playlist exceeds limit"},502);
   const {result}=rewriteLoungeM3u(source,{token:key,publicBase,coreBase:upstream,
-    username:creds.username,password:creds.password});
+    username:creds.username,password:creds.password,epgMap:directEpgEnabled ? directEpg.map : undefined});
   return new Response(req.method==="HEAD"?null:result,{headers:{...headers,
     "Content-Type":"application/x-mpegURL; charset=utf-8","X-Lounge-Mode":"customer-token-qa"}});
  }
@@ -180,6 +189,8 @@ async function serve(req:Request,parts:string[]){
  if(kind==="live"&&parts.length===3&&MEDIA.test(detail||"")){
   const path="live/"+encodeURIComponent(creds.username)+"/"+encodeURIComponent(creds.password)+"/"+detail;
   const r=await fetch(coreUrl(creds,path),{redirect:"manual",signal:AbortSignal.timeout(22000)});
+  if(r.status===422)return json({error:"Use the original M3U DRM entry"},422);
+  if(r.status===401||r.status===403)return json({error:"Channel unavailable for this service"},r.status);
   if(![301,302,307,308].includes(r.status))return json({error:"Stream unavailable"},502);
   const raw=r.headers.get("location");
   if(!raw)return json({error:"Stream unavailable"},502);

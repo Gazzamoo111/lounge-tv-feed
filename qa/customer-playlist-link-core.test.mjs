@@ -61,3 +61,19 @@ test("reject unencrypted source and public base",()=>{
 test("reject wrong link token",()=>{
  assert.throws(()=>rewriteLoungeM3u(fixture,{...options,token:"garbage"}),/Invalid recipient/);
 });
+test("fixes category ampersands only and checks the original guide ID before mapping",()=>{
+ const line='#EXTINF:-1 channel-id="ltv-42" tvg-id="original&amp;id" tvg-logo="https://example.com/?a=1&amp;b=2" group-title="01 Sports &amp; News, &quot;NZ&quot;",Name &amp; co';
+ const enriched=fixture.replace('#EXTINF:-1 group-title="01 New Zealand",SKY SPORT 1 HD BACKUP',line);
+ const opt={...options,epgMap:{"ltv-42":["original&id","source&id"]}};
+ const result=rewriteLoungeM3u(enriched,opt).result;
+ assert.ok(result.includes(line.replace('group-title="01 Sports &amp; News','group-title="01 Sports & News').replace('tvg-id="original&amp;id"','tvg-id="source&amp;id"')));
+ assert.ok(result.includes(publicBase+'/live/'+key+'/2000636918.ts'));
+ assert.ok(rewriteLoungeM3u(enriched.replace('original&amp;id','changed'),opt).result.includes('tvg-id="changed"'));
+ assert.ok(rewriteLoungeM3u(enriched,options).result.includes('tvg-id="original&amp;id"'));
+});
+
+test("leaves non-display lines and both protected DRM paths unchanged with the map enabled",()=>{
+ const baseline=rewriteLoungeM3u(fixture,options).result;
+ const mapped=rewriteLoungeM3u(fixture,{...options,epgMap:{"ltv-42":["old","new"]}}).result;
+ assert.equal(mapped,baseline);
+});

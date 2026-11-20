@@ -37,6 +37,14 @@ try{
  }
  const issued=await call("issue",{service_assignment_id:sid,label,expires_in_days:days});
  if(!issued.ok||!issued.url||!issued.link_id)throw Error("Gateway did not return a complete link.");
+ const guideUrls=issued.guide_urls??[];
+ const guideSteps=guideUrls.length>1 ? [
+  "4. In Guides, confirm the Lounge TV guide from the playlist is first. If it is missing, add:",
+  guideUrls[0],
+  "Add these two XMLTV URLs in this order:",
+  ...guideUrls.slice(1),
+  "Let the first guide refresh finish and check now/next before enabling sync.",
+ ] : [];
  const welcome=[
   "Your Lounge TV Live TV access is ready.",
   "",
@@ -45,7 +53,8 @@ try{
   "3. In Settings > Live TV > Playlists, choose Add M3U Playlist and paste this private link:",
   issued.url,
   "Name the playlist Lounge TV Live.",
-  "4. Once channels work, enable Settings > Live TV > Nuvio Account Sync for your other devices.",
+  ...guideSteps,
+  "Once channels and guides work, you can enable Nuvio Account Sync on your own account.",
   "",
   "Premium movies/series, Xperience and TorBox are activated separately when confirmed; the playlist link activates Live TV only.",
   "Do not share this playlist link."

@@ -4,7 +4,30 @@ export const TOKEN_RE=/^[A-Za-z0-9_-]{43}$/;
 const MEDIA_RE=/^(tvnz-1|tvnz-2|three|maori-tv|te-reo)\.(mpd|m3u8)$/;
 const ID_RE=/^[1-9][0-9]{0,11}\.(ts|m3u8)$/;
 
-export function rewriteLoungeM3u(source,{token,publicBase,coreBase,username,password}){
+const M3U_FIELDS = /^(#EXTINF:(?:[^",]|"[^"]*")*)(,.*)$/;
+const CHANNEL_ID = /(?:^|\s)channel-id="([^"]*)"/;
+const EPG_ID = /(\stvg-id=")([^"]*)"/;
+const GROUP_TITLE = /(\sgroup-title=")([^"]*)"/;
+const decode = (value) => value.replace(/&(amp|quot|lt|gt|#39);/g, (_, key) =>
+  ({amp:"&",quot:'"',lt:"<",gt:">","#39":"'"}[key]));
+const escapeAttribute = (value) => value.replace(/[&"<>]/g, (ch) =>
+  ({"&":"&amp;",'"':"&quot;","<":"&lt;",">":"&gt;"}[ch]));
+
+export function rewriteDisplayMetadata(line, epgMap) {
+  const match = M3U_FIELDS.exec(line);
+  if (!match) return line;
+  const [, fields, displayName] = match;
+  const channel = CHANNEL_ID.exec(fields);
+  const candidate = channel && epgMap?.[decode(channel[1])];
+  const categoryFixed = fields.replace(GROUP_TITLE, (_, prefix, group) =>
+    prefix + group.replace(/&amp;/g, "&") + '"');
+  const mapped = Array.isArray(candidate) ? categoryFixed.replace(EPG_ID, (original, prefix, id) =>
+    decode(id) === candidate[0] ? prefix + escapeAttribute(candidate[1]) + '"' : original
+  ) : categoryFixed;
+  return mapped + displayName;
+}
+
+export function rewriteLoungeM3u(source,{token,publicBase,coreBase,username,password,epgMap}){
   if(!TOKEN_RE.test(token)||!username||!password)throw new Error("Invalid recipient");
   const pub=new URL(publicBase);
   const core=new URL(coreBase);
@@ -34,7 +57,7 @@ export function rewriteLoungeM3u(source,{token,publicBase,coreBase,username,pass
       continue;
     }
     if(line.startsWith("#")){
-      out.push(original);
+      out.push(rewriteDisplayMetadata(original, epgMap));
       continue;
     }
     const u=new URL(line);
