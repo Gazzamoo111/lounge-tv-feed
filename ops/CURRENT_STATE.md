@@ -1,4 +1,17 @@
-# Lounge TV production state | 20 November 2026
+## Category-only v39 update | 20 November 2026 NZDT
+
+**Serving gateway:** Supabase `n` **v39 ACTIVE**, bundle `14d7c1bf0b1f89fb76d137b55df876fa7d2706564485d265b0617f34c6349d01`, 16 source files. **Plus:** `lounge-plus-qa` **v6 ACTIVE**, bundle `1dbe8638c928b41cc9e4f1d6593bb8343d4e1a8ecc3a73d2bd0f1c36ad98d9c7`, 15 source files. Released from merged [PR #19](https://github.com/Gazzamoo111/lounge-tv-feed/pull/19) head `2d729001115c04fb3402f31359696bb164f8d81a`.
+
+- Source readback matched all 31 deployed files after the two-function release. No DB, stream routing, account auth, TVNZ DRM, Sky Sport routing, `direct-epg.json` or three-guide configuration changed.
+- Added Movie Streams for UK Sky Store and US Cinemania/CM Hollywood plus one UK Cinemania Hollywood channel. Permanent movie networks stay in Movie Channels.
+- Plus visible category names no longer include literal `&`, preventing `&amp;` rendering. Existing channel and category IDs stable. UK/US sports event feeds now classified explicitly.
+- Direct JavaScript regression and invariants passed **19/19**. **Nuvio device acceptance is not yet recorded**; production source parity is not a playback or EPG completeness guarantee.
+- Rollback source: archived `n` **v38** and `lounge-plus-qa` **v5** under snapshot commit `166d8eaee86cf8e3462fa70e781263290de867cb`. Former v37 also preserved. Restore both 16-file/15-file bundles together if category import is defective; do not restore v36.
+- **Unresolved guide gaps:** Premier Sports, several beIN, some movie networks and documentaries lack verified programme data under current source/mapping. The earlier 967 guarded remappings are unchanged. Missing upstream schedules require separate verified matching in Issue #10; do not assign unrelated schedules.
+
+---
+
+# Lounge TV previous production state | 20 November 2026 (v38 historical reference)
 
 **Authoritative serving source:** `production/n/` copied from ACTIVE Supabase Edge Function `n` v38, bundle digest `c67dd009bd4089e3897d6921063c8608353293de8b39bc7450e84344a6a8637e`. The authenticated public hostname is `https://n.loungetv.nz` (historically confirmed via Worker/origin logs). Post-release custom-domain and physical-device checks are not yet independently recorded.
 

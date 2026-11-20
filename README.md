@@ -1,16 +1,18 @@
 # Lounge TV | Current Xtream Gateway
 
-**Current reference: 20 November 2026.** The operating Live TV gateway is Supabase `n` **v38** at `n.loungetv.nz`, with account-scoped Plus delegation to `lounge-plus-qa` **v5**. This is the supported Xtream login for Nuvio + IPTV. Internal DRM-aware M3U fallback is not a customer setup step.
+**Current reference: 20 November 2026.** The operating Live TV gateway is Supabase `n` **v39** at `n.loungetv.nz`, with account-scoped Plus delegation to `lounge-plus-qa` **v6**. This is the supported Xtream login for Nuvio + IPTV. Internal DRM-aware M3U fallback is not a customer setup step.
 
 ## Active implementation
 
-- [`production/n/`](production/n/) stores the 16 files of the byte-verified v38 Edge Function.
-- [`production/plus/`](production/plus/) stores the 15 files of the byte-verified Plus v5 Edge Function.
+- [`production/n/`](production/n/) stores the 16 files of the byte-verified v39 Edge Function.
+- [`production/plus/`](production/plus/) stores the 15 files of the byte-verified Plus v6 Edge Function.
 - [`production/release-lock.json`](production/release-lock.json) pins the exact source blob hashes, function versions, deployed bundle hashes, EPG configuration and rollback reference.
 - [`ops/CURRENT_STATE.md`](ops/CURRENT_STATE.md) records the verified running version, dependencies and remaining checks.
 - [`release/locked-xtream-20261120`](https://github.com/Gazzamoo111/lounge-tv-feed/tree/release/locked-xtream-20261120) contains the separately protected v38, v37 rollback and Plus v5 source snapshot.
 
-**EPG:** Lounge TV canonical guide first, epg66 second, epg64 third; 967 guarded EPG remappings. Changes in v38 preserve category IDs/order, stream IDs and routing, TVNZ Widevine, Sky Sport choices, and Plus authentication. Old format `&amp;` in category labels is corrected in the emitted fallback.
+**Category-only v39 update:** Sky Store and Cinemania/CM Hollywood unscheduled feeds have a separate Movie Streams category. Event-specific UK/US sports feeds are in Live Events; permanent channels and all existing IDs, account routes, EPG mappings and stream URLs are preserved. Plus display labels use “and” to avoid Nuvio `&amp;` artefacts. Native device category verification remains outstanding.
+
+**EPG:** Lounge TV canonical guide first, epg66 second, epg64 third; 967 guarded EPG remappings. The EPG changes introduced in v38 preserve category IDs/order, stream IDs and routing, TVNZ Widevine, Sky Sport choices, and Plus authentication. Old format `&amp;` in category labels is corrected in the emitted fallback.
 
 **What remains unverified:** physical Nuvio playback/guide auto-import after the v38 production release; fresh customer acceptance; commercial permissions for EPGenius sources. Do not infer playback from ACTIVE metadata or automated feed tests.
 
