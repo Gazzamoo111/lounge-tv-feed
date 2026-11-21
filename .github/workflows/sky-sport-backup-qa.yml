@@ -7,6 +7,11 @@ on:
       - 'production/n/qa-customer-live-presentation.mjs'
       - 'production/plus/qa-customer-live-presentation.mjs'
       - 'tests/sky-sport-hd-backup-qa.test.mjs'
+      - 'tests/sky-sport-hls-optin.test.mjs'
+      - 'production/n/index.ts'
+      - 'production/plus/index.ts'
+      - 'production/n/qa-live-format.mjs'
+      - 'production/plus/qa-live-format.mjs'
       - '.github/workflows/sky-sport-backup-qa.yml'
 jobs:
   qa:
@@ -19,4 +24,4 @@ jobs:
         with:
           node-version: '22'
       - name: Verify Sky Sport backup isolation
-        run: node --test tests/sky-sport-hd-backup-qa.test.mjs
+        run: node --test tests/sky-sport-hd-backup-qa.test.mjs tests/sky-sport-hls-optin.test.mjs
