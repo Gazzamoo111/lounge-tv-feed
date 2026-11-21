@@ -1,0 +1,22 @@
+name: Sky Sport HD fallback QA
+on:
+  pull_request:
+    paths:
+      - 'production/n/qa-sky-*.mjs'
+      - 'production/plus/qa-sky-*.mjs'
+      - 'production/n/qa-customer-live-presentation.mjs'
+      - 'production/plus/qa-customer-live-presentation.mjs'
+      - 'tests/sky-sport-hd-backup-qa.test.mjs'
+      - '.github/workflows/sky-sport-backup-qa.yml'
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Sky Sport backup isolation
+        run: node --test tests/sky-sport-hd-backup-qa.test.mjs
