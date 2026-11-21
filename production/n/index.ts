@@ -7,6 +7,7 @@ import { qaAuVisibleRows } from "./qa-au-duplicates.mjs";
 import { qaAuWrongGuide } from "./qa-au-integrity.mjs";
 import { qaSkySwapPrimary } from "./qa-sky-fhd-primary.mjs";
 import { qaSkyOriginalHdBackups } from "./qa-sky-hd-backups.mjs";
+import { bestRequestedStreamFormat } from "./qa-live-format.mjs";
 import { qaSkyNzLoopFilter } from "./qa-sky-nz-loop-filter.mjs";
 import { qaCustomerLiveRows, qaCustomerCategoryLabels } from "./qa-customer-live-presentation.mjs";
 import { qaTvnzXtreamDrmFields } from "./qa-tvnz-xtream-drm.mjs";
@@ -1844,7 +1845,7 @@ Deno.serve(async(req)=>{
       if(!auth.ok)return json({error:"not_allowed"},403);
       const found=(await nuvioFullRows()).some((r:any)=>Number(r.external_id)===externalId);
       if(!found)return json({error:"not_allowed"},403);
-      return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+rawId+".ts",302);
+      return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+rawId+"."+bestRequestedStreamFormat(idPart),302);
     }
     const mapped:any=await releaseLivePlayback(externalId);
     if(!mapped) return json({error:"not_allowed"},403);
@@ -1856,7 +1857,7 @@ Deno.serve(async(req)=>{
       if(nz.drm) return json({error:"drm_client_required",message:"TVNZ requires a Widevine-capable player and the M3U DRM metadata"},422);
       return Response.redirect(nz.url,302);
     }
-    const ext=String(mapped.source_format||"ts").replace(/[^a-z0-9]/gi,"")||"ts";
+    const ext=bestRequestedStreamFormat(idPart,mapped.source_format);
     // BEST validates the customer's credentials on the redirected stream itself.
     // Avoid a second provider round-trip before every channel start.
     return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(mapped.provider_stream_id)+"."+ext,302);
