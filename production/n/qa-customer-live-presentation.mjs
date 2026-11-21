@@ -63,10 +63,7 @@ export function qaCustomerLiveRows(rows, groupOf) {
     // JUICE TV duplicates can occur outside the New Zealand group.
     if(normalized==="JUICE TV")return [];
     if(nz && excludedNzNames.some(rule=>rule.test(normalized)))return [];
-    const sky=/^SKY SPORT ([1-9]) HD BACKUP$/i.exec(String(row.display_name||"").trim());
-    if(nz && sky){
-      return [{...row, display_name:"Sky Sport "+sky[1]}];
-    }
+    // Keep the HD Backup label distinct from the main channel during source QA.
     return [row];
   });
 }
