@@ -16,7 +16,8 @@ export function qaSkyNzLoopFilter(rows) {
   const number=Number(matched[1]);
   const id=Number(row.provider_stream_id);
   if(category==="RAW" && id===HD_BY_NUMBER.get(number))return false;
-  if(category==="NEW ZEALAND" && id===HD_BY_NUMBER.get(number))return false;
+  // Preserve explicitly named HD alternatives; keep raw/duplicate HD entries hidden.
+  if(category==="NEW ZEALAND" && id===HD_BY_NUMBER.get(number))return /^SKY SPORT [1-9] HD BACKUP$/i.test(name);
   // The curated display entry uses the FHD provider ID and retains its
   // stable Lounge external ID, guide, artwork and category.
   if(category==="NEW ZEALAND" && id===FHD_BY_NUMBER.get(number))return true;
