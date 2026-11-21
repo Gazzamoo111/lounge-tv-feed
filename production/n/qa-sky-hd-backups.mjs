@@ -11,6 +11,10 @@ export function qaSkyOriginalHdBackups(rows, curated, inventory) {
     const originalId=Number(row.provider_stream_id);
     const n=Number(match[1]);
     if(originalId!==636917+n || !available.has(originalId))continue;
+    // Do not offer the same BEST stream twice if the curated primary is HD.
+    const selected=rows.find(r=>r.category==="New Zealand" && r.provider_name==="BEST"
+      && String(r.display_name||"").trim().toUpperCase()===`SKY SPORT ${n}`);
+    if(!selected || Number(selected.provider_stream_id)===originalId)continue;
     const externalId=2000000000+originalId;
     if(known.has(externalId))continue;
     const name=`SKY SPORT ${n} HD BACKUP`;
