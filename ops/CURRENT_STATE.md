@@ -1,3 +1,7 @@
+## Sky Sport NZ playback incident | 22 November 2026 NZDT
+
+Owner reports Sky Sport NZ 1–9 stop after approximately 30 seconds. This supersedes the 21 November acceptance for those channels. [Issue #20](https://github.com/Gazzamoo111/lounge-tv-feed/issues/20) is open. Production remains **n v39 / Plus v6**. Deployed entrypoints match main, and Sky live returns a BEST redirect. [Draft PR #21](https://github.com/Gazzamoo111/lounge-tv-feed/pull/21) head `55b4347` fixes HD backup ordering and scopes HLS opt-in to Sky Sport NZ. Handler fixtures and [CI](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44920978868) passed. No QA or production deployment. Authenticated BEST duration, concurrent sessions and 10-minute Nuvio acceptance remain pending.
+
 ## Owner Nuvio device acceptance | 21 November 2026 NZDT
 
 The owner reports the existing Lounge TV Xtream connection with **production n v39 / Plus v6 is working perfectly** after the category and EPG updates. Treat this as **user-observed device acceptance of the current configuration**. The excellent EPG coverage, working playback and category presentation should be preserved. This is not independent automated verification of every channel, a fresh-customer provisioning test or evidence that every EPG gap is resolved. Do not change the working feeds as part of cleanup. The earlier reported missing Premier Sports/beIN/movie/documentary schedules remain research opportunities, not launch blockers based on this report.
