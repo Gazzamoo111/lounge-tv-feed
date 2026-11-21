@@ -1,4 +1,4 @@
-import { ownerSkyHdSource } from "./owner-sky-hd.mjs";
+import { ownerSkySportSource } from "./owner-sky-sport.mjs";
 import { nzSourceForBinding, nzPlaylistLines } from "./nz-routing.mjs";
 import { qaEpgAlias } from "./qa-epg-alias.mjs";
 import { nuvioChannelPriority } from "./channel-priority.mjs";
@@ -1858,7 +1858,7 @@ Deno.serve(async(req)=>{
     const ext=String(mapped.source_format||"ts").replace(/[^a-z0-9]/gi,"")||"ts";
     // BEST validates the customer's credentials on the redirected stream itself.
     // Avoid a second provider round-trip before every channel start.
-    const providerStreamId=await ownerSkyHdSource(mapped,u,p,sql);
+    const providerStreamId=await ownerSkySportSource(mapped,u,p,sql);
     return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+providerStreamId+"."+ext,302);
   }
   if(parts[0]==="movie"||parts[0]==="series"){
