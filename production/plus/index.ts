@@ -1298,6 +1298,8 @@ async function nuvioFullRows():Promise<any[]>{
   // Customer NZ Sky Sport 1-9: the curated main must remain FHD. The subsequent
   // QA visibility rule removes unreliable HD duplicates and looping sources.
   const rows:any[]=[...curated.map((r:any)=>regionalSkyPreferredSource(qaSkySwapPrimary({...r})))],identities=new Set<string>();
+  // Reserve HD backup IDs before the raw inventory can take them.
+  rows.push(...qaSkyOriginalHdBackups(rows,curated,inventory));
   const used=new Set(rows.filter((r:any)=>r.provider_name==="BEST").map((r:any)=>Number(r.provider_stream_id)));
   for(const row of rows){const group=nuvioGroup(row),n=nuvioIdentity(String(row.display_name));if(group!=="Live Events"&&n)identities.add(group+"|"+n);}
   for(const r of inventory){
@@ -1309,9 +1311,7 @@ async function nuvioFullRows():Promise<any[]>{
    if(group!=="Live Events"&&n)identities.add(key);
    rows.push(item);
   }
-  // Retain the old NZ HD streams as named manual fallbacks after the FHD trial.
-  rows.push(...qaSkyOriginalHdBackups(rows,curated,inventory));
-  // Keep curated FHD, hide HD backup rows and looping group. No BEST inventory edit.
+  // Keep the curated mains and named HD alternatives. Hide raw loops.
   rows.splice(0,rows.length,...qaSkyNzLoopFilter(rows));
   // One customer-facing Australian row per service; raw provider alternatives stay in inventory.
   const auVisible=qaAuVisibleRows(rows,nuvioGroup);
@@ -1841,9 +1841,9 @@ Deno.serve(async(req)=>{
       const rawId=externalId-NUVIO_STREAM_BASE;
       const auth=await catalogueAccountState(base,u,p);
       if(!auth.ok)return json({error:"not_allowed"},403);
-      const found=(await nuvioFullRows()).some((r:any)=>Number(r.external_id)===externalId);
+      const found=(await nuvioFullRows()).find((r:any)=>Number(r.external_id)===externalId);
       if(!found)return json({error:"not_allowed"},403);
-      return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+rawId+"."+bestRequestedStreamFormat(idPart),302);
+      return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+rawId+"."+bestRequestedStreamFormat(idPart,found),302);
     }
     const mapped:any=await releaseLivePlayback(externalId);
     if(!mapped) return json({error:"not_allowed"},403);
@@ -1855,7 +1855,7 @@ Deno.serve(async(req)=>{
       if(nz.drm) return json({error:"drm_client_required",message:"TVNZ requires a Widevine-capable player and the M3U DRM metadata"},422);
       return Response.redirect(nz.url,302);
     }
-    const ext=bestRequestedStreamFormat(idPart,mapped.source_format);
+    const ext=bestRequestedStreamFormat(idPart,mapped,mapped.source_format);
     // BEST validates the customer's credentials on the redirected stream itself.
     // Avoid a second provider round-trip before every channel start.
     return Response.redirect(base+"/live/"+encodeURIComponent(u)+"/"+encodeURIComponent(p)+"/"+Number(mapped.provider_stream_id)+"."+ext,302);
