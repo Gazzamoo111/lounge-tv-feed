@@ -1,0 +1,19 @@
+name: Issue 22 public verified alias export
+on:
+  push:
+    branches:
+      - epg/issue-22-private-source-batch
+    paths:
+      - '.github/workflows/issue22-alias-export.yml'
+permissions:
+  contents: read
+jobs:
+  copy-aliases:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue22-verified-epg-aliases
+          path: config/best_epg_verified_aliases.json
+          retention-days: 1
