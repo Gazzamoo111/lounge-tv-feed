@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""QA-only 25-category presentation for Lounge TV's PRIVATE Xtream/R2 seed ZIP.
+"""Owner-approved 20-category QA presentation for Lounge TV's PRIVATE Xtream/R2 seed ZIP.
 Retains all 14,717 original IDs, EPG and D1 source seed; hides banner/INFO channels
 from the visible API and M3U, not from the protected audit.
 No upstream source URL or credential is introduced.
@@ -8,48 +8,57 @@ import argparse,collections,hashlib,json,re,zipfile
 from pathlib import Path
 
 CATEGORIES=[
- ('🇳🇿 NZ Sky Sport',(3,4)),
- ('🇦🇺 Australian TV',(5,)),
- ('🇦🇺 Australian Sport',(6,)),
- ('🇬🇧 UK TV',(13,)),
- ('🇺🇸 US Networks',(22,)),
- ('🇺🇸 US Regional TV',(23,)),
- ('🌍 International Sport',(20,21)),
- ('🎬 Movie Channels',(8,10)),
- ('🎟️ Movie Streams',(7,9)),
- ('⭐ Entertainment and Comedy',(11,12)),
+ ('🇳🇿 New Zealand',(3,4)),
+ ('🇦🇺 Australia',(5,6)),
+ ('🇬🇧 UK TV & Entertainment',(11,12,13,17)),
+ ('🇬🇧 UK Sports',(21,)),
+ ('🇺🇸 US TV & Entertainment',(22,23)),
+ ('🇺🇸 US Sports',(20,35)),
+ ('🌍 Sports Networks',()),
+ ('📺 Streaming Services',(18,)),
+ ('🎬 Movie Channels',(7,8,9,10)),
  ('🧸 Kids and Family',(14,)),
  ('🔎 Documentaries and Lifestyle',(15,16)),
- ('📰 News',(17,)),
- ('📺 Streaming Services',(18,)),
  ('📡 FAST TV',()),
  ('🎵 Music',(19,)),
- ('💎 4K UHD',(1,2)),
  ('🍿 24/7 Movies',(24,)),
- ('📺 24/7 Series and Classics',(25,26)),
- ('🎭 24/7 Drama, Crime and Action',(27,28,29)),
- ('😄 24/7 Comedy',(30,)),
- ('🧩 24/7 Kids and Cartoons',(32,33)),
- ('🎁 24/7 Variety',(31,34)),
- ('⏪ Sports Replays',(35,)),
- ('🏆 Live Sports and PPV',(36,37)),
+ ('📺 24/7 Series',(25,26)),
+ ('😄 24/7 Comedy & Reality',(30,31)),
+ ('🎭 24/7 Drama & Crime',(27,28,29)),
+ ('📺 24/7 Streaming & OnePlay',(1,2,34)),
+ ('🧩 24/7 Kids & Cartoons',(32,33)),
+ ('🏆 Live Events',(36,37)),
 ]
 DIVIDER=re.compile(r'^\s*#{2,}')
 INFO=re.compile(r'(?<!\w)INFO(?!\w)',re.I)
 FAST=re.compile(r'^\s*(?:PRIME|TV)\s*\|',re.I)
 LINK=re.compile(r'/(\d+)\.(?:ts|m3u8)$')
 GROUP=re.compile(r'group-title="[^"]*"')
+SPORTS_NETWORK=re.compile(r'\\b(?:ESPN|BEIN|FOX SPORTS|SKY SPORTS|TNT SPORTS|SPORTSNET|NFL NETWORK|NBA TV|CBS SPORTS|NBC SPORTS|NESN|SEC NETWORK|ACC NETWORK|ACCN|EUROSPORT|PREMIER SPORTS|DAZN|SPORTS NETWORK)\\b',re.I)
+SPORTS_4K=re.compile(r'\\b(?:SPORT|ESPN|FOX|TNT|BEIN|NFL|NBA|NHL|MLB|F1|UFC|RACING|NESN|SKY SPORTS)\\b',re.I)
+MOVIE_4K=re.compile(r'\\b(?:CINEMA|MOVIE|FILM|HBO|HOLLYWOOD|CINEMAX)\\b',re.I)
+BASE_CATEGORY={old:i for i,(_,ids) in enumerate(CATEGORIES,1) for old in ids}
 def encode(obj):return (json.dumps(obj,ensure_ascii=False,separators=(',',':'))+'\n').encode('utf-8')
 def hidden_reason(name):
  if DIVIDER.match(name):return 'decorative_divider'
  if INFO.search(name):return 'info_placeholder'
  return ''
 def category_for(item):
- source=int(item['category_id'])
- if source==18 and FAST.match(item['name']):return 15
- for index,(_,oldgroups) in enumerate(CATEGORIES,1):
-  if source in oldgroups:return index
- raise ValueError('Unmapped source category '+str(source))
+ source=int(item['category_id']);name=item['name']
+ if source==18 and FAST.match(name):return 12
+ if source in (11,12,17):
+  if source==17 and name.startswith('AU|'):return 2
+  if name.startswith(('US|','TV|')):return 5
+  if name.startswith('PRIME|'):return 12
+ if source==20 and SPORTS_NETWORK.search(name):return 7
+ if source==21 and SPORTS_NETWORK.search(name) and name.startswith('PRIME|'):return 7
+ if source==35 and name.startswith('UK|'):return 4
+ if source==2:
+  if SPORTS_4K.search(name):return 7
+  if MOVIE_4K.search(name):return 9
+ if source==32 and 'ONEPLAY' in name.upper():return 18
+ if source not in BASE_CATEGORY:raise ValueError('Unmapped source category '+str(source))
+ return BASE_CATEGORY[source]
 def main(source_zip:Path,target_zip:Path):
  if source_zip.resolve()==target_zip.resolve():raise ValueError('Never overwrite the original')
  with zipfile.ZipFile(source_zip) as source:
@@ -60,7 +69,7 @@ def main(source_zip:Path,target_zip:Path):
   if len(old)!=14717 or len(oldcats)!=37:raise ValueError('Unexpected approved master inventory')
   if len({x['stream_id'] for x in old})!=len(old):raise ValueError('Duplicate source ID')
   if set(int(x['category_id']) for x in oldcats)!=set(range(1,38)):raise ValueError('Unknown category IDs')
-  if len(CATEGORIES)!=25:raise ValueError('Expected 25 categories')
+  if len(CATEGORIES)!=20:raise ValueError('Expected exactly 20 approved categories')
   hidden=[];live=[]
   for item in old:
    target_id=category_for(item);obj={**item,'category_id':str(target_id)}
@@ -72,7 +81,7 @@ def main(source_zip:Path,target_zip:Path):
   by=collections.defaultdict(list)
   for pos,item in enumerate(live,1):
    item['num']=pos;by[int(item['category_id'])].append(item)
-  if set(by)!=set(range(1,26)):raise ValueError('Empty category')
+  if set(by)!=set(range(1,21)):raise ValueError('Empty category')
   tmpl=source.read(base+'catalog/template.m3u').decode('utf-8')
   raw=[x.rstrip('\r') for x in tmpl.splitlines() if x.strip()]
   if len(raw)!=1+2*14717 or not raw[0].startswith('#EXTM3U'):raise ValueError('Invalid original M3U')
@@ -97,18 +106,18 @@ def main(source_zip:Path,target_zip:Path):
    base+'catalog/template.m3u':('\n'.join(m3u)+'\n').encode(),
    base+'catalog/hidden_info.json':encode({'description':'These entries are hidden only from Nuvio. The source playlist and D1 ID inventory remain intact.','items':hidden,'count':len(hidden)}),
    base+'catalog/curation_report.json':encode({
-    'version':'issue23-category-qa-v1','original_streams':len(old),
+    'version':'issue23-approved-order-v2','original_streams':len(old),
     'visible_streams':len(live),'hidden_info_streams':len(hidden),
-    'original_categories':37,'visible_categories':25,
+    'original_categories':37,'visible_categories':20,
     'epg_ids_changed':0,'stream_ids_changed':0,
     'groups':[{'category_id':i,'name':label,'visible_count':len(by[i])} for i,(label,_) in enumerate(CATEGORIES,1)],
-    'known_source_gap':'No dedicated general NZ TV group in approved private master; only NZ Sky Sport.'
+    'known_source_gap':'Original source has only NZ Sky Sport, no general NZ TV. The accepted 20-category order does not invent missing channels.'
    })
   }
-  for i in range(1,26):repl[base+f'catalog/by-category/{i}.json']=encode(by[i])
+  for i in range(1,21):repl[base+f'catalog/by-category/{i}.json']=encode(by[i])
   manifest=json.loads(source.read(base+'manifest.json'))
-  manifest.update({'streams':len(live),'source_streams':14717,'categories':25,
-                   'hidden_info_streams':len(hidden),'category_curated':'issue23-category-qa-v1',
+  manifest.update({'streams':len(live),'source_streams':14717,'categories':20,
+                   'hidden_info_streams':len(hidden),'category_curated':'issue23-approved-order-v2',
                    'playlist_epg_ids':sum(bool(x['epg_channel_id']) for x in live)})
   repl[base+'manifest.json']=encode(manifest)
   old_cat_files={f for f in existing if re.fullmatch(r'seed/catalog/by-category/\d+\.json',f)}
@@ -131,7 +140,7 @@ def main(source_zip:Path,target_zip:Path):
   for path in existing:
    if path.startswith(base+'epg/short/') and original.read(path)!=after.read(path):
     raise ValueError('Short EPG was changed')
- return {'categories':25,'visible_streams':len(live),'hidden_info_streams':len(hidden),
+ return {'categories':20,'visible_streams':len(live),'hidden_info_streams':len(hidden),
          'epg_ids_preserved':sum(bool(x['epg_channel_id']) for x in live),
          'sha256':hashlib.sha256(target_zip.read_bytes()).hexdigest()}
 if __name__=='__main__':
