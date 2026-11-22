@@ -1,0 +1,94 @@
+{
+  "sources": [
+    {
+      "id": "share-us2",
+      "country": "us",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_US2.xml.gz"
+    },
+    {
+      "id": "share-uslocals",
+      "country": "us",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_US_LOCALS1.xml.gz"
+    },
+    {
+      "id": "share-ca2",
+      "country": "global",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_CA2.xml.gz"
+    },
+    {
+      "id": "share-uk1",
+      "country": "uk",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_UK1.xml.gz"
+    },
+    {
+      "id": "share-au1",
+      "country": "au",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_AU1.xml.gz"
+    },
+    {
+      "id": "share-bein",
+      "country": "global",
+      "url": "https://epgshare01.online/epgshare01/epg_ripper_BEIN1.xml.gz"
+    },
+    {
+      "id": "talk-sports",
+      "country": "global",
+      "url": "https://epgtalk.com/Sports_guide.xml.gz"
+    },
+    {
+      "id": "talk-freetv",
+      "country": "global",
+      "url": "https://epgtalk.com/FreeTV_guide.xml.gz"
+    },
+    {
+      "id": "talk-uslocals",
+      "country": "us",
+      "url": "https://epgtalk.com/US_local_guide.xml.gz"
+    },
+    {
+      "id": "talk-uk",
+      "country": "uk",
+      "url": "https://epgtalk.com/UK_guide.xml.gz"
+    },
+    {
+      "id": "teleonline-world",
+      "country": "global",
+      "url": "https://teleonline.github.io/epg/epg.xml.gz"
+    },
+    {
+      "id": "cathy-world",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/waastudios/Cathy-epg/main/data/epg.xml.gz"
+    },
+    {
+      "id": "mjh-pluto-us",
+      "country": "us",
+      "url": "https://i.mjh.nz/PlutoTV/us.xml.gz"
+    },
+    {
+      "id": "mjh-samsung-us",
+      "country": "us",
+      "url": "https://i.mjh.nz/SamsungTVPlus/us.xml.gz"
+    },
+    {
+      "id": "mjh-plex-us",
+      "country": "us",
+      "url": "https://i.mjh.nz/Plex/us.xml.gz"
+    },
+    {
+      "id": "mjh-pluto-ca",
+      "country": "global",
+      "url": "https://i.mjh.nz/PlutoTV/ca.xml.gz"
+    },
+    {
+      "id": "open-us11",
+      "country": "us",
+      "url": "https://www.open-epg.com/files/unitedstates11.xml.gz"
+    },
+    {
+      "id": "open-canada",
+      "country": "global",
+      "url": "https://www.open-epg.com/files/canada.xml.gz"
+    }
+  ]
+}
