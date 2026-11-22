@@ -119,7 +119,14 @@ async function redirectStream(url,env,parts){
   if(!match)return problem('unknown_stream',404);
   if(!env.UPSTREAM_ORIGIN)return problem('provider_not_configured',503);
   let upstream;try{upstream=new URL(env.UPSTREAM_ORIGIN);}catch{return problem('provider_not_configured',503)}
-  if(upstream.protocol!=='https:')return problem('provider_not_configured',503);
+  // BEST's approved M3U uses HTTP. The customer-facing Xtream API still uses HTTPS.
+  // Permit HTTP redirects only when deliberately enabled for this isolated QA Worker.
+  // Never accept upstream hosts or schemes from customer requests.
+  const secure = upstream.protocol === 'https:';
+  const approvedHttp = upstream.protocol === 'http:' && env.ALLOW_HTTP_UPSTREAM === 'true';
+  if ((!secure && !approvedHttp) || !upstream.hostname || upstream.username || upstream.password) {
+    return problem('provider_not_configured',503);
+  }
   // Only a preconfigured upstream may receive redirects. Never accept target URLs from clients.
   const provider=await providerCredentials(account.row,env);
   upstream.pathname=`/${encodeURIComponent(provider.username)}/${encodeURIComponent(provider.password)}/${streamId}`;
