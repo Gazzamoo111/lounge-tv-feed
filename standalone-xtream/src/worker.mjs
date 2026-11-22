@@ -79,7 +79,7 @@ async function m3u(url,account,env){
   // Template is sanitised at build-time; it contains no upstream credentials.
   const authUrl=`username=${encodeURIComponent(account.username)}&password=${encodeURIComponent(account.password)}`;
   const epgUrl=`${url.origin}/xmltv.php?${authUrl}`;
-  const template=text.replace('{{EPG_URL}}',epgUrl)
+  const template=text.replaceAll('{{EPG_URL}}',epgUrl)
     .replaceAll('{{BASE}}',url.origin)
     .replaceAll('{{USER}}',encodeURIComponent(account.username))
     .replaceAll('{{PASS}}',encodeURIComponent(account.password));
