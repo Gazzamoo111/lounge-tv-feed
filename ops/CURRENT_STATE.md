@@ -1,3 +1,13 @@
+## Standalone Xtream QA | 23 November 2026 NZDT
+
+[Issue #23](https://github.com/Gazzamoo111/lounge-tv-feed/issues/23) / [draft PR #24](https://github.com/Gazzamoo111/lounge-tv-feed/pull/24). The isolated Cloudflare Worker `loungetv-xtream-standalone-qa` serves `https://xtream-qa.loungetv.nz`, version `4723ac7c-1176-4495-b5be-784e8554dab3`. D1 `loungetv-accounts` contains 14,717 permitted stream IDs. Standard-tier R2 `loungetv-xtream-private` has public access disabled. Its initial pointer is `{"release":"v20261123-issue22"}`. Both bindings are QA-only. The application has no Supabase dependency.
+
+HTTP QA authenticated the dedicated test account and verified rejection for incorrect, expired and revoked logins. Catalogue, ordered categories, M3U, short EPG and full XMLTV matched the approved private data. The 72.88% compilation had 3,235 current-or-next matches out of 4,439 eligible entries, across 2,849 XMLTV IDs and 187,840 programmes. A conditional pointer update and rollback succeeded with the catalogue available throughout.
+
+The dedicated account supports Nuvio catalogue and EPG testing. Provider playback is blocked pending a verified HTTPS BEST line with matching bouquet and stream IDs. The approved M3U origin was supplied as HTTP on port 80, and HTTPS probes did not establish provider access. No physical Nuvio acceptance or sustained playback is recorded. The draft branch includes scheduled refresh code and durable private mapping inputs. Scheduling is inactive pending an approved default-branch workflow and bucket-scoped GitHub Actions credentials. Production cutover and customer/account migration are pending.
+
+Rollback baseline: set the QA R2 pointer back to `{"release":"v20261123-issue22"}` using a conditional write and retain Worker version `4723ac7c-1176-4495-b5be-784e8554dab3`. This is the first QA version and no preceding QA Worker rollback exists. Current production routing through `connect.loungetv.nz` and Supabase was preserved.
+
 ## Sky Sport NZ playback incident | 22 November 2026 NZDT
 
 Owner reports Sky Sport NZ 1–9 stop after approximately 30 seconds. This supersedes the 21 November acceptance for those channels. [Issue #20](https://github.com/Gazzamoo111/lounge-tv-feed/issues/20) is open. Standard gateway remains **n v39**. Deployed entrypoints match main, and Sky live returns a BEST redirect. [Draft PR #21](https://github.com/Gazzamoo111/lounge-tv-feed/pull/21) head `55b4347` fixes HD backup ordering and scopes HLS opt-in to Sky Sport NZ. Handler fixtures and [CI](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44920978868) passed. That PR remains undeployed. Authenticated BEST duration, concurrent sessions and 10-minute Nuvio acceptance remain pending.

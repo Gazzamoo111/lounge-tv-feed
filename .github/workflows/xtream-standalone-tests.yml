@@ -20,6 +20,11 @@ jobs:
           node-version: '22'
       - name: Test Xtream compatibility, credentials, EPG, playback routes
         run: node --test standalone-xtream/tests/worker.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test strict scheduled guide validation
+        run: python -m unittest discover -s standalone-xtream/tests -p 'test_*.py'
       - name: Ensure no runtime Supabase dependency
         shell: bash
         run: |

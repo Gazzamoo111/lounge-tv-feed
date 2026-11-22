@@ -4,8 +4,24 @@
   "main": "src/worker.mjs",
   "compatibility_date": "2026-11-01",
   "workers_dev": true,
-  "observability": {"enabled": true},
-  "vars": {"RELEASE": "m3u-v1"},
-  "r2_buckets": [{"binding": "ASSETS", "bucket_name": "loungetv-xtream-private"}],
-  "d1_databases": [{"binding": "DB", "database_name": "loungetv-accounts", "database_id": "REPLACE_AFTER_PRIVATE_D1_CREATED"}]
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "RELEASE": "m3u-v1"
+  },
+  "r2_buckets": [
+    {
+      "binding": "ASSETS",
+      "bucket_name": "loungetv-xtream-private"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "loungetv-accounts",
+      "database_id": "4f880ec7-f02d-4c52-836e-884ac4e5f21b"
+    }
+  ],
+  "preview_urls": false
 }

@@ -35,9 +35,10 @@ async function asset(env,path){
   // A tiny pointer activates a complete immutable snapshot atomically after uploads validate.
   const pointer=await env.ASSETS.get('current.json');
   if(!pointer)return null;
-  const {release}=JSON.parse(await pointer.text());
-  if(typeof release!=='string'||!/^v[a-zA-Z0-9_-]{1,48}$/.test(release))return null;
-  return await env.ASSETS.get(`releases/${release}/${path}`);
+  const {release, epg_release}=JSON.parse(await pointer.text());
+  const active = path.startsWith('epg/') ? epg_release ?? release : release;
+  if(typeof active!=='string'||!/^v[a-zA-Z0-9_-]{1,48}$/.test(active))return null;
+  return await env.ASSETS.get(`releases/${active}/${path}`);
 }
 function info(account,url){
   const domain=url.hostname;const now=Math.floor(Date.now()/1000);
@@ -59,19 +60,43 @@ async function liveAction(url,account,env){
     const id=url.searchParams.get('stream_id')||'';
     if(!/^\d{1,12}$/.test(id))return js({epg_listings:[]});
     const x=await asset(env,`epg/short/${id}.json`);
-    return x?bytesResponse(x):js({epg_listings:[]});
+    if (!x) return js({epg_listings:[]});
+    const encoding = x.httpMetadata?.contentEncoding;
+    const body = encoding === 'gzip' ? x.body.pipeThrough(new DecompressionStream('gzip')) : x.body;
+    const {epg_listings} = await new Response(body).json();
+    const now = Math.floor(Date.now() / 1000);
+    const limit = Number(url.searchParams.get('limit'));
+    const listings = epg_listings.filter(row => row.stop_timestamp > now);
+    if (action === 'get_short_epg' && Number.isInteger(limit) && limit > 0) {
+      listings.length = Math.min(listings.length, limit);
+    }
+    for (const row of listings) row.now_playing = Number(row.start_timestamp <= now);
+    return js({epg_listings:listings});
   }
   if(['get_vod_categories','get_vod_streams','get_series_categories','get_series','get_live_info'].includes(action))return js([]);
   if(['get_vod_info','get_series_info'].includes(action))return js({});
   return problem('unsupported_action',400);
 }
-async function xmltv(env){
+async function xmltv(request,env){
   const x=await asset(env,'epg/guide.xml.gz');
   if(!x)return problem('epg_not_ready',503);
-  // Xtream's xmltv.php convention returns XML, not an opaque .gz download.
-  if(typeof DecompressionStream!=='function')return problem('decompression_unavailable',503);
-  const xml=x.body.pipeThrough(new DecompressionStream('gzip'));
-  return new Response(xml,{headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'private, max-age=900','Access-Control-Allow-Origin':'*','X-Content-Type-Options':'nosniff'}});
+  const headers = {
+    'Content-Type':'application/xml; charset=utf-8',
+    'Cache-Control':'private, no-store',
+    'Access-Control-Allow-Origin':'*',
+    'X-Content-Type-Options':'nosniff',
+    'Vary':'Accept-Encoding',
+  };
+  // A client that accepts gzip gets the stored bytes without Worker decompression.
+  const acceptsGzip = request.headers.get('Accept-Encoding')?.split(',').some(value =>
+    /^\s*gzip(?:\s*;\s*q=(?:1(?:\.0+)?|0\.\d*[1-9]\d*))?\s*$/i.test(value));
+  if (acceptsGzip) {
+    return new Response(x.body, {
+      headers:{...headers,'Content-Encoding':'gzip'},
+      encodeBody:'manual',
+    });
+  }
+  return new Response(x.body.pipeThrough(new DecompressionStream('gzip')), {headers});
 }
 async function m3u(url,account,env){
   const x=await asset(env,'catalog/template.m3u');if(!x)return problem('playlist_not_ready',503);
@@ -116,7 +141,7 @@ export default {
       const a=await auth(url,env);
       if(!a)return path==='/player_api.php'?js({user_info:{auth:0,status:'Disabled'}},200):problem('unauthorised',401);
       if(path==='/player_api.php')return await liveAction(url,a,env);
-      if(path==='/xmltv.php')return await xmltv(env);
+      if(path==='/xmltv.php')return await xmltv(request,env);
       return await m3u(url,a,env);
     }catch(err){
       // Never echo credentials, upstream URL, or sensitive D1 error details.

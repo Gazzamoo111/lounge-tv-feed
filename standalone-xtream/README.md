@@ -1,6 +1,6 @@
 # Lounge TV | Xtream from private M3U and XMLTV | QA
 
-**Status:** CODE COMPLETE / UNIT TESTED / NOT DEPLOYED.
+**Status:** Isolated Cloudflare QA deployed at `https://xtream-qa.loungetv.nz`. Catalogue and guide verified over HTTPS. Provider playback pending.
 
 Customer experience stays Xtream: server URL + username + password. Existing customer-facing connect.loungetv.nz is untouched. No Supabase dependency inside the NEW Worker.
 
@@ -17,7 +17,7 @@ Use the private source ZIP and offline build scripts delivered in the ChatGPT ha
 - epg/short/<stream-id>.json for 3,235 matched channels
 - stream_ids_seed.sql for the independent D1 database.
 
-Create a private R2 bucket loungetv-xtream-private and a new D1 database loungetv-accounts. Update wrangler.jsonc with the new D1 ID before deploying QA. Use secrets AUTH_PEPPER, PROVIDER_AES_KEY_BASE64 and UPSTREAM_ORIGIN (must be HTTPS). Assign distinct provider credentials to each customer and encrypt them using the private provision_account.mjs tool. Never share the master M3U credential as a universal customer account.
+QA uses private Standard R2 `loungetv-xtream-private`, separate D1 `loungetv-accounts` and the Worker version recorded in [the current state](../ops/CURRENT_STATE.md). The Worker uses secrets `AUTH_PEPPER` and `PROVIDER_AES_KEY_BASE64`. Playback requires an authorised HTTPS `UPSTREAM_ORIGIN` and a verified unique provider line for each account. Encrypt assigned provider credentials through `provision_account.mjs`. Keep query strings and paths containing logins out of diagnostics. Request logging and preview URLs are disabled.
 
 Activate immutable guide/catalogue releases by writing R2 current.json with {"release":"v<identifier>"} only after uploading all releases/v<identifier>/catalog and epg objects and applying the D1 permitted stream IDs seed. Keep previous immutable releases for rollback. Customer credentials do not change when the guide updates.
 
@@ -36,6 +36,12 @@ VOD and series are intentionally empty in this LIVE TV-only prototype. Redirects
 
 ## Testing and production gates
 
-Run node --test standalone-xtream/tests/worker.test.mjs; expected 11 PASS. Also run the private offline integration checks over the 14,717-stream generated dataset. Provision one QA account and test on an actual Nuvio device. No device test or customer signup was performed in the branch. The existing Supabase gateway is retained as the rollback path until account, playback, expiry, guide update, renewal and feature-parity gates pass.
+Run `node --test standalone-xtream/tests/worker.test.mjs` and `python -m unittest discover -s standalone-xtream/tests -p 'test_*.py'`. Public HTTP verification covered the complete real catalogue, M3U, XMLTV, short EPG, expiry and revocation. The QA login supports catalogue and guide testing. See [migration gates](docs/MIGRATION_GATES.md) for playback and cutover acceptance.
 
-See docs/MIGRATION_GATES.md. Deployment to Cloudflare requires account authorization not available in this chat.
+## QA guide refresh and rollback
+
+`refresh_epg.py` reads the immutable catalogue and the exact approved mapping and source configuration in private R2 under `refresh-inputs/`. It only downloads feeds selected by the verified mappings, rejects synthetic or stale listings and keeps the active guide if a source fails or a mapped ID has no current or near-term programme. It writes the new XMLTV and compressed short guide objects under an immutable guide release. A conditional write changes only the guide reference in `current.json` once all objects have uploaded. Catalogue and D1 IDs stay on the same release. The script fails closed before exceeding its 2 GB QA refresh-storage budget.
+
+The scheduled workflow is prepared on this branch. GitHub schedules only the workflow on the default branch. The QA environment also requires `LTV_XTREAM_QA_REFRESH_ENABLED=true`, `LTV_XTREAM_R2_ACCOUNT_ID` and the two bucket-scoped R2 credentials referenced in the workflow. No schedule or persistent publication credential is active. The initial deployment token expires on 30 November 2026 NZDT and is separate from scheduler access.
+
+The initial QA catalogue and guide are both `v20261123-issue22`. To restore that baseline use an ETag-conditioned write of `{"release":"v20261123-issue22"}` to QA R2 `current.json`. For later refreshes the pointer records `previous_epg_release`; preserve the catalogue `release` when restoring the guide. The deployed Worker version and the protected production state are recorded in [the current state](../ops/CURRENT_STATE.md).

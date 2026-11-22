@@ -17,7 +17,7 @@ async function mock(){
     ['catalog/by-category/1.json',JSON.stringify([{stream_id:12345,name:'NZ Test',epg_channel_id:'ltv.test'}])],
     ['catalog/template.m3u','#EXTM3U url-tvg="{{EPG_URL}}"\n#EXTINF:-1 tvg-id="ltv.test",NZ Test\n{{BASE}}/live/{{USER}}/{{PASS}}/12345.ts\n'],
     ['epg/guide.xml.gz',new Uint8Array(gzipSync('<tv><channel id="ltv.test"/></tv>'))],
-    ['epg/short/12345.json',JSON.stringify({epg_listings:[{title:'VGVzdA==',start_timestamp:1}]})],
+    ['epg/short/12345.json',JSON.stringify({epg_listings:[{title:'VGVzdA==',start_timestamp:1,stop_timestamp:Math.floor(Date.now()/1000)+86400}]})],
   ]);
   const dbCalls=[];const reads=[];
   const DB={
@@ -115,4 +115,28 @@ test('non GET/HEAD methods and missing bindings fail closed',async()=>{
   const {env}=await mock();
   assert.equal((await worker.fetch(new Request('https://xtream-qa.example.test/player_api.php',{method:'POST'}),env)).status,405);
   assert.equal((await worker.fetch(req(api()),{})).status,503);
+});
+
+test('guide-only pointer advances and rolls back without changing the catalogue',async()=>{
+  const {env,data}=await mock();
+  data.set('current.json',JSON.stringify({release:'v1',epg_release:'v2'}));
+  data.set('releases/v2/epg/guide.xml.gz',gzipSync('<tv><channel id="ltv.updated"/></tv>'));
+  const newer = await worker.fetch(req('/xmltv.php?'+auth),env);
+  assert.match(await newer.text(), /ltv.updated/);
+  const catalogue = await worker.fetch(req(api('get_live_streams')),env);
+  assert.equal((await catalogue.json())[0].stream_id,12345);
+  data.set('current.json',JSON.stringify({release:'v1'}));
+  const restored = await worker.fetch(req('/xmltv.php?'+auth),env);
+  assert.match(await restored.text(), /ltv.test/);
+});
+test('short EPG drops expired programmes and computes now-playing at request time',async()=>{
+  const {env,data}=await mock();
+  const now = Math.floor(Date.now()/1000);
+  data.set('epg/short/12345.json',JSON.stringify({epg_listings:[
+    {title:'old',start_timestamp:now-60,stop_timestamp:now-30},
+    {title:'current',start_timestamp:now-30,stop_timestamp:now+30,now_playing:0},
+    {title:'next',start_timestamp:now+30,stop_timestamp:now+60,now_playing:1},
+  ]}));
+  const response = await worker.fetch(req(api('get_short_epg')+'&stream_id=12345&limit=1'),env);
+  assert.deepEqual((await response.json()).epg_listings.map(row=>[row.title,row.now_playing]),[['current',1]]);
 });

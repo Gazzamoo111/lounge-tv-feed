@@ -8,13 +8,16 @@ The current connect.loungetv.nz Cloudflare Worker forwards to Supabase's lounge-
 
 ## Release gates
 
-- [ ] R2, D1 and Worker QA created and provisioned with real customer-specific source credentials.
+- [x] Private R2, D1, Worker and isolated QA hostname deployed.
+- [x] Public HTTPS verification covers 14,717 streams, 37 categories, full XMLTV, short EPG, M3U and account expiry/revocation.
+- [ ] Provision a verified HTTPS BEST line in the dedicated QA account and verify access to the approved stream IDs.
 - [ ] Nuvio authenticates via Xtream and imports all 37 categories and 14,717 channels.
 - [ ] XMLTV programme ID alignment and short EPG verified on Nuvio.
 - [ ] NZ/AU/UK/US test playback accepted; Sky Sport 1 plays for at least 10 minutes.
 - [ ] Customer creation, expiry, revocation and renewal tested.
 - [ ] Provider bouquet coverage and account connection limits validated.
-- [ ] Auto EPG refresh and immutable R2 release rollback exercised.
+- [x] Conditional QA R2 pointer switch and restoration exercised over HTTPS.
+- [ ] Activate and verify scheduled refresh from live upstream guide sources.
 - [ ] Existing account, activation, provisioning, financial and website dependencies migrated.
 - [ ] Cutover to connect.loungetv.nz supervised with exact rollback retained.
 - [ ] Supabase data exported and no active consumers depend on its functions.
