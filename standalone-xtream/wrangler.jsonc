@@ -1,0 +1,11 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "loungetv-xtream-standalone-qa",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": true,
+  "observability": {"enabled": true},
+  "vars": {"RELEASE": "m3u-v1"},
+  "r2_buckets": [{"binding": "ASSETS", "bucket_name": "loungetv-xtream-private"}],
+  "d1_databases": [{"binding": "DB", "database_name": "loungetv-accounts", "database_id": "REPLACE_AFTER_PRIVATE_D1_CREATED"}]
+}
