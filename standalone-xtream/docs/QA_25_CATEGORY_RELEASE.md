@@ -1,3 +1,9 @@
+# SUPERSEDED: DO NOT DEPLOY
+
+The 25-category order described below was rejected by the owner. The approved order is **20 categories**, documented in [QA_APPROVED_20_CATEGORY_RELEASE.md](QA_APPROVED_20_CATEGORY_RELEASE.md). The corrected curation script and latest private QA package supersede this historical design. This document is retained only as a record of the rejected candidate.
+
+---
+
 # Lounge TV | Issue #23 | 25-category QA presentation change
 
 **Status:** Code committed and offline private seed validated. **Not yet uploaded to live QA R2**. Existing production and Supabase must remain untouched.
