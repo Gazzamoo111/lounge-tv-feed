@@ -1,0 +1,129 @@
+{
+  "sources": [
+    {
+      "id": "epgenius-6",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg6.xml.gz"
+    },
+    {
+      "id": "epgenius-66",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg66.xml.gz"
+    },
+    {
+      "id": "epgenius-64",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg64.xml.gz"
+    },
+    {
+      "id": "epgenius-37",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg37.xml.gz"
+    },
+    {
+      "id": "epgenius-2",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg2.xml.gz"
+    },
+    {
+      "id": "epgenius-65",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg65.xml.gz"
+    },
+    {
+      "id": "epgenius-63",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg63.xml.gz"
+    },
+    {
+      "id": "epgenius-41",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg41.xml.gz"
+    },
+    {
+      "id": "epgenius-52",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg52.xml.gz"
+    },
+    {
+      "id": "epgenius-14",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg14.xml.gz"
+    },
+    {
+      "id": "epgenius-15",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg15.xml.gz"
+    },
+    {
+      "id": "epgenius-55",
+      "country": "global",
+      "url": "https://raw.githubusercontent.com/ferteque/Curated-M3U-Repository/main/epg55.xml.gz"
+    },
+    {
+      "id": "nz-tvnzplus",
+      "country": "nz",
+      "url": "https://nzxmltv.com/iptv/tvnz-static.xml.gz"
+    },
+    {
+      "id": "nz-sky",
+      "country": "nz",
+      "url": "https://nzxmltv.com/sky/guide.xml"
+    },
+    {
+      "id": "nz-freeview",
+      "country": "nz",
+      "url": "https://nzxmltv.com/freeview/guide.xml"
+    },
+    {
+      "id": "nz-epgpw",
+      "country": "nz",
+      "url": "https://epg.pw/xmltv/epg_NZ.xml.gz"
+    },
+    {
+      "id": "nz-epglat",
+      "country": "nz",
+      "url": "https://epg.lat/files/nz.xml.gz"
+    },
+    {
+      "id": "au-epgpw",
+      "country": "au",
+      "url": "https://epg.pw/xmltv/epg_AU.xml.gz"
+    },
+    {
+      "id": "au-epglat",
+      "country": "au",
+      "url": "https://epg.lat/files/au.xml.gz"
+    },
+    {
+      "id": "uk-epgpw",
+      "country": "uk",
+      "url": "https://epg.pw/xmltv/epg_GB.xml.gz"
+    },
+    {
+      "id": "uk-epglat",
+      "country": "uk",
+      "url": "https://epg.lat/files/uk.xml.gz"
+    },
+    {
+      "id": "us-epgpw",
+      "country": "us",
+      "url": "https://epg.pw/xmltv/epg_US.xml.gz"
+    },
+    {
+      "id": "us-epglat",
+      "country": "us",
+      "url": "https://epg.lat/files/us.xml.gz"
+    },
+    {
+      "id": "us2-epglat",
+      "country": "us",
+      "url": "https://epg.lat/files/us2.xml.gz"
+    },
+    {
+      "id": "us-sports-epglat",
+      "country": "us",
+      "url": "https://epg.lat/files/us_sports.xml.gz"
+    }
+  ]
+}
