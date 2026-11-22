@@ -1,0 +1,92 @@
+name: International Master QA
+on:
+  pull_request:
+    paths:
+      - "qa/international-master/**"
+      - ".github/workflows/international-master-qa.yml"
+  push:
+    branches:
+      - "qa/international-master-unified-20261119"
+    paths:
+      - "qa/international-master/**"
+      - ".github/workflows/international-master-qa.yml"
+jobs:
+  category-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node --test qa/international-master/*.test.mjs
+
+  xmltv-audit-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover -s qa/international-master -p 'test_best_epg_audit.py' -v
+
+  best-guide-private-qa:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/qa/international-master-unified-20261119'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Authenticate GitHub job to private Lounge QA broker
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('loungetv-international-epg-qa');
+            core.setSecret(token);
+            core.exportVariable('LOUNGE_QA_OIDC', token);
+      - name: Build validated compressed International XMLTV from real programmes
+        run: python qa/international-master/build-best-epg-qa.py build
+      - name: Refresh short-lived OIDC token for private upload
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('loungetv-international-epg-qa');
+            core.setSecret(token);
+            core.exportVariable('LOUNGE_QA_OIDC', token);
+      - name: Upload compressed QA guide privately and verify
+        run: python qa/international-master/build-best-epg-qa.py upload
+      - name: Verify live Nuvio QA XMLTV delivery
+        run: python qa/international-master/build-best-epg-qa.py probe
+
+
+  regional-live-qa:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/qa/international-master-unified-20261119'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Authorise one-time QA diagnostics without storing BEST credentials
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const token = await core.getIDToken('loungetv-international-epg-qa');
+            core.setSecret(token);
+            core.exportVariable('LOUNGE_QA_OIDC', token);
+      - name: Confirm 23 regions, unchanged EPG/media/DRM, and Sky source health
+        run: python qa/international-master/qa-world-regional-live-test.py
