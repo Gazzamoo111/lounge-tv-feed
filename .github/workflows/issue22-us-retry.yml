@@ -1,0 +1,51 @@
+name: Issue 22 recover oversized US XMLTV only
+on:
+  push:
+    branches:
+      - epg/issue-22-private-source-batch
+    paths:
+      - '.github/workflows/issue22-us-retry.yml'
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'cryptography>=42,<50'
+      - name: Fetch one oversized US source and hybrid-encrypt
+        shell: bash
+        run: |
+          python - <<'PY'
+          import datetime as dt
+          import json, tarfile
+          import issue22.download_sources as d
+          d.MAX_UNPACKED=1500*1024*1024
+          d.MAX_BYTES=240*1024*1024
+          d.FEEDS.mkdir(parents=True,exist_ok=True)
+          src=next(x for x in json.loads((d.ROOT/'sources.json').read_text())['sources'] if x['id']=='us-epglat')
+          row=d.fetch_source(src)
+          print(json.dumps(row,indent=2),flush=True)
+          status={'configured_sources':1,'successful_sources':int(row['status']=='ok'),'failed_sources':int(row['status']!='ok'),'results':[row],'completed_utc':dt.datetime.now(dt.timezone.utc).isoformat(),'recovery_of':'Issue22 original 24/25 source batch'}
+          (d.OUT/'source_status.json').write_text(json.dumps(status,indent=2))
+          with tarfile.open(d.OUT/'batch.tar.gz','w:gz',compresslevel=4) as t:
+              t.add(d.OUT/'source_status.json',arcname='source_status.json')
+              if row['status']=='ok':t.add(d.FEEDS/'us-epglat.xmltv',arcname='feeds/us-epglat.xmltv')
+          d.encrypt_bundle(d.OUT/'batch.tar.gz',d.OUT/'encrypted_feeds.bin',d.ROOT/'runner_public_key.pem')
+          (d.OUT/'batch.tar.gz').unlink()
+          if row['status']!='ok':raise SystemExit('Recovery source failed')
+          PY
+      - name: Upload encrypted recovery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue22-encrypted-us-epglat-recovery
+          path: |
+            issue22/batch-download/encrypted_feeds.bin
+            issue22/batch-download/source_status.json
+          retention-days: 1
+          if-no-files-found: warn
