@@ -34,9 +34,9 @@ INFO=re.compile(r'(?<!\w)INFO(?!\w)',re.I)
 FAST=re.compile(r'^\s*(?:PRIME|TV)\s*\|',re.I)
 LINK=re.compile(r'/(\d+)\.(?:ts|m3u8)$')
 GROUP=re.compile(r'group-title="[^"]*"')
-SPORTS_NETWORK=re.compile(r'\\b(?:ESPN|BEIN|FOX SPORTS|SKY SPORTS|TNT SPORTS|SPORTSNET|NFL NETWORK|NBA TV|CBS SPORTS|NBC SPORTS|NESN|SEC NETWORK|ACC NETWORK|ACCN|EUROSPORT|PREMIER SPORTS|DAZN|SPORTS NETWORK)\\b',re.I)
-SPORTS_4K=re.compile(r'\\b(?:SPORT|ESPN|FOX|TNT|BEIN|NFL|NBA|NHL|MLB|F1|UFC|RACING|NESN|SKY SPORTS)\\b',re.I)
-MOVIE_4K=re.compile(r'\\b(?:CINEMA|MOVIE|FILM|HBO|HOLLYWOOD|CINEMAX)\\b',re.I)
+SPORTS_NETWORK=re.compile(r'\b(?:ESPN|BEIN|FOX SPORTS|SKY SPORTS|TNT SPORTS|SPORTSNET|NFL NETWORK|NBA TV|CBS SPORTS|NBC SPORTS|NESN|SEC NETWORK|ACC NETWORK|ACCN|EUROSPORT|PREMIER SPORTS|DAZN|SPORTS NETWORK)\b',re.I)
+SPORTS_4K=re.compile(r'\b(?:SPORT|ESPN|FOX|TNT|BEIN|NFL|NBA|NHL|MLB|F1|UFC|RACING|NESN|SKY SPORTS)\b',re.I)
+MOVIE_4K=re.compile(r'\b(?:CINEMA|MOVIE|FILM|HBO|HOLLYWOOD|CINEMAX)\b',re.I)
 BASE_CATEGORY={old:i for i,(_,ids) in enumerate(CATEGORIES,1) for old in ids}
 def encode(obj):return (json.dumps(obj,ensure_ascii=False,separators=(',',':'))+'\n').encode('utf-8')
 def hidden_reason(name):
