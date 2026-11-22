@@ -109,7 +109,24 @@ test('invalid stream cannot be used as open redirect or to fetch provider creden
   assert.equal((await worker.fetch(req('/live/user1/customer-pass/12346.ts'),env)).status,404);
   assert.equal((await worker.fetch(req('/live/user1/customer-pass/http:%2F%2Fbad.example'),env)).status,404);
   env.UPSTREAM_ORIGIN='http://insecure.example.test';
+  // Existing safe default blocks accidental HTTP provider configuration.
   assert.equal((await worker.fetch(req('/live/user1/customer-pass/12345.ts'),env)).status,503);
+  env.ALLOW_HTTP_UPSTREAM='true';
+  // Unknown source ids remain rejected even with HTTP allowed.
+  assert.equal((await worker.fetch(req('/live/user1/customer-pass/12346.ts'),env)).status,404);
+  // Unexpected protocols are never allowed, even with the QA opt-in.
+  env.UPSTREAM_ORIGIN='javascript:alert(1)';
+  assert.equal((await worker.fetch(req('/live/user1/customer-pass/12345.ts'),env)).status,503);
+});
+test('QA explicit HTTP BEST redirect preserves the approved numeric stream ID and per-account credentials',async()=>{
+  const {env}=await mock();
+  env.UPSTREAM_ORIGIN='http://provider.example.test:80';
+  env.ALLOW_HTTP_UPSTREAM='true';
+  const response=await worker.fetch(req('/live/user1/customer-pass/12345.ts'),env);
+  assert.equal(response.status,302);
+  assert.equal(response.headers.get('location'),'http://provider.example.test/testprov1/testprov2/12345');
+  assert.equal(response.headers.get('cache-control'),'private, no-store');
+  assert.equal(response.headers.get('referrer-policy'),'no-referrer');
 });
 test('non GET/HEAD methods and missing bindings fail closed',async()=>{
   const {env}=await mock();
