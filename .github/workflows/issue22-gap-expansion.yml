@@ -1,0 +1,58 @@
+name: Issue 22 supplementary genuine EPG gap audit
+on:
+  push:
+    branches:
+      - epg/issue-22-private-source-batch
+    paths:
+      - 'issue22/expansion_sources.json'
+      - '.github/workflows/issue22-gap-expansion.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'cryptography>=42,<50'
+      - name: Fetch independent candidate XMLTV sources and encrypt before upload
+        shell: bash
+        run: |
+          python - <<'PY'
+          import concurrent.futures,datetime,json,tarfile
+          import issue22.download_sources as d
+          d.MAX_BYTES=240*1024*1024
+          d.MAX_UNPACKED=1300*1024*1024
+          d.FEEDS.mkdir(parents=True,exist_ok=True)
+          src=json.loads((d.ROOT/'expansion_sources.json').read_text())['sources']
+          print('Supplementary source count:',len(src),flush=True)
+          with concurrent.futures.ThreadPoolExecutor(max_workers=5) as pool:
+              rows=list(pool.map(d.fetch_source,src))
+          for row in rows:
+              print(row['id'],row['status'],row.get('bytes',''),row.get('guide_channels',''),row.get('programmes',''),flush=True)
+          status={'created_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),'results':rows,
+              'successes':sum(r['status']=='ok' for r in rows),
+              'failures':[r['id'] for r in rows if r['status']!='ok']}
+          (d.OUT/'source_status.json').write_text(json.dumps(status,indent=2))
+          with tarfile.open(d.OUT/'batch.tar.gz','w:gz',compresslevel=2) as tar:
+              tar.add(d.OUT/'source_status.json',arcname='source_status.json')
+              for row in rows:
+                  if row['status']=='ok':tar.add(d.FEEDS/(row['id']+'.xmltv'),arcname='feeds/'+row['id']+'.xmltv')
+          d.encrypt_bundle(d.OUT/'batch.tar.gz',d.OUT/'encrypted_feeds.bin',d.ROOT/'runner_public_key.pem')
+          (d.OUT/'batch.tar.gz').unlink()
+          if status['successes']==0:raise SystemExit('No new sources downloaded')
+          PY
+      - name: Upload encrypted candidate sources only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue22-encrypted-supplementary-sources
+          path: |
+            issue22/batch-download/encrypted_feeds.bin
+            issue22/batch-download/source_status.json
+          retention-days: 3
+          if-no-files-found: warn
