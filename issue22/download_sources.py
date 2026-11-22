@@ -12,8 +12,8 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 ROOT=pathlib.Path(__file__).resolve().parent
 OUT=ROOT/'batch-download'
 FEEDS=OUT/'feeds'
-MAX_BYTES=160*1024*1024
-MAX_UNPACKED=350*1024*1024
+MAX_BYTES=240*1024*1024
+MAX_UNPACKED=1500*1024*1024
 
 def inspect_xml(file):
     with file.open('rb') as fp: gz=fp.read(2)==b'\x1f\x8b'
@@ -26,7 +26,7 @@ def inspect_xml(file):
             nonlocal unpacked
             if n is None or n<0:n=65536
             b=self.f.read(min(n,1024*1024));unpacked+=len(b)
-            if unpacked>MAX_UNPACKED:raise ValueError('uncompressed XML exceeds 350 MB')
+            if unpacked>MAX_UNPACKED:raise ValueError('uncompressed XML exceeds 1500 MB')
             return b
         def close(self):pass
     with opener(file,'rb') as f:
@@ -51,7 +51,7 @@ def fetch_source(src):
             with urllib.request.urlopen(req,timeout=70) as r,tmp.open('wb') as f:
                 while part:=r.read(1024*1024):
                     size+=len(part)
-                    if size>MAX_BYTES:raise ValueError('response exceeds 160 MB')
+                    if size>MAX_BYTES:raise ValueError('response exceeds 240 MB')
                     h.update(part);f.write(part)
             if size<200:raise ValueError('implausibly small response')
             info=inspect_xml(tmp)
