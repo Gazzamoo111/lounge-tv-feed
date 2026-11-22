@@ -1,0 +1,14 @@
+name = "loungetv-epg-standalone"
+main = "src/index.mjs"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+[vars]
+GUIDE_OBJECT_KEY = "guides/current.xml.gz"
+
+[[r2_buckets]]
+binding = "EPG_BUCKET"
+bucket_name = "loungetv-epg-private"
+
+# Dedicated custom domain to configure only after checking existing DNS:
+# epg.loungetv.nz. Never point this at n.loungetv.nz or connect.loungetv.nz.
