@@ -90,6 +90,7 @@ test('get.php dynamically attaches the guide and never outputs provider credenti
   const body=await r.text();
   assert.equal(r.status,200);assert.match(body,/url-tvg="https:\/\/xtream-qa\.example\.test\/xmltv.php\?/);
   assert.match(body,/live\/user1\/customer-pass\/12345\.ts/);
+  assert.doesNotMatch(body,/\{\{EPG_URL\}\}/);
   assert.doesNotMatch(body,/provider\.example|testprov1|testprov2/);
 });
 test('short EPG returns channel matching XMLTV source ID',async()=>{
