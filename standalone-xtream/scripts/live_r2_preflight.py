@@ -217,6 +217,130 @@ def remaining_station_groups(rows):
     return {key: group for key, group in groups.items() if len(group) > 1}
 
 
+STATION_FOLLOWUP_BASELINE = 'vprod-stations-45149065010-1'
+STATION_FOLLOWUP_GUIDE = 'vprod-freeview-45145113439-1'
+STATION_FOLLOWUP_KEEPERS = {
+    1458754: 30492,
+    1261564: 30567,
+    1458815: 1905810,
+    45235: 1905930,
+    1905927: 45251,
+    1920892: 1920303,
+    1920845: 1919987,
+    1069214: 30523,
+    1941463: 45610,
+    866341: 91768,
+    2024017: 1430405,
+    2024504: 1430311,
+    2023953: 1430204,
+    1424877: 887937,
+    1424878: 1014213,
+    1905936: 30524,
+    1905939: 1014233,
+    1905951: 30556,
+    1905954: 45295,
+    45328: 1905890,
+    1458753: 1905893,
+    1905905: 164073,
+    1905902: 164072,
+    1905884: 164071,
+    1920891: 1920300,
+    1920844: 1919984,
+    1905942: 45326,
+    1944440: 1944272,
+    1944406: 1944405,
+    1944350: 1944349,
+    559548: 478627,
+    976593: 1433539,
+    1448714: 1433526,
+    1942813: 1943572,
+    1942775: 1943956,
+    1942718: 1942717,
+    1943271: 1943895,
+    1942604: 1943401,
+    1942574: 1944148,
+    1943243: 1943808,
+    1942500: 1942497,
+    1942498: 1944256,
+    1942468: 1943368,
+    1942460: 1944252,
+    1942433: 1941954,
+    1942384: 1943358,
+    1942370: 1943708,
+    1943342: 1942317,
+    1943205: 1942285,
+    1943188: 1942192,
+    1942186: 1942185,
+    1943455: 1943454,
+    559588: 478592,
+    1943883: 1943882,
+    1943861: 1943413,
+    1943856: 1943855,
+    1943849: 1943848,
+    1943841: 1943840,
+    1943396: 1943395,
+    1943805: 1943804,
+    1943380: 1943379,
+    1943375: 1943374,
+    1943776: 1943775,
+    1943773: 1943772,
+    1943365: 1943364,
+    1943727: 1943726,
+    1943695: 1943497,
+    1944222: 1943661,
+    1943323: 1943322,
+    978704: 976614,
+    976534: 1049066,
+    976562: 1041931,
+    976644: 1060650,
+    1944296: 1944295,
+    1944294: 1944293,
+    1942171: 1943553,
+    1944171: 1944170,
+    1944283: 1944282,
+    1944162: 1944161,
+    1944156: 1944155,
+    1942167: 1944057,
+    1944122: 1944121,
+    1944220: 1944219,
+    976542: 1811973,
+    1503129: 1414075,
+    1503131: 1433175,
+    1448718: 1414077,
+    1503134: 1414076,
+    1503137: 1414078,
+    1503139: 1433176,
+    1944085: 1943564,
+    1944069: 1944068,
+    1944065: 1944064,
+    1943517: 1943516,
+    1943507: 1943506,
+    1943502: 1943501,
+    1944041: 1944040,
+    1458793: 1458804,
+}
+
+
+def followup_removals(rows, guide_ids):
+    by_id = {row['stream_id']: row for row in rows}
+    removed = set(STATION_FOLLOWUP_KEEPERS)
+    keepers = set(STATION_FOLLOWUP_KEEPERS.values())
+    if not removed or removed & keepers or not removed | keepers <= by_id.keys():
+        raise ValueError('The reviewed station IDs do not match the active catalogue')
+    for stream_id, keeper_id in STATION_FOLLOWUP_KEEPERS.items():
+        row, keeper = by_id[stream_id], by_id[keeper_id]
+        if (str(row['category_id']) in {'1', '9', '25'} or row['stream_id'] in FREEVIEW
+                or 'SKY SPORT' in row['name'].upper()):
+            raise ValueError(f'Protected station {stream_id}')
+        if row.get('epg_channel_id') in guide_ids and keeper.get('epg_channel_id') not in guide_ids:
+            if (str(keeper['category_id']) in {'1', '9', '25'} or keeper_id in FREEVIEW
+                    or 'SKY SPORT' in keeper['name'].upper()):
+                raise ValueError(f'Cannot replace protected keeper {keeper_id}')
+            removed.remove(stream_id)
+            removed.add(keeper_id)
+    return removed
+
+
 def apply_catalogue_removals(client, bucket, release, catalogue, rows, remove):
     visible = [row for row in rows if row['stream_id'] not in remove]
     if not remove:
@@ -323,6 +447,8 @@ def main():
     stations.add_argument('--publish-stations', action='store_true')
     stations.add_argument('--verify-stations', action='store_true')
     stations.add_argument('--audit-remaining', action='store_true')
+    stations.add_argument('--publish-remaining', action='store_true')
+    stations.add_argument('--verify-remaining', action='store_true')
     args = parser.parse_args()
     bucket = PRODUCTION_BUCKET if args.production else QA_BUCKET
     target = 'PRODUCTION' if args.production else 'QA'
@@ -416,6 +542,30 @@ def main():
                     for row in matches
                 ]]))
             print('REMAINING_AUDIT', len(rows), len(candidates))
+            return
+        if args.publish_remaining or args.verify_remaining:
+            if (not args.production or epg_release != STATION_FOLLOWUP_GUIDE
+                    or hashlib.sha256(guide).hexdigest() != QA_RELEASE_HASHES['epg/guide.xml.gz']
+                    or len(cats) != 24 or by[9] or len(ppv) != 6756):
+                raise ValueError('Production guide or protected catalogue changed')
+            if args.verify_remaining:
+                if (not release.startswith('vprod-stations-') or release == STATION_FOLLOWUP_BASELINE
+                        or any((left in ids) == (right in ids)
+                               for left, right in STATION_FOLLOWUP_KEEPERS.items())
+                        or remaining_station_groups(rows)
+                        or len(rows) != 12812 - len(STATION_FOLLOWUP_KEEPERS)):
+                    raise ValueError('Follow-up catalogue did not pass live readback')
+                print('REMAINING_RELEASE_VERIFIED', release, len(rows))
+                return
+            if release != STATION_FOLLOWUP_BASELINE or len(rows) != 12812:
+                raise ValueError('Production catalogue drifted before follow-up release')
+            remove = followup_removals(rows, guide_ids)
+            catalogue = {key: content[key] for key in ('catalog/live_all.json', 'catalog/template.m3u')}
+            visible = apply_catalogue_removals(client, bucket, release, catalogue, rows, remove)
+            assert len(visible) == len(rows) - len(remove)
+            assert not remaining_station_groups(visible)
+            print('REMAINING_RELEASE_VALIDATED', json.dumps({'visible': len(visible), 'duplicates_removed': len(remove)}))
+            publish(client, bucket, current_obj, pointer, catalogue, {})
             return
         if args.stage_stations or args.publish_stations or args.verify_stations:
             if not args.production:
