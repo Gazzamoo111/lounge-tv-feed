@@ -10,13 +10,14 @@ import io
 import json
 import os
 from pathlib import Path
+import re
 import tempfile
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
 
 import boto3
 
-from cleanup_qa_catalog import QUALITY, blocks_from_m3u, plan_uk, plan_us, priority
+from cleanup_qa_catalog import KNOWN_UK_KEEP, QUALITY, blocks_from_m3u, normalize, plan_uk, plan_us, priority, uk_brand
 from stage_nz_freeview_epg import prepare
 
 QA_BUCKET = 'loungetv-xtream-private'
@@ -120,17 +121,66 @@ def catalogue_duplicates(rows):
     return remove, ambiguous
 
 
-def audit_full_catalogue(client, bucket, release, catalogue):
-    rows = json.loads(catalogue['catalog/live_all.json'])
-    remove, ambiguous = catalogue_duplicates(rows)
+UK_REGIONAL_FEED = re.compile(
+    r'(?:(?:BBC ONE|BBC TWO|BBC 1|BBC 2|BBC1|BBC2|ITV 1|ITV1) )?'
+    r'(?:CHANNEL ISLANDS?|EAST(?: MIDLANDS| YORKSHIRE)?|WEST(?: MIDLANDS| COUNTRY)?|'
+    r'NORTH(?: EAST| WEST)?|SOUTH(?: EAST| WEST)?|SCOT(?:LAND)?|WALES|NI|NORTHERN IRELAND|'
+    r'LONDON|MIDLANDS|YORKS(?:HIRE)?|BORDER(?: SCOTLAND)?|GRANADA|TYNE TEES|'
+    r'MERIDIAN|ANGLIA|OXFORD|CAMBRIDGE|SUSSEX|KENT|WM|EM|N IRELAND|YORKSHIRE EAST|YORKSHIRE WEST)'
+)
+UK_PREFIX = re.compile(r'^\s*UK(?:-NOWTV)?\s*\|\s*')
+
+
+def station_key(row):
+    category = str(row['category_id'])
+    if category not in {'2', '3', '4', '5', '6', '7', '8', '10', '11', '12', '13'}:
+        return None
+    name = row['name'].upper()
+    if 'SKY SPORT' in name:
+        return None
+    if category == '3' and UK_PREFIX.match(name):
+        base = normalize(name)
+        brand = uk_brand(name)
+        if brand:
+            suffix = re.sub(
+                r'^(?:BBC ONE|BBC TWO|BBC 1|BBC 2|BBC1|BBC2|ITV 1|ITV1|CHANNEL 4|CHANNEL 5)\b\s*',
+                '', base,
+            )
+            if not suffix or UK_REGIONAL_FEED.fullmatch(suffix):
+                return category, brand
+        return category, base
+    # Keep market, affiliate, timeshift and language qualifiers outside the explicit UK families.
+    base = ' '.join(QUALITY.sub(' ', name.replace('ᴿᴬᵂ', ' RAW ')).split())
+    return (category, base) if base else None
+
+
+def station_duplicates(rows, guide_ids):
+    groups = collections.defaultdict(list)
+    for row in rows:
+        key = station_key(row)
+        if key:
+            groups[key].append(row)
+    decisions = []
+    for (category, station), group in groups.items():
+        if len(group) < 2:
+            continue
+        preferred = KNOWN_UK_KEEP.get(station) if category == '3' else None
+        keeper = max(group, key=lambda row: (
+            row.get('epg_channel_id') in guide_ids,
+            priority(row, preferred),
+        ))
+        decisions.append({
+            'category': category, 'station': station, 'keep': keeper['name'],
+            'keep_id': keeper['stream_id'],
+            'remove': [[row['stream_id'], row['name']] for row in group if row is not keeper],
+        })
+    return decisions
+
+
+def apply_catalogue_removals(client, bucket, release, catalogue, rows, remove):
     visible = [row for row in rows if row['stream_id'] not in remove]
-    assert not catalogue_duplicates(visible)[0], 'Confirmed duplicate remained after catalogue pass'
-    print('FULL_CATALOGUE_DUPLICATE_AUDIT', json.dumps({
-        'checked': len(rows), 'confirmed_removed': len(remove), 'visible': len(visible),
-        'unconfirmed_same_name_groups': ambiguous, 'removed_stream_ids': sorted(remove),
-    }))
     if not remove:
-        return
+        return visible
 
     def encode(items):
         return (json.dumps(items, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
@@ -146,6 +196,19 @@ def audit_full_catalogue(client, bucket, release, catalogue):
     assert set(blocks) == {row['stream_id'] for row in rows}
     catalogue['catalog/template.m3u'] = (header + ''.join(block for sid, block in blocks.items() if sid not in remove)).encode()
     catalogue['catalog/live_all.json'] = encode(visible)
+    return visible
+
+
+def audit_full_catalogue(client, bucket, release, catalogue):
+    rows = json.loads(catalogue['catalog/live_all.json'])
+    remove, ambiguous = catalogue_duplicates(rows)
+    visible = [row for row in rows if row['stream_id'] not in remove]
+    assert not catalogue_duplicates(visible)[0], 'Confirmed duplicate remained after catalogue pass'
+    print('FULL_CATALOGUE_DUPLICATE_AUDIT', json.dumps({
+        'checked': len(rows), 'confirmed_removed': len(remove), 'visible': len(visible),
+        'unconfirmed_same_name_groups': ambiguous, 'removed_stream_ids': sorted(remove),
+    }))
+    apply_catalogue_removals(client, bucket, release, catalogue, rows, remove)
 
 
 def publish(client, bucket, current, pointer, catalogue, guide):
@@ -154,7 +217,8 @@ def publish(client, bucket, current, pointer, catalogue, guide):
     if not run.isdigit() or not attempt.isdigit():
         raise ValueError('Invalid CI release identifier')
     target = 'prod' if bucket == PRODUCTION_BUCKET else 'qa'
-    release = f'v{target}-freeview-{run}-{attempt}'
+    kind = 'freeview' if guide else 'stations'
+    release = f'v{target}-{kind}-{run}-{attempt}'
     destination = f'releases/{release}/'
 
     def objects(prefix):
@@ -165,11 +229,15 @@ def publish(client, bucket, current, pointer, catalogue, guide):
         raise ValueError('Immutable QA release already exists')
     changes = catalogue | guide
     unchanged = {}
-    for scope, prior in zip(('catalog', 'epg'), BASELINE):
+    active_guide = pointer.get('epg_release', pointer['release'])
+    sources = {'catalog': pointer['release']}
+    if guide:
+        sources['epg'] = active_guide
+    for scope, prior in sources.items():
         prefix = f'releases/{prior}/'
         unchanged.update({key.removeprefix(prefix): (key, size) for key, size in objects(prefix + scope + '/').items()
                           if key.removeprefix(prefix) not in changes})
-    if len(unchanged) < 3000:
+    if len(unchanged) < (3000 if guide else 12):
         raise ValueError('The existing QA catalogue or guide is incomplete')
 
     def copy(entry):
@@ -195,7 +263,9 @@ def publish(client, bucket, current, pointer, catalogue, guide):
     if objects(destination) != expected:
         raise RuntimeError('Staged release object inventory differs')
 
-    updated = dict(pointer, release=release, epg_release=release, previous_epg_release=BASELINE[1])
+    updated = dict(pointer, release=release, epg_release=release if guide else active_guide)
+    if guide:
+        updated['previous_epg_release'] = active_guide
     client.put_object(Bucket=bucket, Key='current.json', Body=json.dumps(updated).encode(),
                       ContentType='application/json', CacheControl='no-store', IfMatch=current['ETag'])
     active = client.get_object(Bucket=bucket, Key='current.json')
@@ -208,6 +278,10 @@ def main():
     parser.add_argument('--stage-scoped', action='store_true')
     parser.add_argument('--publish-scoped', action='store_true')
     parser.add_argument('--production', action='store_true')
+    stations = parser.add_mutually_exclusive_group()
+    stations.add_argument('--stage-stations', action='store_true')
+    stations.add_argument('--publish-stations', action='store_true')
+    stations.add_argument('--verify-stations', action='store_true')
     args = parser.parse_args()
     bucket = PRODUCTION_BUCKET if args.production else QA_BUCKET
     target = 'PRODUCTION' if args.production else 'QA'
@@ -291,6 +365,30 @@ def main():
             r['stream_id'] for r in by[1]
             if r['stream_id'] in FREEVIEW and (not r.get('epg_channel_id') or r['epg_channel_id'] not in guide_ids)
         ]))
+        if args.stage_stations or args.publish_stations or args.verify_stations:
+            if not args.production:
+                raise ValueError('Station consolidation requires the production target')
+            groups = station_duplicates(rows, guide_ids)
+            remove = {sid for group in groups for sid, _ in group['remove']}
+            for group in groups:
+                print('STATION_GROUP', json.dumps(group))
+            if args.stage_stations:
+                print('UK_ENTERTAINMENT_STATIONS', json.dumps([[r['stream_id'], r['name']] for r in by[3]]))
+            print('STATION_AUDIT', json.dumps({'checked': len(rows), 'groups': len(groups), 'remove': len(remove)}))
+            if args.verify_stations:
+                if not release.startswith('vprod-stations-') or groups:
+                    raise ValueError('The active station release did not pass readback')
+                return
+            if release != 'vprod-freeview-45145113439-1' or epg_release != release:
+                raise ValueError('Production catalogue or guide drifted before station release')
+            catalogue = {key: content[key] for key in ('catalog/live_all.json', 'catalog/template.m3u')}
+            visible = apply_catalogue_removals(client, bucket, release, catalogue, rows, remove)
+            assert not station_duplicates(visible, guide_ids)
+            assert sum(station_key(row) == ('3', 'BBC ONE') for row in visible) == 1
+            print('STATION_RELEASE_VALIDATED', json.dumps({'visible': len(visible), 'removed': len(remove)}))
+            if args.publish_stations:
+                publish(client, bucket, current_obj, pointer, catalogue, {})
+            return
         if args.production and release.startswith('vprod-freeview-'):
             remaining, ambiguous = catalogue_duplicates(rows)
             assert not remaining, 'Active production catalogue contains a confirmed duplicate'
