@@ -1,0 +1,35 @@
+name: Lounge TV isolated Xtream QA tests
+on:
+  push:
+    branches:
+      - feature/xtream-no-supabase-20261123
+    paths:
+      - 'standalone-xtream/**'
+      - '.github/workflows/xtream-standalone-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  gateway-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test Xtream compatibility, credentials, EPG, playback routes
+        run: node --test standalone-xtream/tests/*.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test strict scheduled guide validation
+        run: python -m unittest discover -s standalone-xtream/tests -p 'test_*.py'
+      - name: Ensure no runtime Supabase dependency
+        shell: bash
+        run: |
+          if grep -Ei 'supabase\\.co|SUPABASE_URL|SUPABASE_SERVICE_ROLE' standalone-xtream/src/worker.mjs; then
+            echo 'Unexpected Supabase dependency in standalone Xtream Worker'
+            exit 1
+          fi
+          echo 'Standalone Xtream Worker has no Supabase runtime dependency'

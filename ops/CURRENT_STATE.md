@@ -1,3 +1,83 @@
+## Australian Channel 9 cleanup live in QA | 23 November 2026 NZDT
+
+Verified immutable QA R2 release `v20261123-deduplicated25-au9` on Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4`. Applied the guarded PR #24 script from `66248ffe78e038847718e3ea60fd66ab96788b2a` to the exact active phantom-fixed catalogue `v20261123-deduplicated25-ppv-meta`. Dry run, application and idempotence passed. Only 9Now RAW QLD `1921340`, VIC `1921345` and WA `1921330` were omitted from the QA browse feed. Channel 9 Sydney and Perth and distinct Nine stations remain. All retained stream rows and M3U blocks are exact.
+
+Live HTTPS verified **25 categories, 13,083 entries, 64 Australian entries and all 6,756 PPV entries**. Category 25 `🏆 Live Sport | Events & PPV` is last in the returned playlist and Xtream category list with no phantom ZZ entry. PPV category bytes and the XMLTV match the prior QA release. Redirects for the corrected PPV event, both kept Channel 9 feeds and TVNZ 1 are identical. The server continues providing all events to Nuvio. Physical profile controls were not accessible: selecting Playlist order, hiding the PPV group in Live TV and verifying that Sports Hub can still find an event while hidden remain device checks.
+
+QA Worker, D1, credentials, production and Supabase were untouched. Rollback is a conditional QA `current.json` restore to `{"release":"v20261123-deduplicated25-ppv-meta","epg_release":"v20261123-issue22"}`.
+
+## Phantom PPV category repair verified live in QA | 23 November 2026 NZDT
+
+QA serves new immutable catalogue `v20261123-deduplicated25-ppv-meta`. Applied `fix_ppv_group_metadata.py` from PR #24 commit `89626c0a892bec29bf2802e8444d737efaf30bec` to a fresh snapshot of active `v20261123-deduplicated25`. Dry run, application and idempotent rerun passed. The sole event display name change is for stream 2189718. Exactly three of 28 QA catalogue objects changed, including exactly one M3U EXTINF line. Category definitions and order, original canonical logo, all stream IDs, all URLs, PPV row order, and every other item field remained exact.
+
+Activated with an ETag-conditioned QA R2 pointer switch, keeping EPG release `v20261123-issue22`. Verified authenticated live HTTPS Xtream categories and the full M3U, with exactly 25 categories, 13,086 streams, 6,756 PPV entries, one group-title per EXTINF, and no legacy ZZ group. Both served sources have `🏆 Live Sport | Events & PPV` last. The live gzip XMLTV and exact redirects for the repaired PPV event, Sky Sport 1 and TVNZ 1 matched the pre-change checks. Nuvio's physical refresh and client-side sorting were not verified.
+
+QA Worker remains `ad8494b3-1905-4205-99dd-4af8c25c08a4`. Worker, D1, account bindings, production and Supabase were untouched. Rollback is a conditional QA `current.json` restore to `{"release":"v20261123-deduplicated25","epg_release":"v20261123-issue22"}`.
+
+## QA catalogue deduplication and protected PPV | 23 November 2026 NZDT
+
+QA now serves immutable R2 catalogue `v20261123-deduplicated25` on Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4`. The EPG pointer still uses `v20261123-issue22`. Verified 25 categories in the approved sequence with the original emojis and flags, ending in `🏆 Live Sport | Events & PPV`. The label changed from `🏆 Live Events`; its category ID stayed 25.
+
+- 13,086 customer-visible entries after hiding 211 extra variants in 80 groups. For confirmed same-channel groups, kept the preferred known or entitled quality and a useful second feed when available. Matching retains market, affiliate, time-shift and regional qualifiers; ambiguous sources remain distinct. All 67 AU entries and 181 US Local & Regional TV entries were retained. UK Sky Sports Main Event was reduced to 1905853 and 1458672, both tested for media.
+- All 6,756 live PPV JSON records matched the former QA release byte for byte. The only PPV M3U metadata edit is the category label. All PPV IDs, URLs, channel names, logos, icons, flags, order and guide mappings remain exact. All retained non-PPV stream rows and M3U blocks, including all five NZ Freeview IDs and both Widevine metadata blocks, matched the prior release.
+- Live HTTPS QA accepted the known login and rejected a bad password. The returned category JSON, 13,086-entry M3U and existing gzip XMLTV matched the expected bytes. All nine sampled route targets, including the five Freeview/TVNZ paths, were identical before and after.
+- Short media verification decoded 25 frames each from Sky Sport 1, BBC One London, US ABC HD, UK Sky Sports Main Event FHD and its HEVC backup. AU Channel 7 HD still returned HTTP 407 at the redirected media host after BEST returned 302. There was no media body. The unchanged route and prior observed 407 separate this playback issue from catalogue edits. No physical Nuvio, sustained playback or new TVNZ licence grant was verified.
+- Existing automated checks passed (24 JavaScript and 10 Python). No changes to Worker code, D1, provider bindings, production or Supabase. Rollback is a conditional QA-only `current.json` restore to `{"release":"v20261123-premium25-nz5","epg_release":"v20261123-issue22"}`. All previous immutable catalogue objects are retained.
+
+## BEST trial bound and tested in live QA | 23 November 2026 NZDT
+
+The fresh private provider export matched 13,187 of 13,292 approved BEST IDs, including all four requested samples. Existing account `lounge-tv-qa` is bound through its AES-GCM encrypted provider fields on QA D1. Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4` inherits the existing auth secret and uses the approved trial origin and a versioned encryption key. The Worker source matched the previous deployed source. Existing QA login, expiry and connection allowance were preserved. No other account provider fields were populated.
+
+| Channel | QA | BEST entry origin | Media host result |
+| --- | --- | --- | --- |
+| Sky Sport 1 FHD (2024778) | 302, exact approved provider path | 302 | HTTP 200, H.264 video and AAC audio, 30 frames decoded on repeat |
+| AU Channel 7 HD (738209) | 302, exact approved provider path | 302 | HTTP 407 on two checks, zero media bytes |
+| BBC One London (392911) | 302, exact approved provider path | 302 | HTTP 200, H.264 video and AC-3 audio, 30 frames decoded on repeat |
+| US ABC HD (45439) | 302, exact approved provider path | 302 | HTTP 407 on two checks, zero media bytes |
+
+The two repeat failures occurred on redirected media hosts and were reported via Envoy without a Proxy-Authenticate header. HTTP 513 did not recur in these playback checks. This evidence locates the failure after the BEST entry redirect and does not establish a provider-side IP restriction. Physical Nuvio playback and sustained playback were not tested in this task.
+
+The public QA M3U and guide matched the approved bytes. All 25 categories, 13,297 visible entries and 6,756 PPV entries were preserved on the same R2 release `v20261123-premium25-nz5`. All 24 JavaScript and 10 Python checks passed. Production and Supabase were untouched.
+
+Rollback for this QA-only config change: restore Worker `97c9cb65-0fe0-4446-9a4a-c84349d61667` and clear only the two trial provider fields for the QA account. Leave QA auth, expiry, connection allowance, D1 stream IDs and R2 pointers unchanged.
+
+## Fresh BEST trial verification blocked | 23 November 2026 NZDT
+
+The reseller screenshot reported the fresh trial as enabled with a 24 November expiry. The approved BEST origin returned HTTP 503 over HTTPS without an Xtream response. After explicit approval for the fresh trial at that exact HTTP origin, direct requests to the account API, playlist export and approved Sky Sport 1 stream returned HTTP 513 with zero response bytes. No provider status, bouquet, stream IDs or media could be read. The supplied trial was not assigned, and no Sky Sport mapping was edited.
+
+QA remained on Worker `97c9cb65-0fe0-4446-9a4a-c84349d61667` with R2 `v20261123-premium25-nz5`. The QA login worked, D1 still had no assigned provider line and the same 25-category catalogue remained active. Both TVNZ routes still returned HTTP 302 over QA with DRM playback unverified. No production, customer or Supabase changes.
+
+## Supplied account verification and live playback checks | 23 November 2026 NZDT
+
+The supplied account authenticated at the existing HTTPS Lounge TV gateway with HTTP 200, `auth=1`, status `Active`. The gateway exposes Lounge TV public stream IDs. The latest read returned 2,988 public IDs, with no direct overlap against the 13,292 approved BEST IDs. Inspecting authorized HTTPS playback redirect metadata without following the upstream redirects confirmed the approved provider IDs for AU Channel 7 HD and US ABC HD. Sky Sport 1 resolved to different IDs and BBC One London was absent from the exposed catalogue. These samples do not establish the complete BEST entitlement set.
+
+The approved provider origin did not return a usable HTTPS Xtream response. Direct verification against its plaintext HTTP endpoint was blocked by automatic approval review. There was no explicit approval to transmit this account's credentials over HTTP. The account was not assigned in QA D1.
+
+Live QA playback returned HTTP 503 `temporarily_unavailable` for Sky Sport 1 FHD (2024778), AU Channel 7 HD (738209), UK BBC One London (392911) and US ABC HD (45439). Both TVNZ QA playback links returned 302 to the approved DASH manifests. Connected Chrome blocked both final TVNZ manifest requests with `ERR_BLOCKED_BY_CLIENT`, before a Widevine challenge or licence grant. DRM playback was not verified.
+
+Reconfirmed all 25 categories, the exact approved 13,297-entry M3U and the 6,756 Live Events entries, plus the exact XMLTV in gzip and plain XML. QA continued on Worker `97c9cb65-0fe0-4446-9a4a-c84349d61667` and R2 `v20261123-premium25-nz5`. No deployment, production, customer or entitlement changes. The rollback baseline remains the one recorded below.
+
+## Premium 25 and NZ Freeview live QA | 23 November 2026 NZDT
+
+The authorised QA release is active at `https://xtream-qa.loungetv.nz`. The Worker `loungetv-xtream-standalone-qa` uses version `97c9cb65-0fe0-4446-9a4a-c84349d61667` from source commit `e7229194084e9ccca02cff293ccc5fcc0561e7db`. Private R2 `current.json` points to catalogue `v20261123-premium25-nz5` and the byte-identical existing EPG `v20261123-issue22`. Added five whitelisted IDs to QA D1, which now has 14,722 permitted IDs. No QA or production account rows were edited.
+
+- The live HTTPS Xtream login accepted the QA account and rejected an incorrect password. All 25 ordered categories and the exact 13,297-entry M3U passed. Native `get_live_streams` deliberately returns 503 with the QA DRM fallback flag. `get.php` returned 200 with both TVNZ Widevine entries. Nuvio's client retry was not tested.
+- All 6,756 Live Events are byte-identical to the previous curated preview. The original event IDs, names, logos, guide IDs, links and event order were also preserved. Both gzip and plain XMLTV returned HTTP 200 and matched the approved guide (2,849 IDs, 187,840 programmes). The five new NZ channels have no guide mappings.
+- All five NZ stream endpoints returned 302 to the exact approved manifests. Three, Whakaata Māori and Te Reo returned HTTP 200 with HLS playlists upstream. Both TVNZ manifests returned HTTP 403 from this runner. Both licence endpoints returned HTTP 502 for an invalid Widevine challenge. Unauthenticated requests returned 401, empty requests 400, oversized requests 413, unsupported channels 404, wrong methods 405 and preflight 204. No licence grant or sustained device playback was verified.
+- The BEST HTTP code correction is active on QA. BEST's HTTP account API returned 200 with `auth=1` and account status `Expired` for the approved test line. The expired line was not assigned. The live QA BEST sample returned HTTP 503 and needs an active dedicated line with matching stream IDs.
+- Rollback restored Worker `4723ac7c-1176-4495-b5be-784e8554dab3` and the exact prior pointer `{"release":"v20261123-issue22"}`, which served 37 categories with the new NZ routes inactive. The candidate was then restored and the 25 categories and TVNZ redirect rechecked. The five additive QA D1 IDs were retained.
+- Local checks passed 24 JavaScript tests and 10 Python tests. Scheduled EPG refresh stays inactive. Production remains on the same `connect.loungetv.nz` route to Supabase and returned its existing unauthenticated HTTP 401. No production, customer or Supabase edits were made.
+
+## Standalone Xtream QA | 23 November 2026 NZDT
+
+[Issue #23](https://github.com/Gazzamoo111/lounge-tv-feed/issues/23) / [draft PR #24](https://github.com/Gazzamoo111/lounge-tv-feed/pull/24). The isolated Cloudflare Worker `loungetv-xtream-standalone-qa` serves `https://xtream-qa.loungetv.nz`, version `4723ac7c-1176-4495-b5be-784e8554dab3`. D1 `loungetv-accounts` contains 14,717 permitted stream IDs. Standard-tier R2 `loungetv-xtream-private` has public access disabled. Its initial pointer is `{"release":"v20261123-issue22"}`. Both bindings are QA-only. The application has no Supabase dependency.
+
+HTTP QA authenticated the dedicated test account and verified rejection for incorrect, expired and revoked logins. A separate QA account was enabled, accepted by the live API, disabled and rejected again. Catalogue, ordered categories, M3U, short EPG and full XMLTV matched the approved private data. The 72.88% compilation had 3,235 current-or-next matches out of 4,439 eligible entries, across 2,849 XMLTV IDs and 187,840 programmes. A conditional pointer update and rollback succeeded with the catalogue available throughout.
+
+The dedicated account supports Nuvio catalogue and EPG testing. Provider playback is blocked pending a verified HTTPS BEST line with matching bouquet and stream IDs. The approved M3U origin was supplied as HTTP on port 80, and HTTPS probes did not establish provider access. No physical Nuvio acceptance or sustained playback is recorded. The draft branch includes scheduled refresh code and durable private mapping inputs. An online compile parsed all 27 upstream feeds selected by the verified mappings. Four guide IDs lacked current or upcoming programmes, so the validation gate rejected the refresh and the deployed guide stayed active. Scheduling is inactive pending an approved default-branch workflow and bucket-scoped GitHub Actions credentials. Production cutover and customer/account migration are pending.
+
+Rollback baseline: set the QA R2 pointer back to `{"release":"v20261123-issue22"}` using a conditional write and retain Worker version `4723ac7c-1176-4495-b5be-784e8554dab3`. This is the first QA version and no preceding QA Worker rollback exists. Current production routing through `connect.loungetv.nz` and Supabase was preserved.
+
 ## Sky Sport NZ playback incident | 22 November 2026 NZDT
 
 Owner reports Sky Sport NZ 1–9 stop after approximately 30 seconds. This supersedes the 21 November acceptance for those channels. [Issue #20](https://github.com/Gazzamoo111/lounge-tv-feed/issues/20) is open. Standard gateway remains **n v39**. Deployed entrypoints match main, and Sky live returns a BEST redirect. [Draft PR #21](https://github.com/Gazzamoo111/lounge-tv-feed/pull/21) head `55b4347` fixes HD backup ordering and scopes HLS opt-in to Sky Sport NZ. Handler fixtures and [CI](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/44920978868) passed. That PR remains undeployed. Authenticated BEST duration, concurrent sessions and 10-minute Nuvio acceptance remain pending.
