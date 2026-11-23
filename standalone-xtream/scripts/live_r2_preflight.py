@@ -19,7 +19,18 @@ import boto3
 from cleanup_qa_catalog import blocks_from_m3u, plan_uk, plan_us
 from stage_nz_freeview_epg import prepare
 
-BUCKET = 'loungetv-xtream-private'
+QA_BUCKET = 'loungetv-xtream-private'
+PRODUCTION_BUCKET = 'loungetv-xtream-production-private'
+QA_PROGRAMME_CUTOFF = datetime(2026, 11, 23, 8, 16, 26, tzinfo=timezone.utc)
+PRODUCTION_BASELINE_HASHES = {
+    'catalog/template.m3u': '681d5e1173e39664e60ace9c8948f9186bdfae5c989eb3a9c50d2430fc0e9bb7',
+    'catalog/by-category/25.json': 'b192870e341f13a42c3cd1fb36a6cef17ae9b406d9f07420b48f4ca9be185899',
+    'epg/guide.xml.gz': '348335093597caaa8aa8b46060ff7eaa732873c75cd5f2c78d26ee54fd12d0a4',
+}
+QA_RELEASE_HASHES = {
+    'catalog/template.m3u': 'b879f4e698c076c324be18c6b2d143b9d7f2fd8cde4a14528a1dd31415ea0bc1',
+    'epg/guide.xml.gz': 'b7bff32ee1c16c7fcd626a4d22bf1ed0fb621e35b22e397bb23259a0366aaa16',
+}
 REQUIRED = ['catalog/live_categories.json','catalog/live_all.json','catalog/template.m3u',
             'catalog/by-category/1.json','catalog/by-category/2.json','catalog/by-category/3.json',
             'catalog/by-category/5.json','catalog/by-category/9.json','catalog/by-category/25.json']
@@ -32,8 +43,8 @@ BASELINE = ('v20261123-deduplicated25-au9', 'v20261123-issue22')
 CONFIRMED = {111546, 1458573, 111553, 1458568, 1458569, 1458570, 1458780,
              1458549, 1424873, 111557, 164074, 230678, 1198206}
 
-def fetch(client, release, key):
-    obj = client.get_object(Bucket=BUCKET, Key=f'releases/{release}/{key}')
+def fetch(client, bucket, release, key):
+    obj = client.get_object(Bucket=bucket, Key=f'releases/{release}/{key}')
     return obj['Body'].read()
 
 def scoped_changes(catalog, guide, decisions, source, now):
@@ -86,17 +97,18 @@ def scoped_changes(catalog, guide, decisions, source, now):
             {f'epg/{k}': v for k, v in epg_changes.items()})
 
 
-def publish(client, current, pointer, catalogue, guide):
+def publish(client, bucket, current, pointer, catalogue, guide):
     run = os.environ['GITHUB_RUN_ID']
     attempt = os.environ['GITHUB_RUN_ATTEMPT']
     if not run.isdigit() or not attempt.isdigit():
         raise ValueError('Invalid CI release identifier')
-    release = f'vqa-freeview-{run}-{attempt}'
+    target = 'prod' if bucket == PRODUCTION_BUCKET else 'qa'
+    release = f'v{target}-freeview-{run}-{attempt}'
     destination = f'releases/{release}/'
 
     def objects(prefix):
         return {obj['Key']: obj['Size'] for page in client.get_paginator('list_objects_v2').paginate(
-            Bucket=BUCKET, Prefix=prefix) for obj in page.get('Contents', [])}
+            Bucket=bucket, Prefix=prefix) for obj in page.get('Contents', [])}
 
     if objects(destination):
         raise ValueError('Immutable QA release already exists')
@@ -111,7 +123,7 @@ def publish(client, current, pointer, catalogue, guide):
 
     def copy(entry):
         path, (key, _) = entry
-        client.copy_object(Bucket=BUCKET, Key=destination + path, CopySource={'Bucket': BUCKET, 'Key': key})
+        client.copy_object(Bucket=bucket, Key=destination + path, CopySource={'Bucket': bucket, 'Key': key})
 
     with ThreadPoolExecutor(max_workers=20) as pool:
         for _ in pool.map(copy, unchanged.items()):
@@ -124,8 +136,8 @@ def publish(client, current, pointer, catalogue, guide):
             metadata = {'ContentType': 'application/gzip'}
         elif path.startswith('epg/short/'):
             metadata['ContentEncoding'] = 'gzip'
-        client.put_object(Bucket=BUCKET, Key=destination + path, Body=raw, IfNoneMatch='*', **metadata)
-        if fetch(client, release, path) != raw:
+        client.put_object(Bucket=bucket, Key=destination + path, Body=raw, IfNoneMatch='*', **metadata)
+        if fetch(client, bucket, release, path) != raw:
             raise RuntimeError('Staged object differs from the validated asset')
     expected = {destination + k: size for k, (_, size) in unchanged.items()}
     expected.update({destination + k: len(v) for k, v in changes.items()})
@@ -133,18 +145,21 @@ def publish(client, current, pointer, catalogue, guide):
         raise RuntimeError('Staged release object inventory differs')
 
     updated = dict(pointer, release=release, epg_release=release, previous_epg_release=BASELINE[1])
-    client.put_object(Bucket=BUCKET, Key='current.json', Body=json.dumps(updated).encode(),
+    client.put_object(Bucket=bucket, Key='current.json', Body=json.dumps(updated).encode(),
                       ContentType='application/json', CacheControl='no-store', IfMatch=current['ETag'])
-    active = client.get_object(Bucket=BUCKET, Key='current.json')
+    active = client.get_object(Bucket=bucket, Key='current.json')
     assert json.load(active['Body']) == updated, 'Live QA pointer did not match the published release'
-    print('QA_RELEASE_ACTIVE', release, 'VERIFIED_OBJECTS', len(expected), 'ROLLBACK', json.dumps(pointer))
+    print(f'{target.upper()}_RELEASE_ACTIVE', release, 'VERIFIED_OBJECTS', len(expected), 'ROLLBACK', json.dumps(pointer))
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--stage-scoped', action='store_true')
     parser.add_argument('--publish-scoped', action='store_true')
+    parser.add_argument('--production', action='store_true')
     args = parser.parse_args()
+    bucket = PRODUCTION_BUCKET if args.production else QA_BUCKET
+    target = 'PRODUCTION' if args.production else 'QA'
     account = os.environ['R2_ACCOUNT_ID']
     access = os.environ['R2_ACCESS_KEY_ID']
     secret = os.environ['R2_SECRET_ACCESS_KEY']
@@ -157,17 +172,17 @@ def main():
         )
     client = boto3.client('s3', endpoint_url=f'https://{account}.r2.cloudflarestorage.com',
         region_name='auto', aws_access_key_id=access, aws_secret_access_key=secret)
-    current_obj=client.get_object(Bucket=BUCKET, Key='current.json')
+    current_obj=client.get_object(Bucket=bucket, Key='current.json')
     pointer=json.loads(current_obj['Body'].read())
     release=pointer['release']
     epg_release=pointer.get('epg_release',release)
-    print('ACTIVE_QA_RELEASE',release,'EPG_RELEASE',epg_release,'ETAG',current_obj['ETag'])
+    print(f'ACTIVE_{target}_RELEASE',release,'EPG_RELEASE',epg_release,'ETAG',current_obj['ETag'])
     with tempfile.TemporaryDirectory() as tmp:
         catalog = Path(tmp) / 'catalog'
         catalog.mkdir()
         content={}
         for path in REQUIRED:
-            raw=fetch(client,release,path)
+            raw=fetch(client,bucket,release,path)
             content[path]=raw
             dest=catalog / path.removeprefix('catalog/')
             dest.parent.mkdir(parents=True,exist_ok=True)
@@ -200,7 +215,7 @@ def main():
             {'group':d['group'],'keep_id':d['keep_id'],
              'hidden_id':d['hidden_id'],'reason':d['reason']}
             for d in decisions], ensure_ascii=False))
-        guide=fetch(client,epg_release,'epg/guide.xml.gz')
+        guide=fetch(client,bucket,epg_release,'epg/guide.xml.gz')
         print('EPG_SHA256',hashlib.sha256(guide).hexdigest())
         prog_by=collections.defaultdict(list)
         guide_ids=set()
@@ -228,10 +243,27 @@ def main():
         if (release, epg_release) == BASELINE or args.stage_scoped or args.publish_scoped:
             if (release, epg_release) != BASELINE or len(rows) != 13083 or len(guide_ids) != 2849:
                 raise ValueError('Active QA baseline differs from the approved release')
+            if args.production:
+                assets = content | {'epg/guide.xml.gz': guide}
+                for key, digest in PRODUCTION_BASELINE_HASHES.items():
+                    if hashlib.sha256(assets[key]).hexdigest() != digest:
+                        raise ValueError(f'Production baseline differs from approved QA input: {key}')
+            cutoff = QA_PROGRAMME_CUTOFF if args.production else datetime.now(timezone.utc)
             with urlopen(STATIC_GUIDE, timeout=90) as source:
-                replacements = scoped_changes(catalog, guide, decisions, source, datetime.now(timezone.utc))
+                replacements = scoped_changes(catalog, guide, decisions, source, cutoff)
+            if args.production:
+                assets = replacements[0] | replacements[1]
+                for key, digest in QA_RELEASE_HASHES.items():
+                    if hashlib.sha256(assets[key]).hexdigest() != digest:
+                        raise ValueError(f'Staged production asset differs from the verified QA release: {key}')
+                now = datetime.now(timezone.utc).timestamp()
+                for sid in FREEVIEW:
+                    guide_rows = json.loads(gzip.decompress(assets[f'epg/short/{sid}.json']))['epg_listings']
+                    if not any(row['start_timestamp'] <= now < row['stop_timestamp'] for row in guide_rows):
+                        raise ValueError(f'QA programme snapshot no longer has a current listing for {sid}')
+                print('PRODUCTION_QA_HASH_PARITY_VERIFIED')
             if args.publish_scoped:
-                publish(client, current_obj, pointer, *replacements)
+                publish(client, bucket, current_obj, pointer, *replacements)
                 return
         print('READ_ONLY_PREFLIGHT_PASSED; no R2 objects or pointers changed')
 
