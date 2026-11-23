@@ -1,4 +1,4 @@
-name: Lounge TV scoped QA release
+name: Lounge TV read-only live R2 QA release preflight
 on:
   push:
     branches:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 12
     environment: lounge-tv-xtream-qa-refresh
     steps:
       - uses: actions/checkout@v4
@@ -24,9 +24,9 @@ jobs:
           python-version: '3.12'
       - name: Install pinned R2 client
         run: python -m pip install boto3==1.42.78
-      - name: Validate, publish and verify the scoped QA release
+      - name: Read exact active QA R2 release and dry-run PR27 (never writes)
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
-        run: python standalone-xtream/scripts/live_r2_preflight.py --publish-scoped
+        run: python standalone-xtream/scripts/live_r2_preflight.py
