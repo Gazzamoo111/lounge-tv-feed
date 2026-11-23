@@ -380,10 +380,10 @@ BROWSE_BASELINE = 'vprod-stations-45150504093-1'
 BROWSE_GUIDE = 'vprod-freeview-45145113439-1'
 FEATURED_CHANNELS = {
     '1': r'TVNZ 1;TVNZ 2;THREE;WHAKAATA MAORI;TE REO;SKY SPORT 1;SKY SPORT 2;SKY SPORT 3;SKY SPORT 4;SKY SPORT 5;SKY SPORT 6;SKY SPORT 7;SKY SPORT 8;SKY SPORT 9;SKY SPORT SELECT;SKY OPEN',
-    '2': r'CHANNEL 7;CHANNEL 9;CHANNEL 10|NETWORK 10|TEN;ABC TV|ABC HD;SBS ONE|SBS HD|SBS;ABC NEWS;7MATE;7TWO;7FLIX;9GEM;9GO;9LIFE;10 BOLD;10 PEACH;SBS VICELAND;SBS WORLD MOVIES;NITV;ABC KIDS;FOX SPORTS;KAYO',
+    '2': r'CHANNEL 7 HD|CHANNEL 7;CHANNEL 9 SYDNEY|CHANNEL 9 PERTH|CHANNEL 9 HD;CHANNEL 10 (?:SYDNEY|MELBOURNE|PERTH)|NETWORK 10|TEN;ABC (?:TV|HD|SYDNEY|MELBOURNE|NSW|VIC|NATIONAL);SBS ONE|SBS HD|SBS;ABC NEWS;7MATE;7TWO;7FLIX;9GEM;9GO;9LIFE;10 BOLD;10 PEACH;SBS VICELAND;SBS WORLD MOVIES;NITV;ABC KIDS;FOX SPORTS;KAYO',
     '3': r'BBC ONE|BBC 1;BBC TWO|BBC 2;ITV1|ITV 1;CHANNEL 4;CHANNEL 5;SKY ATLANTIC;SKY SHOWCASE;SKY MAX;SKY WITNESS;BBC NEWS;SKY NEWS;COMEDY CENTRAL;E4;ITV 2|ITV2;ITV 3|ITV3;ITV 4|ITV4;DAVE;GOLD;ALIBI;SYFY',
     '4': r'SKY SPORTS MAIN EVENT;SKY SPORTS PREMIER LEAGUE;SKY SPORTS FOOTBALL;SKY SPORTS F1;SKY SPORTS CRICKET;SKY SPORTS GOLF;SKY SPORTS ACTION;SKY SPORTS ARENA;SKY SPORTS NEWS;TNT SPORTS 1;TNT SPORTS 2;TNT SPORTS 3;TNT SPORTS 4;PREMIER SPORTS? 1;PREMIER SPORTS? 2;EUROSPORT 1;EUROSPORT 2;RACING TV|RACING UK;MUTV;LFC',
-    '5': r'ABC;CBS;NBC;FOX;PBS;CW;HBO;SHOWTIME;FX;TNT;TBS;USA NETWORK;AMC;BRAVO;CNN;FOX NEWS;MSNBC;BET;COMEDY CENTRAL;DISCOVERY',
+    '5': r'ABC (?:HD|FHD)|ABC$;CBS (?:HD|FHD)|CBS$;NBC (?:HD|FHD)|NBC$;FOX (?:HD|FHD)|FOX$;PBS;CW;HBO;SHOWTIME;FX;TNT;TBS;USA NETWORK;AMC;BRAVO;CNN;FOX NEWS;MSNBC;BET;COMEDY CENTRAL;DISCOVERY',
     '6': r'ESPN;ESPN 2|ESPN2;FOX SPORTS 1|FS1;FOX SPORTS 2|FS2;CBS SPORTS;NBC SPORTS;NFL NETWORK;NBA TV;MLB NETWORK;NHL NETWORK;GOLF CHANNEL;TENNIS CHANNEL;ESPN U|ESPNU;SEC NETWORK;BIG TEN NETWORK;ACC NETWORK;YES NETWORK;NESN;SPORTSNET;BEIN SPORTS',
     '7': r'ABC;NBC;CBS;FOX;PBS;CW;TELEMUNDO;UNIVISION;NEW YORK;LOS ANGELES;CHICAGO;PHILADELPHIA;DALLAS;SAN FRANCISCO;BOSTON;ATLANTA;SEATTLE;MIAMI;HOUSTON;DENVER',
     '8': r'ESPN;FOX SPORTS;BEIN SPORTS;TNT SPORTS;EUROSPORT;DAZN;SPORTSNET;TSN;SUPERSPORT;NFL NETWORK;NBA TV;MLB NETWORK;NHL NETWORK;GOLF CHANNEL;TENNIS CHANNEL;RACING;UFC;MOTORSPORT;OLYMPIC;CRICKET',
@@ -423,14 +423,23 @@ def order_category(rows, category):
     featured = []
     remaining = {row['stream_id']: row for row in rows}
     names = {sid: browse_name(row['name']) for sid, row in remaining.items()}
+    event_placeholders = {
+        sid for sid, row in remaining.items()
+        if category == '25' and (
+            row['name'].lstrip().startswith(('#', '=')) or
+            re.search(r'\b(?:DATA|NO SCHEDULED EVENT)\b', names[sid])
+        )
+    }
     for selector in FEATURED_CHANNELS[category].split(';'):
         pattern = re.compile(r'(?:^| )(?:(?:' + selector + r'))(?= |$)')
-        matches = [sid for sid in remaining if pattern.search(names[sid]) and not re.search(r'\+\s*1\b', names[sid])]
+        matches = [sid for sid in remaining if sid not in event_placeholders and pattern.search(names[sid]) and not re.search(r'\+\s*1\b', names[sid])]
         if matches:
             sid = min(matches, key=lambda item: (names[item] != selector, len(names[item])))
             featured.append(remaining.pop(sid))
     # Retain the existing editorial order for featured slots without a named match.
-    for sid in list(remaining)[:max(0, min(20, len(rows)) - len(featured))]:
+    fallback = [sid for sid in remaining if sid not in event_placeholders]
+    fallback.extend(sid for sid in remaining if sid in event_placeholders)
+    for sid in fallback[:max(0, min(20, len(rows)) - len(featured))]:
         featured.append(remaining.pop(sid))
     return featured + sorted(remaining.values(), key=lambda row: alphabetic_key(row['name']))
 
