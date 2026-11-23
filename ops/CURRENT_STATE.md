@@ -1,3 +1,11 @@
+## Production follow-up duplicate cleanup | 23 November 2026 NZDT
+
+Published catalogue `vprod-stations-45150504093-1` at `tv.loungetv.nz`. Reviewed 98 additional pairs in the active catalogue using market and normalized names, including 27 pairs across categories, and kept one feed per pair. Existing valid guide data won when only one variant had it. Examples include UK SYFY, TNT Sports 1 and 4, Premier Sports 1 and 2, UK Nickelodeon, US BET, and repeated 24/7 titles. Distinct regional/language labels and timeshift qualifiers were preserved. The catalogue now has 12,714 unique stream IDs, 24 categories, no 4K UHD category, and all 6,756 PPV entries. NZ and Sky Sport routes were protected. The unified guide remained `vprod-freeview-45145113439-1` with the same SHA-256 and all five Freeview mappings.
+
+[Publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45150504093) verified 28 catalogue objects and switched the pointer conditionally. [Independent readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45150746509) confirmed exactly one survivor per reviewed pair, zero further groups under this rule, and no missing NZ guide IDs. Public HTTPS responded; authenticated device playback was not verified. Rollback is a conditional restore to catalogue `vprod-stations-45149065010-1` with guide `vprod-freeview-45145113439-1` and previous guide `v20261123-issue22`. QA, auth, Worker and Supabase were untouched.
+
+---
+
 ## Production station consolidation and 4K UHD removal | 23 November 2026 NZDT
 
 Production catalogue `vprod-stations-45149065010-1` is active at `tv.loungetv.nz`. The customer-visible catalogue keeps BBC One London (392911), suppressing 22 other BBC One entries including BBC1 aliases and regional variants. A further 100 station variants were suppressed across the eligible categories. UK TV & Entertainment dropped from 147 to 73 entries. The broken 4K UHD category and all 79 entries were removed from browse results and M3U. Known distinct services, +1 feeds as separate services, protected NZ/Sky Sport routes and the 6,756 PPV records remain. The station rules preserve protected event and dedicated 24/7 categories, and classify channels using explicit UK aliases and category-bound quality normalization elsewhere.
