@@ -24,20 +24,22 @@ class CleanupTest(unittest.TestCase):
                 row(111558,'UK| BBC ONE SCOTLAND HD','uk.bbc1.scot'),
                 row(1014307,'UK| CHANNEL 4 +1','uk.ch4.plus1')]
         hide,decisions=plan_uk(inputs)
-        self.assertEqual(hide,{229915,111558})
+        self.assertEqual(hide,{229915})
+        self.assertNotIn(111558,hide) # distinct Scotland EPG is protected
         self.assertTrue(all(d['keep_id']==392911 for d in decisions))
         self.assertNotIn(1014307,hide)
 
     def test_us_main_hd_selected_over_raw(self):
-        inputs=[row(45451,'US| FX HD','fx'),row(2151727,'TV| FX ᴿᴬᵂ','fx.raw'),
+        inputs=[row(45451,'US| FX HD','fx'),row(2151727,'TV| FX ᴿᴬᵂ','fx'),
                 row(91852,'US| FX WEST HD','fx.west'),row(45449,'US| FXX HD','fxx')]
         hide,decisions=plan_us(inputs)
-        self.assertEqual(hide,{2151727,91852})
+        self.assertEqual(hide,{2151727})
+        self.assertNotIn(91852,hide) # US WEST has distinct EPG
         self.assertNotIn(45449,hide)
         self.assertTrue(all(d['keep_id']==45451 for d in decisions))
 
     def test_us_distinct_brand_kept(self):
-        inputs=[row(45458,'US| HALLMARK HD','h'),row(2151713,'TV| HALLMARK CHANNEL ᴿᴬᵂ','h2'),
+        inputs=[row(45458,'US| HALLMARK HD','h'),row(2151713,'TV| HALLMARK CHANNEL ᴿᴬᵂ','h'),
                 row(90961,'US| HALLMARK FAMILY HD','hf')]
         hide,_=plan_us(inputs)
         self.assertEqual(hide,{2151713})
