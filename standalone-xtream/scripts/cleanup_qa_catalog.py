@@ -81,6 +81,12 @@ def plan_uk(rows):
         winner=max(items,key=lambda r:priority(r,pref))
         for r in items:
             if r is not winner:
+                # Distinct regional guide IDs indicate different schedules.
+                # Never remove an EPG-bearing channel by name similarity alone.
+                source_epg=r.get('epg_channel_id') or ''
+                winner_epg=winner.get('epg_channel_id') or ''
+                if source_epg and winner_epg and source_epg!=winner_epg:
+                    continue
                 remove.add(r['stream_id'])
                 decision.append({'category':'UK','group':key,'keep_id':winner['stream_id'],
                                  'hidden_id':r['stream_id'],'hidden_name':r['name'],
@@ -97,6 +103,11 @@ def plan_us(rows):
         winner=max(items,key=priority)
         for r in items:
             if r is not winner:
+                # US EAST/WEST streams may have independent regional schedules.
+                source_epg=r.get('epg_channel_id') or ''
+                winner_epg=winner.get('epg_channel_id') or ''
+                if source_epg and winner_epg and source_epg!=winner_epg:
+                    continue
                 remove.add(r['stream_id'])
                 decision.append({'category':'US','group':key,'keep_id':winner['stream_id'],
                                  'hidden_id':r['stream_id'],'hidden_name':r['name'],
