@@ -1,3 +1,11 @@
+## Scoped catalogue and Freeview fix live in QA | 23 November 2026 NZDT
+
+Activated QA release `vqa-freeview-45136607167-1` for both the standalone Cloudflare catalogue and unified EPG. Removed exactly 12 confirmed UK duplicates and one confirmed US duplicate. Restored the verified legacy guide IDs and current/upcoming schedules for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo. The release scope preserves the existing 25 categories and their order, Sky Sport order and 4K category, 64 AU rows, 6,756 PPV streams and the NZ stream IDs and playback metadata. The existing guide was extended by five channels and 1,087 genuine programme rows. Current QA is 13,070 unique visible streams and 2,854 XMLTV IDs.
+
+[Publish run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45136607167) validated 3,269 R2 objects and switched `current.json` conditionally. [Independent readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45138025650) confirmed the active pointer, all five guide mappings present and zero remaining candidates under the confirmed duplicate rule. The workflow is back in read-only mode. The unauthenticated QA Xtream HTTPS endpoint responded as expected. Authenticated Nuvio import and device playback were not checked. No changes to production, D1, the Worker or Supabase. Roll back by conditionally restoring `current.json` to `{"release":"v20261123-deduplicated25-au9","epg_release":"v20261123-issue22"}` using the current pointer ETag. Previous immutable assets remain available.
+
+---
+
 ## Freeview mappings recovered from the legacy Nuvio feed | 23 November 2026 NZDT
 
 Read the deployed Supabase `lounge-core-live-m3u` and `lounge-core-live-xmltv` source without changing either function. The legacy playlist uses `mjh-tvnz-1`, `mjh-tvnz-2`, `mjh-three`, `mjh-maori-tv`, and `mjh-te-reo` for the five named channels. The legacy XMLTV function's existing static Lounge TV guide (`lounge-tv-player`, `epg-data`, `epg/guide.xml`) was downloaded and parsed. All five IDs are present. Each returned one current programme and upcoming counts of 240, 260, 160, 341 and 154 respectively. The direct MJH gzip URL returned HTML from this runner, so the existing static guide supplies the verified schedules.
