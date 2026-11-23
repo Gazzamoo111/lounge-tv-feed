@@ -1,3 +1,11 @@
+## Production catalogue cleanup and Freeview guide live | 23 November 2026 NZDT
+
+Activated `vprod-freeview-45145113439-1` at `tv.loungetv.nz`. The candidate reproduced the verified QA Freeview guide and QA playlist before the expanded duplicate pass. It removed 70 confirmed entries in total (13 from the earlier QA change and 57 from the full catalogue pass). Existing region labels, distinct schedules, protected NZ routes and the 6,756-entry PPV group were retained. The new unified guide includes all five mappings for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo, and the publish validated current listings. Production account records, playback routing, D1, Worker, Supabase and the legacy gateway were untouched.
+
+[Publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45145113439) verified 3,269 objects and atomically changed the production R2 pointer. [Independent production readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45145767999) verified 13,013 unique streams, 25 categories, all five NZ guide mappings, and zero remaining duplicates meeting the confirmed rule. 133 similar-name groups lacked enough matching guide evidence and were retained. Public HTTPS responded as expected without credentials. An authenticated device playback check and a fresh customer Nuvio test remain outstanding. The previous immutable production catalogue `v20261123-deduplicated25-au9` and guide `v20261123-issue22` are the conditional R2 pointer rollback pair. The temporary production deployment key expires after 24 hours.
+
+---
+
 ## Scoped catalogue and Freeview fix live in QA | 23 November 2026 NZDT
 
 Activated QA release `vqa-freeview-45136607167-1` for both the standalone Cloudflare catalogue and unified EPG. Removed exactly 12 confirmed UK duplicates and one confirmed US duplicate. Restored the verified legacy guide IDs and current/upcoming schedules for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo. The release scope preserves the existing 25 categories and their order, Sky Sport order and 4K category, 64 AU rows, 6,756 PPV streams and the NZ stream IDs and playback metadata. The existing guide was extended by five channels and 1,087 genuine programme rows. Current QA is 13,070 unique visible streams and 2,854 XMLTV IDs.
