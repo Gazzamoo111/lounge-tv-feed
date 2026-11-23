@@ -104,7 +104,7 @@ def publish(client, current, pointer, catalogue, guide):
     unchanged = {}
     for scope, prior in zip(('catalog', 'epg'), BASELINE):
         prefix = f'releases/{prior}/'
-        unchanged.update({key.removeprefix(prefix): (key, size) for key, size in objects(prefix + scope + '/')
+        unchanged.update({key.removeprefix(prefix): (key, size) for key, size in objects(prefix + scope + '/').items()
                           if key.removeprefix(prefix) not in changes})
     if len(unchanged) < 3000:
         raise ValueError('The existing QA catalogue or guide is incomplete')
