@@ -30,7 +30,10 @@ def main():
     if not(account and access and secret):
         raise SystemExit('BLOCKER: R2 read-only QA credentials not configured')
     if len(account) != 32 or len(access) != 32 or len(secret) != 64:
-        raise SystemExit('BLOCKER: invalid R2 account or S3 credential format; check GitHub environment settings')
+        raise SystemExit(
+            f'BLOCKER: invalid QA R2 credential lengths (account={len(account)}, '
+            f'access={len(access)}, secret={len(secret)}); expected 32/32/64'
+        )
     client = boto3.client('s3', endpoint_url=f'https://{account}.r2.cloudflarestorage.com',
         region_name='auto', aws_access_key_id=access, aws_secret_access_key=secret)
     current_obj=client.get_object(Bucket=BUCKET, Key='current.json')
