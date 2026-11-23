@@ -1,4 +1,4 @@
-name: Lounge TV production EPG incident audit
+name: Lounge TV production EPG recovery dry run
 on:
   push:
     branches:
@@ -15,7 +15,7 @@ concurrency:
 jobs:
   preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 30
     environment: lounge-tv-xtream-production-refresh
     steps:
       - uses: actions/checkout@v4
@@ -24,55 +24,10 @@ jobs:
           python-version: '3.12'
       - name: Install pinned R2 client
         run: python -m pip install boto3==1.42.78
-      - name: Measure active production guide freshness
+      - name: Validate refreshed production schedules without publishing
         env:
+          LTV_XTREAM_R2_BUCKET: loungetv-xtream-production-private
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
-        run: |
-          python - <<'PY'
-          import collections, datetime as dt, gzip, hashlib, io, json, os, xml.etree.ElementTree as ET
-          import boto3
-          bucket = 'loungetv-xtream-production-private'
-          r2 = boto3.client('s3', endpoint_url='https://' + os.environ['R2_ACCOUNT_ID'] + '.r2.cloudflarestorage.com', region_name='auto', aws_access_key_id=os.environ['R2_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['R2_SECRET_ACCESS_KEY'])
-          def get(key):
-              with r2.get_object(Bucket=bucket, Key=key)['Body'] as body:
-                  return body.read()
-          pointer = json.loads(get('current.json'))
-          release = pointer['release']
-          guide_release = pointer.get('epg_release', release)
-          catalogue = json.loads(get(f'releases/{release}/catalog/live_all.json'))
-          guide = get(f'releases/{guide_release}/epg/guide.xml.gz')
-          print('ACTIVE_GUIDE',json.dumps(pointer),hashlib.sha256(guide).hexdigest())
-          now = dt.datetime.now(dt.timezone.utc)
-          then = dt.datetime(2026,11,23,10,10,tzinfo=dt.timezone.utc)
-          def timestamp(value):
-              return dt.datetime.strptime(value, '%Y%m%d%H%M%S %z')
-          channels = set()
-          current, yesterday, future = set(), set(), set()
-          end_by_id = {}
-          for _, elem in ET.iterparse(io.BytesIO(gzip.decompress(guide)), events=('end',)):
-              if elem.tag == 'channel':
-                  channels.add(elem.attrib['id'])
-              elif elem.tag == 'programme':
-                  try: start, stop = (timestamp(elem.attrib[key]) for key in ('start','stop'))
-                  except (ValueError, KeyError): elem.clear(); continue
-                  guide_id = elem.attrib['channel']
-                  if start <= now < stop: current.add(guide_id)
-                  if start <= then < stop: yesterday.add(guide_id)
-                  if start > now: future.add(guide_id)
-                  if guide_id not in end_by_id or stop > end_by_id[guide_id]: end_by_id[guide_id]=stop
-              elem.clear()
-          labels = json.loads(get(f'releases/{release}/catalog/live_categories.json'))
-          by = collections.defaultdict(list)
-          for row in catalogue: by[str(row['category_id'])].append(row)
-          def report(rows):
-              ids = [row.get('epg_channel_id') for row in rows]
-              return {'rows':len(ids),'mapped':sum(x in channels for x in ids),'yesterday_now':sum(x in yesterday for x in ids),'now':sum(x in current for x in ids),'future':sum(x in future for x in ids),'expired':sum(x in end_by_id and end_by_id[x]<=now for x in ids),'lost':sum(x in yesterday and x not in current for x in ids)}
-          print('COVERAGE',now.isoformat(),json.dumps(report(catalogue)))
-          for c in labels: print('COVERAGE_CATEGORY',c['category_name'],json.dumps(report(by[str(c['category_id'])])))
-          for row in catalogue:
-              if str(row['category_id']) == '1' or 'BBC ONE' in row['name'].upper():
-                  x=row.get('epg_channel_id')
-                  print('GUIDE_SAMPLE', row['name'], bool(x in channels), bool(x in yesterday), bool(x in current), str(end_by_id.get(x)))
-          PY
+        run: python standalone-xtream/scripts/refresh_epg.py --recover-production --dry-run
