@@ -11,7 +11,8 @@
     "RELEASE": "m3u-v1",
     "ALLOW_HTTP_UPSTREAM": "true",
     "ENABLE_NZ_OVERRIDES": "true",
-    "ENABLE_TVNZ_LICENSE_RELAY": "true"
+    "ENABLE_TVNZ_LICENSE_RELAY": "true",
+    "NUVIO_M3U_DRM_FALLBACK": "true"
   },
   "r2_buckets": [
     {
