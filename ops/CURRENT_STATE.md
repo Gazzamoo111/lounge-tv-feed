@@ -1,3 +1,13 @@
+## Issue #26 direct Cloudflare R2 read blocked | 23 November 2026 NZDT
+
+Read-only live QA preflight added to [draft PR #27](https://github.com/Gazzamoo111/lounge-tv-feed/pull/27): `standalone-xtream/scripts/live_r2_preflight.py` and `.github/workflows/xtream-r2-live-preflight.yml`. [Run 45126061821](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45126061821) failed prior to contacting Cloudflare because the existing GitHub Actions `lounge-tv-xtream-qa-refresh` environment exposed **empty** `vars.LTV_XTREAM_R2_ACCOUNT_ID`, `secrets.LTV_XTREAM_R2_ACCESS_KEY_ID` and `secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY`. These secrets were not fetched or printed. Direct chat has no Cloudflare connector and container DNS is unavailable. This is a verified access blocker, not an EPG compilation failure.
+
+PR #27's cleanup code now **retains UK/US regional channels with distinct EPG IDs**, avoiding the earlier broad suppressions of BBC Scotland / US WEST. [Run 45126253761](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45126253761) passed the full Node/Python suite. No current active R2 catalogue, EPG or release pointer has been read or changed in this task, so no live before/after counts, QA publication or production promotion can be claimed.
+
+Latest verified previous Cloudflare R2 pair: catalogue `v20261123-deduplicated25-au9`, EPG `v20261123-issue22`; 25 category/13,083 visible/6,756 PPV, XMLTV 2,849 channel IDs/187,840 programmes (23 Nov verified prior release). Historical matched-now/next source compile was 3,235/4,439 (72.88%), **not a new live-R2 coverage measurement**. Keep the intact EPG until a genuine comparison is available. Isolated Cloudflare production `tv.loungetv.nz` and Supabase-backed legacy `connect.loungetv.nz` remain untouched. All remaining blockers logged to [Issue #26](https://github.com/Gazzamoo111/lounge-tv-feed/issues/26) and Issue #25.
+
+---
+
 ## QA cleanup investigation and guarded staging | 23 November 2026 NZDT | NOT DEPLOYED
 
 [Issue #26](https://github.com/Gazzamoo111/lounge-tv-feed/issues/26), [draft PR #27](https://github.com/Gazzamoo111/lounge-tv-feed/pull/27) on branch `feature/qa-catalog-audit-cleanup-20261123`. Owner photos show blank Freeview/TVNZ schedules, crowded UK (BBC One/Two, ITV1, Channel 4/5) and US duplicate entries, unwanted 4K UHD, and interleaved NZ Sky Sport RAW and FHD streams. The photos do **not establish the exact login hostname**; both QA and isolated production must be checked before promotion.
