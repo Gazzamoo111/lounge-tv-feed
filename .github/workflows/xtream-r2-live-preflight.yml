@@ -1,4 +1,4 @@
-name: Lounge TV production remaining duplicate check
+name: Lounge TV production follow-up duplicate release
 on:
   push:
     branches:
@@ -24,9 +24,9 @@ jobs:
           python-version: '3.12'
       - name: Install pinned R2 client
         run: python -m pip install boto3==1.42.78
-      - name: Check remaining production duplicate groups
+      - name: Publish the reviewed duplicate removals
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
-        run: python standalone-xtream/scripts/live_r2_preflight.py --production --audit-remaining
+        run: python standalone-xtream/scripts/live_r2_preflight.py --production --publish-remaining
