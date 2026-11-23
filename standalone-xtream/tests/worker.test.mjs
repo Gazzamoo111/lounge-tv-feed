@@ -180,7 +180,7 @@ test('NZ Widevine endpoint requires Xtream account and rejects empty challenges'
   assert.equal((await worker.fetch(new Request(url,{method:'POST',body:new Uint8Array([1])}),env)).status,401);
   const valid=url+'&'+auth;
   assert.equal((await worker.fetch(new Request(valid,{method:'POST',body:new Uint8Array()}),env)).status,400);
-  assert.equal((await worker.fetch(new Request(valid,{method:'POST',body:new Uint8Array(130000)}),env)).status,413);
+  assert.equal((await worker.fetch(new Request(valid,{method:'POST',body:new Uint8Array(131073)}),env)).status,413);
 });
 
 test('non GET/HEAD methods and missing bindings fail closed',async()=>{
