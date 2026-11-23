@@ -1,3 +1,11 @@
+## Australian Channel 9 cleanup live in QA | 23 November 2026 NZDT
+
+Verified immutable QA R2 release `v20261123-deduplicated25-au9` on Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4`. Applied the guarded PR #24 script from `66248ffe78e038847718e3ea60fd66ab96788b2a` to the exact active phantom-fixed catalogue `v20261123-deduplicated25-ppv-meta`. Dry run, application and idempotence passed. Only 9Now RAW QLD `1921340`, VIC `1921345` and WA `1921330` were omitted from the QA browse feed. Channel 9 Sydney and Perth and distinct Nine stations remain. All retained stream rows and M3U blocks are exact.
+
+Live HTTPS verified **25 categories, 13,083 entries, 64 Australian entries and all 6,756 PPV entries**. Category 25 `🏆 Live Sport | Events & PPV` is last in the returned playlist and Xtream category list with no phantom ZZ entry. PPV category bytes and the XMLTV match the prior QA release. Redirects for the corrected PPV event, both kept Channel 9 feeds and TVNZ 1 are identical. The server continues providing all events to Nuvio. Physical profile controls were not accessible: selecting Playlist order, hiding the PPV group in Live TV and verifying that Sports Hub can still find an event while hidden remain device checks.
+
+QA Worker, D1, credentials, production and Supabase were untouched. Rollback is a conditional QA `current.json` restore to `{"release":"v20261123-deduplicated25-ppv-meta","epg_release":"v20261123-issue22"}`.
+
 ## Phantom PPV category repair verified live in QA | 23 November 2026 NZDT
 
 QA serves new immutable catalogue `v20261123-deduplicated25-ppv-meta`. Applied `fix_ppv_group_metadata.py` from PR #24 commit `89626c0a892bec29bf2802e8444d737efaf30bec` to a fresh snapshot of active `v20261123-deduplicated25`. Dry run, application and idempotent rerun passed. The sole event display name change is for stream 2189718. Exactly three of 28 QA catalogue objects changed, including exactly one M3U EXTINF line. Category definitions and order, original canonical logo, all stream IDs, all URLs, PPV row order, and every other item field remained exact.
