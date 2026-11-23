@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Refresh the approved guide using its frozen Lounge ID → upstream ID mappings."""
+import argparse
 import base64
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
@@ -20,6 +21,14 @@ PRODUCTION_BUCKET = 'loungetv-xtream-production-private'
 INPUTS = 'refresh-inputs'
 MAX_REFRESH_BYTES = 2_000_000_000
 RELEASE_ID = re.compile(r'v[a-zA-Z0-9_-]{1,48}\Z')
+FREEVIEW = {
+    900000001: 'mjh-tvnz-1', 900000002: 'mjh-tvnz-2', 900000003: 'mjh-three',
+    900000004: 'mjh-maori-tv', 900000005: 'mjh-te-reo',
+}
+FREEVIEW_SOURCE = {
+    'id': 'loungetv_freeview',
+    'url': 'https://raw.githubusercontent.com/Gazzamoo111/lounge-tv-player/epg-data/epg/guide.xml',
+}
 
 
 def download_events(source, wanted, cache_dir, now):
@@ -32,7 +41,7 @@ def download_events(source, wanted, cache_dir, now):
     return read_programmes(path, wanted, now)
 
 
-def build_assets(sources, mappings, catalogue, now, load_events):
+def build_assets(sources, mappings, catalogue, now, load_events, *, previous=None, visible=None):
     """Emit a guide only when every approved channel has a genuine schedule."""
     indexed = {source['id']: source for source in sources}
     wanted = defaultdict(set)
@@ -51,17 +60,55 @@ def build_assets(sources, mappings, catalogue, now, load_events):
         streams[stream_id] = guide_id
         display.setdefault(guide_id, row['channel_name'])
         wanted[upstream[0]].add(upstream[1])
-    if len(catalogue) != 14_717 or len(streams) != 3_235 or len(winners) != 2_849:
+    extra = len(FREEVIEW) if previous is not None else 0
+    if (len(catalogue), len(streams), len(winners)) != (14_717 + extra, 3_235 + extra, 2_849 + extra):
         raise ValueError('Approved catalogue or mapping count changed')
 
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        events = dict(zip(wanted, pool.map(lambda ident: load_events(indexed[ident], wanted[ident]), wanted)))
+    def load(ident):
+        try:
+            return load_events(indexed[ident], wanted[ident])
+        except Exception as error:
+            if previous is None:
+                raise
+            print('GUIDE_SOURCE_UNAVAILABLE', ident, type(error).__name__, flush=True)
+            return {}
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        events = dict(zip(wanted, pool.map(load, wanted)))
+    schedules = {}
+    for guide_id, (source, ident) in winners.items():
+        fresh = events[source].get(ident, [])
+        if previous is not None:
+            old = previous.get(guide_id, [])
+            old_quality = best_program_quality(old, now)
+            new_quality = best_program_quality(fresh, now)
+            # A source outage or narrower horizon must not displace usable live data.
+            fresh_end = max((stop for _, stop, _ in fresh), default=now)
+            old_end = max((stop for _, stop, _ in old), default=now)
+            if (any(before and not after for before, after in zip(old_quality, new_quality))
+                    or new_quality == old_quality and fresh_end < old_end):
+                fresh = old
+        schedules[guide_id] = fresh
     missing = sum(
-        not any(best_program_quality(events[source].get(ident, []), now))
-        for source, ident in winners.values()
+        not any(best_program_quality(entries, now)) for entries in schedules.values()
     )
-    if missing:
+    if missing and previous is None:
         raise RuntimeError(f'{missing} approved guide IDs lack current or upcoming schedules; keeping the active guide')
+    if previous is not None:
+        before = {sid: best_program_quality(previous.get(gid, []), now)
+                  for sid, gid in streams.items() if sid in visible}
+        after = {sid: best_program_quality(schedules[streams[sid]], now) for sid in before}
+        lost = sum(any(a and not b for a, b in zip(before[sid], after[sid])) for sid in before)
+        current_before = sum(quality[0] for quality in before.values())
+        current_after = sum(quality[0] for quality in after.values())
+        print('EPG_RECOVERY_COVERAGE', json.dumps({
+            'current_before': current_before, 'current_after': current_after,
+            'next_12h_before': sum(quality[1] for quality in before.values()),
+            'next_12h_after': sum(quality[1] for quality in after.values()),
+            'visible_regressions': lost, 'source_ids_without_near_term_programmes': missing,
+        }), flush=True)
+        if lost or current_after <= current_before:
+            raise RuntimeError('Recovery did not improve coverage without regression')
 
     guide = ET.Element('tv', {'generator-info-name': 'Lounge TV verified EPG'})
     for guide_id, name in display.items():
@@ -70,10 +117,10 @@ def build_assets(sources, mappings, catalogue, now, load_events):
     short = {}
     count = 0
     utc_format = '%Y-%m-%d %H:%M:%S'
-    for guide_id, (source, ident) in winners.items():
+    for guide_id, entries in schedules.items():
         listings = []
         seen = set()
-        rows = sorted(events[source][ident], key=lambda row: (row[0], row[1]))
+        rows = sorted(entries, key=lambda row: (row[0], row[1]))
         for start, stop, xml in rows:
             programme = ET.fromstring(xml)
             title = programme.findtext('title')
@@ -103,7 +150,7 @@ def build_assets(sources, mappings, catalogue, now, load_events):
     return assets, count
 
 
-def compile_current(client, now, bucket=BUCKET):
+def compile_current(client, now, bucket=BUCKET, *, recover=False):
     def get(key):
         result = client.get_object(Bucket=bucket, Key=key)
         with result['Body'] as body:
@@ -117,6 +164,7 @@ def compile_current(client, now, bucket=BUCKET):
     sources, _ = get(f'{INPUTS}/Accepted_Sources.json')
     mappings, _ = get(f'{INPUTS}/LoungeTV_EPG_Mappings.json')
     catalogue, _ = get(f'releases/{catalogue_release}/catalog/live_all.json')
+    visible = {row['stream_id']: row for row in catalogue}
     if bucket == PRODUCTION_BUCKET:
         original, _ = get(f'{INPUTS}/catalogue-index-baseline.json')
         approved_guides = {
@@ -128,17 +176,43 @@ def compile_current(client, now, bucket=BUCKET):
             raise ValueError('Approved EPG mappings do not agree with the visible production catalogue')
         catalogue = original
     with tempfile.TemporaryDirectory() as cache_dir:
+        previous = None
+        if recover:
+            if bucket != PRODUCTION_BUCKET:
+                raise ValueError('Recovery must target the production bucket')
+            approved_guides = {row['matched_tvg_id'] for row in mappings['items']} | set(FREEVIEW.values())
+            previous_path = Path(cache_dir) / 'previous.xml.gz'
+            with client.get_object(Bucket=bucket, Key=f'releases/{epg_release}/epg/guide.xml.gz')['Body'] as body:
+                previous_path.write_bytes(body.read())
+            previous = read_programmes(previous_path, approved_guides, now, horizon_hours=168)
+            new_catalogue = list(catalogue)
+            new_mappings = list(mappings['items'])
+            for stream_id, guide_id in FREEVIEW.items():
+                row = visible.get(stream_id)
+                if not row or row['epg_channel_id'] != guide_id:
+                    raise ValueError(f'Visible Freeview mapping changed for stream {stream_id}')
+                new_mappings.append({'playlist_index': len(new_catalogue), 'channel_name': row['name'],
+                    'matched_tvg_id': guide_id, 'source': FREEVIEW_SOURCE['id'], 'source_id': guide_id})
+                new_catalogue.append(row)
+            catalogue = new_catalogue
+            mappings = {'items': new_mappings}
+            sources = {'sources': [*sources['sources'], FREEVIEW_SOURCE]}
         assets, count = build_assets(
             sources['sources'], mappings['items'], catalogue, now,
             lambda source, wanted: download_events(source, wanted, Path(cache_dir), now),
+            previous=previous, visible=visible,
         )
     return current, etag, assets, count
 
 
-def publish(client, now, bucket=BUCKET):
-    current, etag, assets, count = compile_current(client, now, bucket)
+def publish(client, now, bucket=BUCKET, *, recover=False, dry_run=False):
+    current, etag, assets, count = compile_current(client, now, bucket, recover=recover)
     catalogue_release = current['release']
     epg_release = current.get('epg_release', catalogue_release)
+    if dry_run:
+        print('EPG_RECOVERY_STAGED', json.dumps({'catalogue': catalogue_release, 'active_guide': epg_release,
+              'streams': len(assets) - 1, 'programmes': count}), flush=True)
+        return
     prior_usage = sum(
         obj['Size']
         for page in client.get_paginator('list_objects_v2').paginate(Bucket=bucket, Prefix='releases/vepg-')
@@ -151,12 +225,23 @@ def publish(client, now, bucket=BUCKET):
     if not run_id.isdigit() or not attempt.isdigit():
         raise ValueError('Invalid CI release identifier')
     release = f'vepg-{run_id}-{attempt}'
-    for path, raw in assets.items():
+    def upload(item):
+        path, raw = item
         params = {'ContentType': 'application/gzip'}
         if path.endswith('.json'):
             params = {'ContentType': 'application/json', 'ContentEncoding': 'gzip'}
         client.put_object(Bucket=bucket, Key=f'releases/{release}/{path}',
                           Body=raw, IfNoneMatch='*', **params)
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        for _ in pool.map(upload, assets.items()):
+            pass
+    if recover:
+        prefix = f'releases/{release}/'
+        stored = {obj['Key'].removeprefix(prefix): obj['Size']
+                  for page in client.get_paginator('list_objects_v2').paginate(Bucket=bucket, Prefix=prefix)
+                  for obj in page.get('Contents', [])}
+        if stored != {name: len(raw) for name, raw in assets.items()}:
+            raise RuntimeError('Staged guide assets do not match the expected inventory')
     updated = {
         'release': catalogue_release,
         'epg_release': release,
@@ -164,6 +249,10 @@ def publish(client, now, bucket=BUCKET):
     }
     client.put_object(Bucket=bucket, Key='current.json', Body=json.dumps(updated).encode(),
                       ContentType='application/json', CacheControl='no-store', IfMatch=etag)
+    if recover:
+        with client.get_object(Bucket=bucket, Key='current.json')['Body'] as body:
+            if json.load(body) != updated:
+                raise RuntimeError('The live EPG pointer did not match the staged release')
     print(json.dumps({'epg_release': release, 'streams': len(assets) - 1, 'programmes': count}))
 
 
@@ -171,15 +260,19 @@ if __name__ == '__main__':
     import boto3
     from botocore.config import Config
 
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--recover-production', action='store_true')
+    parser.add_argument('--dry-run', action='store_true')
+    args = parser.parse_args()
     account = os.environ['R2_ACCOUNT_ID']
     if not re.fullmatch(r'[a-f0-9]{32}', account):
         raise ValueError('Invalid Cloudflare account ID')
     r2 = boto3.client(
         's3', endpoint_url=f'https://{account}.r2.cloudflarestorage.com', region_name='auto',
         aws_access_key_id=os.environ['R2_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['R2_SECRET_ACCESS_KEY'],
-        config=Config(retries={'mode': 'standard', 'max_attempts': 8}),
+        config=Config(max_pool_connections=20, retries={'mode': 'standard', 'max_attempts': 8}),
     )
     bucket = os.environ.get('LTV_XTREAM_R2_BUCKET', BUCKET)
     if bucket not in (BUCKET, PRODUCTION_BUCKET):
         raise ValueError('Invalid Xtream R2 bucket')
-    publish(r2, datetime.now(timezone.utc), bucket)
+    publish(r2, datetime.now(timezone.utc), bucket, recover=args.recover_production, dry_run=args.dry_run)
