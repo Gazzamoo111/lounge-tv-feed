@@ -1,3 +1,13 @@
+## Supplied account verification and live playback checks | 23 November 2026 NZDT
+
+The supplied account authenticated at the existing HTTPS Lounge TV gateway with HTTP 200, `auth=1`, status `Active`. The gateway exposes Lounge TV public stream IDs. The latest read returned 2,988 public IDs, with no direct overlap against the 13,292 approved BEST IDs. Inspecting authorized HTTPS playback redirect metadata without following the upstream redirects confirmed the approved provider IDs for AU Channel 7 HD and US ABC HD. Sky Sport 1 resolved to different IDs and BBC One London was absent from the exposed catalogue. These samples do not establish the complete BEST entitlement set.
+
+The approved provider origin did not return a usable HTTPS Xtream response. Direct verification against its plaintext HTTP endpoint was blocked by automatic approval review. There was no explicit approval to transmit this account's credentials over HTTP. The account was not assigned in QA D1.
+
+Live QA playback returned HTTP 503 `temporarily_unavailable` for Sky Sport 1 FHD (2024778), AU Channel 7 HD (738209), UK BBC One London (392911) and US ABC HD (45439). Both TVNZ QA playback links returned 302 to the approved DASH manifests. Connected Chrome blocked both final TVNZ manifest requests with `ERR_BLOCKED_BY_CLIENT`, before a Widevine challenge or licence grant. DRM playback was not verified.
+
+Reconfirmed all 25 categories, the exact approved 13,297-entry M3U and the 6,756 Live Events entries, plus the exact XMLTV in gzip and plain XML. QA continued on Worker `97c9cb65-0fe0-4446-9a4a-c84349d61667` and R2 `v20261123-premium25-nz5`. No deployment, production, customer or entitlement changes. The rollback baseline remains the one recorded below.
+
 ## Premium 25 and NZ Freeview live QA | 23 November 2026 NZDT
 
 The authorised QA release is active at `https://xtream-qa.loungetv.nz`. The Worker `loungetv-xtream-standalone-qa` uses version `97c9cb65-0fe0-4446-9a4a-c84349d61667` from source commit `e7229194084e9ccca02cff293ccc5fcc0561e7db`. Private R2 `current.json` points to catalogue `v20261123-premium25-nz5` and the byte-identical existing EPG `v20261123-issue22`. Added five whitelisted IDs to QA D1, which now has 14,722 permitted IDs. No QA or production account rows were edited.
