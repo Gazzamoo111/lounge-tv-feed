@@ -1,3 +1,4 @@
+import {nzSource,nzLicenseRelay} from './nz-live.mjs';
 // Lounge TV's independent Xtream-compatible Live TV control plane.
 // No Supabase, no shared provider credentials, no media byte proxying.
 const js = (body, status=200) => new Response(JSON.stringify(body), {status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','Access-Control-Allow-Origin':'*','X-Content-Type-Options':'nosniff'}});
@@ -54,7 +55,24 @@ async function liveAction(url,account,env){
     const category=url.searchParams.get('category_id');
     if(category&&!/^\d{1,5}$/.test(category))return problem('invalid_category');
     const x=await asset(env,category?`catalog/by-category/${category}.json`:'catalog/live_all.json');
-    return x?bytesResponse(x):js(category?[]:{error:'catalogue_not_ready'},category?200:503);
+    if(!x)return js(category?[]:{error:'catalogue_not_ready'},category?200:503);
+    if(env.ENABLE_NZ_OVERRIDES!=='true'||(category&&category!=='1'))return bytesResponse(x);
+    // Only decorate the five known NZ rows for Xtream clients which support DRM extensions.
+    const items=await new Response(x.body).json();
+    const base=url.origin;
+    const username=encodeURIComponent(account.username);
+    const password=encodeURIComponent(account.password);
+    for(const row of items){
+      const nz=nzSource(row.stream_id);
+      if(!nz)continue;
+      row.lounge_stream_url=base+'/live/'+username+'/'+password+'/'+nz.id+'.'+nz.format;
+      if(nz.drm){
+        row.lounge_drm_scheme='widevine';
+        row.lounge_drm_manifest='mpd';
+        row.lounge_drm_license=base+'/nz-license.php?ch='+nz.ch+'&username='+username+'&password='+password;
+      }
+    }
+    return js(items);
   }
   if(['get_short_epg','get_simple_data_table'].includes(action)){
     const id=url.searchParams.get('stream_id')||'';
@@ -117,6 +135,14 @@ async function redirectStream(url,env,parts){
   if(!/^\d{1,12}$/.test(streamId))return problem('unknown_stream',404);
   const match=await env.DB.prepare('SELECT stream_id FROM stream_ids WHERE stream_id = ?').bind(Number(streamId)).first();
   if(!match)return problem('unknown_stream',404);
+  const nz=env.ENABLE_NZ_OVERRIDES==='true'?nzSource(streamId):null;
+  if(nz){
+    if(nz.drm&&env.ENABLE_TVNZ_LICENSE_RELAY!=='true')return problem('nz_drm_not_configured',503);
+    return new Response(null,{status:302,headers:{
+      Location:nz.url,'Cache-Control':'private, no-store',
+      'Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff',
+    }});
+  }
   if(!env.UPSTREAM_ORIGIN)return problem('provider_not_configured',503);
   let upstream;try{upstream=new URL(env.UPSTREAM_ORIGIN);}catch{return problem('provider_not_configured',503)}
   // BEST's approved M3U uses HTTP. The customer-facing Xtream API still uses HTTPS.
@@ -137,11 +163,21 @@ export default {
   async fetch(request,env){
     const url=new URL(request.url);const path=url.pathname;
     if(path==='/health')return js({service:'lounge-tv-xtream-standalone',status:'ok',version:'m3u-v1'});
+    if(path==='/nz-license.php'){
+      if(request.method==='OPTIONS')return nzLicenseRelay(request,url);
+      if(env.ENABLE_NZ_OVERRIDES!=='true'||env.ENABLE_TVNZ_LICENSE_RELAY!=='true')return problem('nz_drm_not_configured',503);
+      if(!env.DB||!env.AUTH_PEPPER)return problem('service_not_configured',503);
+      try{
+        const a=await auth(url,env);
+        if(!a)return problem('unauthorised',401);
+        return await nzLicenseRelay(request,url);
+      }catch{return problem('temporarily_unavailable',503)}
+    }
     if(!['GET','HEAD'].includes(request.method))return problem('method_not_allowed',405);
     if(!env.DB||!env.ASSETS||!env.AUTH_PEPPER)return problem('service_not_configured',503);
     try{
       if(path.startsWith('/live/')){
-        const m=path.match(/^\/live\/([^/]+)\/([^/]+)\/(\d{1,12})(?:\.(?:ts|m3u8))?$/);
+        const m=path.match(/^\/live\/([^/]+)\/([^/]+)\/(\d{1,12})(?:\.(?:ts|m3u8|mpd))?$/);
         return m?await redirectStream(url,env,m.slice(1)):problem('unknown_stream',404);
       }
       if(!['/player_api.php','/xmltv.php','/get.php'].includes(path))return problem('not_found',404);
