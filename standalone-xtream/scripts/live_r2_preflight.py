@@ -16,7 +16,7 @@ import xml.etree.ElementTree as ET
 
 import boto3
 
-from cleanup_qa_catalog import blocks_from_m3u, plan_uk, plan_us
+from cleanup_qa_catalog import QUALITY, blocks_from_m3u, plan_uk, plan_us, priority
 from stage_nz_freeview_epg import prepare
 
 QA_BUCKET = 'loungetv-xtream-private'
@@ -95,6 +95,57 @@ def scoped_changes(catalog, guide, decisions, source, now):
     print('SCOPED_RELEASE_VALIDATED', json.dumps({'channels': len(visible_rows), 'removed': len(remove), 'freeview': evidence}))
     return ({f'catalog/{k}': v for k, v in cat_changes.items()},
             {f'epg/{k}': v for k, v in epg_changes.items()})
+
+
+def catalogue_duplicates(rows):
+    confirmed = collections.defaultdict(list)
+    names = collections.defaultdict(list)
+    for row in rows:
+        # Event names recur across broadcasts. Sky Sport fallback and Freeview IDs are protected.
+        name = row['name'].upper().replace('ᴿᴬᵂ', ' RAW ')
+        if str(row['category_id']) == '25' or row['stream_id'] in FREEVIEW or 'SKY SPORT' in name:
+            continue
+        normalized = ' '.join(QUALITY.sub(' ', name).split())
+        if not normalized:
+            continue
+        names[normalized].append(row)
+        if row.get('epg_channel_id'):
+            confirmed[normalized, row['epg_channel_id']].append(row)
+
+    remove = set()
+    for group in confirmed.values():
+        keeper = max(group, key=priority)
+        remove.update(row['stream_id'] for row in group if row is not keeper)
+    ambiguous = sum(sum(row['stream_id'] not in remove for row in group) > 1 for group in names.values())
+    return remove, ambiguous
+
+
+def audit_full_catalogue(client, bucket, release, catalogue):
+    rows = json.loads(catalogue['catalog/live_all.json'])
+    remove, ambiguous = catalogue_duplicates(rows)
+    visible = [row for row in rows if row['stream_id'] not in remove]
+    assert not catalogue_duplicates(visible)[0], 'Confirmed duplicate remained after catalogue pass'
+    print('FULL_CATALOGUE_DUPLICATE_AUDIT', json.dumps({
+        'checked': len(rows), 'confirmed_removed': len(remove), 'visible': len(visible),
+        'unconfirmed_same_name_groups': ambiguous, 'removed_stream_ids': sorted(remove),
+    }))
+    if not remove:
+        return
+
+    def encode(items):
+        return (json.dumps(items, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
+
+    affected = {str(row['category_id']) for row in rows if row['stream_id'] in remove}
+    for category in affected:
+        key = f'catalog/by-category/{category}.json'
+        current = json.loads(catalogue[key] if key in catalogue else fetch(client, bucket, release, key))
+        category_rows = [row for row in current if row['stream_id'] not in remove]
+        assert category_rows == [row for row in visible if str(row['category_id']) == category]
+        catalogue[key] = encode(category_rows)
+    header, blocks = blocks_from_m3u(catalogue['catalog/template.m3u'].decode())
+    assert set(blocks) == {row['stream_id'] for row in rows}
+    catalogue['catalog/template.m3u'] = (header + ''.join(block for sid, block in blocks.items() if sid not in remove)).encode()
+    catalogue['catalog/live_all.json'] = encode(visible)
 
 
 def publish(client, bucket, current, pointer, catalogue, guide):
@@ -240,6 +291,13 @@ def main():
             r['stream_id'] for r in by[1]
             if r['stream_id'] in FREEVIEW and (not r.get('epg_channel_id') or r['epg_channel_id'] not in guide_ids)
         ]))
+        if args.production and release.startswith('vprod-freeview-'):
+            remaining, ambiguous = catalogue_duplicates(rows)
+            assert not remaining, 'Active production catalogue contains a confirmed duplicate'
+            print('FULL_CATALOGUE_DUPLICATE_READBACK', json.dumps({
+                'checked': len(rows), 'confirmed_remaining': len(remaining),
+                'unconfirmed_same_name_groups': ambiguous,
+            }))
         if (release, epg_release) == BASELINE or args.stage_scoped or args.publish_scoped:
             if (release, epg_release) != BASELINE or len(rows) != 13083 or len(guide_ids) != 2849:
                 raise ValueError('Active QA baseline differs from the approved release')
@@ -262,6 +320,7 @@ def main():
                     if not any(row['start_timestamp'] <= now < row['stop_timestamp'] for row in guide_rows):
                         raise ValueError(f'QA programme snapshot no longer has a current listing for {sid}')
                 print('PRODUCTION_QA_HASH_PARITY_VERIFIED')
+                audit_full_catalogue(client, bucket, release, replacements[0])
             if args.publish_scoped:
                 publish(client, bucket, current_obj, pointer, *replacements)
                 return
