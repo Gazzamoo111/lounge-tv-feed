@@ -46,7 +46,7 @@ def utc(s):
     return datetime.strptime(s,'%Y%m%d%H%M%S %z').astimezone(timezone.utc)
 
 
-def select_source(root,now):
+def select_source(root,now,guide_ids=None):
     # Match only explicit exact brand aliases from the Freeview channel definitions.
     names=defaultdict(list)
     for channel in root.findall('channel'):
@@ -60,6 +60,9 @@ def select_source(root,now):
         ids=set().union(*(names.get(normal(n),[]) for n in aliases))
         if len(ids)!=1:raise ValueError(f'{name}: expected one exact source guide ID; found {len(ids)}')
         source_id=next(iter(ids));valid=[]
+        if guide_ids is not None:
+            guide_id=guide_ids[sid]
+            if source_id!=guide_id:raise ValueError(f'{name}: legacy guide ID differs from the verified mapping')
         for programme in by_channel[source_id]:
             try: start,stop=utc(programme.attrib['start']),utc(programme.attrib['stop'])
             except (KeyError,ValueError):continue
@@ -100,11 +103,11 @@ def update_m3u(template,selected):
     return ''.join(out)
 
 
-def prepare(catalog,epg,freeview_xml,now):
+def prepare(catalog,epg,freeview_xml,now,guide_ids=None):
     original_guide=(epg/'guide.xml.gz').read_bytes()
     guide=ET.fromstring(gzip.decompress(original_guide))
     if guide.tag!='tv':raise ValueError('Current guide invalid')
-    source=load_xml(freeview_xml);selected,evidence=select_source(source,now)
+    source=load_xml(freeview_xml);selected,evidence=select_source(source,now,guide_ids)
     for row in guide.findall('channel'):
         if row.attrib.get('id') in {v[0] for v in selected.values()}:
             raise ValueError('NZ guide ID already in active XMLTV. Refuse duplicate')
