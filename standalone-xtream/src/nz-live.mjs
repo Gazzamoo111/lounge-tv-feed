@@ -43,13 +43,14 @@ export async function nzLicenseRelay(request,url){
   if(challenge.byteLength>maxChallenge)return fail(413,'Challenge too large');
   const upstream='https://c.mjh.nz/tvnz-'+ch+'-wv';
   const hdr={'Content-Type':'application/octet-stream','Accept':'application/octet-stream'};
+  const deadline=AbortSignal.timeout(14000);
   try{
-    const first=await fetch(upstream,{method:'POST',headers:hdr,body:challenge.slice(0),redirect:'manual'});
+    const first=await fetch(upstream,{method:'POST',headers:hdr,body:challenge.slice(0),redirect:'manual',signal:deadline});
     let answer=first;
     if(first.status===307||first.status===302){
       const target=allowedTarget(first.headers.get('Location'));
       if(!target)return fail(502,'Unexpected licence redirect');
-      answer=await fetch(target.toString(),{method:'POST',headers:hdr,body:challenge,redirect:'manual'});
+      answer=await fetch(target.toString(),{method:'POST',headers:hdr,body:challenge,redirect:'manual',signal:deadline});
     }
     if(answer.status===401||answer.status===403)return fail(answer.status,'Upstream licence denied');
     if(!answer.ok)return fail(502,'Upstream licence unavailable');
