@@ -1,3 +1,9 @@
+## Fresh BEST trial verification blocked | 23 November 2026 NZDT
+
+The reseller screenshot reported the fresh trial as enabled with a 24 November expiry. The approved BEST origin returned HTTP 503 over HTTPS without an Xtream response. After explicit approval for the fresh trial at that exact HTTP origin, direct requests to the account API, playlist export and approved Sky Sport 1 stream returned HTTP 513 with zero response bytes. No provider status, bouquet, stream IDs or media could be read. The supplied trial was not assigned, and no Sky Sport mapping was edited.
+
+QA remained on Worker `97c9cb65-0fe0-4446-9a4a-c84349d61667` with R2 `v20261123-premium25-nz5`. The QA login worked, D1 still had no assigned provider line and the same 25-category catalogue remained active. Both TVNZ routes still returned HTTP 302 over QA with DRM playback unverified. No production, customer or Supabase changes.
+
 ## Supplied account verification and live playback checks | 23 November 2026 NZDT
 
 The supplied account authenticated at the existing HTTPS Lounge TV gateway with HTTP 200, `auth=1`, status `Active`. The gateway exposes Lounge TV public stream IDs. The latest read returned 2,988 public IDs, with no direct overlap against the 13,292 approved BEST IDs. Inspecting authorized HTTPS playback redirect metadata without following the upstream redirects confirmed the approved provider IDs for AU Channel 7 HD and US ABC HD. Sky Sport 1 resolved to different IDs and BBC One London was absent from the exposed catalogue. These samples do not establish the complete BEST entitlement set.
