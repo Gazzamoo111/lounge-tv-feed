@@ -196,6 +196,27 @@ def station_duplicates(rows, guide_ids):
     return decisions
 
 
+def remaining_station_groups(rows):
+    groups = collections.defaultdict(list)
+    for row in rows:
+        category = str(row['category_id'])
+        name = row['name'].upper()
+        if category in {'1', '9', '25'} or row['stream_id'] in FREEVIEW or 'SKY SPORT' in name:
+            continue
+        # Provider formatting varies between the broadcast and themed categories.
+        market_match = re.match(r'^\s*([A-Z]{2,3})(?:-NOWTV)?\s*[|:]\s*', name)
+        market = market_match[1] if market_match else ''
+        base = name[market_match.end():] if market_match else name
+        base = QUALITY.sub(' ', base.replace('ᴿᴬᵂ', ' RAW '))
+        base = re.sub(r'(?<=\w)[’\'](?=\w)', '', base)
+        base = re.sub(r'[^\w+&]+', ' ', base)
+        base = re.sub(r'\s*\+\s*(?=\d)', ' +', base)
+        base = ' '.join(base.split())
+        if base:
+            groups[market, base].append(row)
+    return {key: group for key, group in groups.items() if len(group) > 1}
+
+
 def apply_catalogue_removals(client, bucket, release, catalogue, rows, remove):
     visible = [row for row in rows if row['stream_id'] not in remove]
     if not remove:
@@ -301,6 +322,7 @@ def main():
     stations.add_argument('--stage-stations', action='store_true')
     stations.add_argument('--publish-stations', action='store_true')
     stations.add_argument('--verify-stations', action='store_true')
+    stations.add_argument('--audit-remaining', action='store_true')
     args = parser.parse_args()
     bucket = PRODUCTION_BUCKET if args.production else QA_BUCKET
     target = 'PRODUCTION' if args.production else 'QA'
@@ -384,6 +406,17 @@ def main():
             r['stream_id'] for r in by[1]
             if r['stream_id'] in FREEVIEW and (not r.get('epg_channel_id') or r['epg_channel_id'] not in guide_ids)
         ]))
+        if args.audit_remaining:
+            if not args.production:
+                raise ValueError('Remaining station audit requires production')
+            candidates = remaining_station_groups(rows)
+            for (market, station), matches in candidates.items():
+                print('REMAINING_GROUP', json.dumps([market, station, [
+                    [row['stream_id'], row['category_id'], row['name'], row.get('epg_channel_id', '')]
+                    for row in matches
+                ]]))
+            print('REMAINING_AUDIT', len(rows), len(candidates))
+            return
         if args.stage_stations or args.publish_stations or args.verify_stations:
             if not args.production:
                 raise ValueError('Station consolidation requires the production target')
