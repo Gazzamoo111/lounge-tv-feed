@@ -1,3 +1,20 @@
+## BEST trial bound and tested in live QA | 23 November 2026 NZDT
+
+The fresh private provider export matched 13,187 of 13,292 approved BEST IDs, including all four requested samples. Existing account `lounge-tv-qa` is bound through its AES-GCM encrypted provider fields on QA D1. Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4` inherits the existing auth secret and uses the approved trial origin and a versioned encryption key. The Worker source matched the previous deployed source. Existing QA login, expiry and connection allowance were preserved. No other account provider fields were populated.
+
+| Channel | QA | BEST entry origin | Media host result |
+| --- | --- | --- | --- |
+| Sky Sport 1 FHD (2024778) | 302, exact approved provider path | 302 | HTTP 200, H.264 video and AAC audio, 30 frames decoded on repeat |
+| AU Channel 7 HD (738209) | 302, exact approved provider path | 302 | HTTP 407 on two checks, zero media bytes |
+| BBC One London (392911) | 302, exact approved provider path | 302 | HTTP 200, H.264 video and AC-3 audio, 30 frames decoded on repeat |
+| US ABC HD (45439) | 302, exact approved provider path | 302 | HTTP 407 on two checks, zero media bytes |
+
+The two repeat failures occurred on redirected media hosts and were reported via Envoy without a Proxy-Authenticate header. HTTP 513 did not recur in these playback checks. This evidence locates the failure after the BEST entry redirect and does not establish a provider-side IP restriction. Physical Nuvio playback and sustained playback were not tested in this task.
+
+The public QA M3U and guide matched the approved bytes. All 25 categories, 13,297 visible entries and 6,756 PPV entries were preserved on the same R2 release `v20261123-premium25-nz5`. All 24 JavaScript and 10 Python checks passed. Production and Supabase were untouched.
+
+Rollback for this QA-only config change: restore Worker `97c9cb65-0fe0-4446-9a4a-c84349d61667` and clear only the two trial provider fields for the QA account. Leave QA auth, expiry, connection allowance, D1 stream IDs and R2 pointers unchanged.
+
 ## Fresh BEST trial verification blocked | 23 November 2026 NZDT
 
 The reseller screenshot reported the fresh trial as enabled with a 24 November expiry. The approved BEST origin returned HTTP 503 over HTTPS without an Xtream response. After explicit approval for the fresh trial at that exact HTTP origin, direct requests to the account API, playlist export and approved Sky Sport 1 stream returned HTTP 513 with zero response bytes. No provider status, bouquet, stream IDs or media could be read. The supplied trial was not assigned, and no Sky Sport mapping was edited.
