@@ -1,0 +1,39 @@
+// Isolated production origin. The legacy connect.loungetv.nz route is managed outside this file.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "loungetv-xtream-production",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "RELEASE": "m3u-v1",
+    "ALLOW_HTTP_UPSTREAM": "true",
+    "ENABLE_NZ_OVERRIDES": "true",
+    "ENABLE_TVNZ_LICENSE_RELAY": "true",
+    "NUVIO_M3U_DRM_FALLBACK": "true",
+    "UPSTREAM_ORIGIN": "http://line.loungeconnect247.xyz"
+  },
+  "r2_buckets": [
+    {
+      "binding": "ASSETS",
+      "bucket_name": "loungetv-xtream-production-private"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "loungetv-xtream-production",
+      "database_id": "a3b2dbc6-f872-44c7-b397-06c578effa28"
+    }
+  ],
+  "preview_urls": false,
+  "routes": [
+    {
+      "pattern": "tv.loungetv.nz",
+      "custom_domain": true
+    }
+  ]
+}

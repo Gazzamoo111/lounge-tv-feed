@@ -1,13 +1,15 @@
 from datetime import datetime, timedelta, timezone
 import gzip
+from io import BytesIO
 import json
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from refresh_epg import build_assets
+from refresh_epg import PRODUCTION_BUCKET, build_assets, compile_current
 
 
 class RefreshTests(unittest.TestCase):
@@ -47,3 +49,28 @@ class RefreshTests(unittest.TestCase):
         self.catalogue[0]['epg_channel_id'] = 'ltv.changed'
         with self.assertRaisesRegex(ValueError, 'do not agree'):
             build_assets(self.sources, self.mappings, self.catalogue, self.now, self.fixture)
+
+    def test_production_reuses_the_immutable_mapping_order_after_curation(self):
+        current = {'release': 'vcurated', 'epg_release': 'vapproved'}
+        visible = [self.catalogue[2].copy(), self.catalogue[0].copy()]
+        objects = {
+            'current.json': current,
+            'refresh-inputs/Accepted_Sources.json': {'sources': self.sources},
+            'refresh-inputs/LoungeTV_EPG_Mappings.json': {'items': self.mappings},
+            'refresh-inputs/catalogue-index-baseline.json': self.catalogue,
+            'releases/vcurated/catalog/live_all.json': visible,
+        }
+
+        class PrivateBucket:
+            def get_object(self, *, Bucket, Key):
+                if Bucket != PRODUCTION_BUCKET:
+                    raise AssertionError('Wrong production bucket')
+                return {'Body': BytesIO(json.dumps(objects[Key]).encode()), 'ETag': 'snapshot'}
+
+        with patch('refresh_epg.download_events', side_effect=lambda source, wanted, *_: self.fixture(source, wanted)):
+            pointer, etag, assets, count = compile_current(PrivateBucket(), self.now, PRODUCTION_BUCKET)
+            self.assertEqual((pointer, etag, count), (current, 'snapshot', 2849))
+            self.assertIn('epg/short/3.json', assets)
+            visible[0]['epg_channel_id'] = 'ltv.wrong'
+            with self.assertRaisesRegex(ValueError, 'visible production catalogue'):
+                compile_current(PrivateBucket(), self.now, PRODUCTION_BUCKET)

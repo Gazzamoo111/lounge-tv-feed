@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 from epg_compiler import best_program_quality, fetch, read_programmes
 
 BUCKET = 'loungetv-xtream-private'
+PRODUCTION_BUCKET = 'loungetv-xtream-production-private'
 INPUTS = 'refresh-inputs'
 MAX_REFRESH_BYTES = 2_000_000_000
 RELEASE_ID = re.compile(r'v[a-zA-Z0-9_-]{1,48}\Z')
@@ -102,9 +103,9 @@ def build_assets(sources, mappings, catalogue, now, load_events):
     return assets, count
 
 
-def publish(client, now):
+def compile_current(client, now, bucket=BUCKET):
     def get(key):
-        result = client.get_object(Bucket=BUCKET, Key=key)
+        result = client.get_object(Bucket=bucket, Key=key)
         with result['Body'] as body:
             return json.load(body), result['ETag']
 
@@ -116,18 +117,35 @@ def publish(client, now):
     sources, _ = get(f'{INPUTS}/Accepted_Sources.json')
     mappings, _ = get(f'{INPUTS}/LoungeTV_EPG_Mappings.json')
     catalogue, _ = get(f'releases/{catalogue_release}/catalog/live_all.json')
+    if bucket == PRODUCTION_BUCKET:
+        original, _ = get(f'{INPUTS}/catalogue-index-baseline.json')
+        approved_guides = {
+            original[item['playlist_index']]['stream_id']: item['matched_tvg_id']
+            for item in mappings['items']
+        }
+        if any(row['stream_id'] in approved_guides and
+               row['epg_channel_id'] != approved_guides[row['stream_id']] for row in catalogue):
+            raise ValueError('Approved EPG mappings do not agree with the visible production catalogue')
+        catalogue = original
     with tempfile.TemporaryDirectory() as cache_dir:
         assets, count = build_assets(
             sources['sources'], mappings['items'], catalogue, now,
             lambda source, wanted: download_events(source, wanted, Path(cache_dir), now),
         )
+    return current, etag, assets, count
+
+
+def publish(client, now, bucket=BUCKET):
+    current, etag, assets, count = compile_current(client, now, bucket)
+    catalogue_release = current['release']
+    epg_release = current.get('epg_release', catalogue_release)
     prior_usage = sum(
         obj['Size']
-        for page in client.get_paginator('list_objects_v2').paginate(Bucket=BUCKET, Prefix='releases/vepg-')
+        for page in client.get_paginator('list_objects_v2').paginate(Bucket=bucket, Prefix='releases/vepg-')
         for obj in page.get('Contents', [])
     )
     if prior_usage + sum(map(len, assets.values())) > MAX_REFRESH_BYTES:
-        raise RuntimeError('QA guide storage budget reached; keeping the active guide')
+        raise RuntimeError('Guide storage budget reached; keeping the active guide')
     run_id = os.environ['GITHUB_RUN_ID']
     attempt = os.environ['GITHUB_RUN_ATTEMPT']
     if not run_id.isdigit() or not attempt.isdigit():
@@ -137,14 +155,14 @@ def publish(client, now):
         params = {'ContentType': 'application/gzip'}
         if path.endswith('.json'):
             params = {'ContentType': 'application/json', 'ContentEncoding': 'gzip'}
-        client.put_object(Bucket=BUCKET, Key=f'releases/{release}/{path}',
+        client.put_object(Bucket=bucket, Key=f'releases/{release}/{path}',
                           Body=raw, IfNoneMatch='*', **params)
     updated = {
         'release': catalogue_release,
         'epg_release': release,
         'previous_epg_release': epg_release,
     }
-    client.put_object(Bucket=BUCKET, Key='current.json', Body=json.dumps(updated).encode(),
+    client.put_object(Bucket=bucket, Key='current.json', Body=json.dumps(updated).encode(),
                       ContentType='application/json', CacheControl='no-store', IfMatch=etag)
     print(json.dumps({'epg_release': release, 'streams': len(assets) - 1, 'programmes': count}))
 
@@ -161,4 +179,7 @@ if __name__ == '__main__':
         aws_access_key_id=os.environ['R2_ACCESS_KEY_ID'], aws_secret_access_key=os.environ['R2_SECRET_ACCESS_KEY'],
         config=Config(retries={'mode': 'standard', 'max_attempts': 8}),
     )
-    publish(r2, datetime.now(timezone.utc))
+    bucket = os.environ.get('LTV_XTREAM_R2_BUCKET', BUCKET)
+    if bucket not in (BUCKET, PRODUCTION_BUCKET):
+        raise ValueError('Invalid Xtream R2 bucket')
+    publish(r2, datetime.now(timezone.utc), bucket)

@@ -1,0 +1,29 @@
+name: Refresh Lounge TV Xtream Production EPG
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '49 16 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-xtream-production-epg
+  cancel-in-progress: false
+jobs:
+  refresh:
+    if: vars.LTV_XTREAM_PROD_REFRESH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - name: Compile and atomically publish to private production R2
+        env:
+          LTV_XTREAM_R2_BUCKET: loungetv-xtream-production-private
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+        run: python standalone-xtream/scripts/refresh_epg.py
