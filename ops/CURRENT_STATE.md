@@ -1,3 +1,11 @@
+## Freeview mappings recovered from the legacy Nuvio feed | 23 November 2026 NZDT
+
+Read the deployed Supabase `lounge-core-live-m3u` and `lounge-core-live-xmltv` source without changing either function. The legacy playlist uses `mjh-tvnz-1`, `mjh-tvnz-2`, `mjh-three`, `mjh-maori-tv`, and `mjh-te-reo` for the five named channels. The legacy XMLTV function's existing static Lounge TV guide (`lounge-tv-player`, `epg-data`, `epg/guide.xml`) was downloaded and parsed. All five IDs are present. Each returned one current programme and upcoming counts of 240, 260, 160, 341 and 154 respectively. The direct MJH gzip URL returned HTML from this runner, so the existing static guide supplies the verified schedules.
+
+The QA catalogue is still `v20261123-deduplicated25-au9` with unified guide `v20261123-issue22`. No deployment or device verification occurred. For the scoped QA release, reuse the five legacy schedules in the unified guide and remove the 13 confirmed UK/US duplicates. The remaining deployment dependency is authenticated QA R2 read/write access in a runner that can stage the release and conditionally update `current.json`. The existing GitHub preflight reported missing R2 configuration and the browser session did not supply that publish path. Keep the current catalogue and guide pair as rollback.
+
+---
+
 ## QA-only duplicate and Freeview follow-up | 23 November 2026 NZDT
 
 The signed-in Cloudflare dashboard confirmed QA R2 `current.json` points to catalogue `v20261123-deduplicated25-au9` and unified EPG `v20261123-issue22`. Running PR #27's existing UK/US planners against the active category JSON previews (162 UK, 157 US) found 13 UK and one US candidates. Twelve UK pairs and the US TNT pair shared a non-empty guide ID. UK Sky Arts 1 FHD/HD had blank guide IDs on both rows and remains unconfirmed. The requested scope excludes 4K removal and Sky Sport reordering.
