@@ -126,14 +126,27 @@ UK_REGIONAL_FEED = re.compile(
     r'(?:CHANNEL ISLANDS?|EAST(?: MIDLANDS| YORKSHIRE)?|WEST(?: MIDLANDS| COUNTRY)?|'
     r'NORTH(?: EAST| WEST)?|SOUTH(?: EAST| WEST)?|SCOT(?:LAND)?|WALES|NI|NORTHERN IRELAND|'
     r'LONDON|MIDLANDS|YORKS(?:HIRE)?|BORDER(?: SCOTLAND)?|GRANADA|TYNE TEES|'
-    r'MERIDIAN|ANGLIA|OXFORD|CAMBRIDGE|SUSSEX|KENT|WM|EM|N IRELAND|YORKSHIRE EAST|YORKSHIRE WEST)'
+    r'MERIDIAN(?: NORTH| SOUTH| WEST)?|ANGLIA(?: EAST| WEST)?|OXFORD|CAMBRIDGE|'
+    r'SUSSEX|KENT|WM|EM|N IRELAND|YORKSHIRE EAST|YORKSHIRE WEST|EAST W|'
+    r'NORTH EAST AND CAM|YK LI|WEST COUNTRY WEST|SOUTH AND EAST|CENTRAL EAST|CENTRAL WEST)'
 )
 UK_PREFIX = re.compile(r'^\s*UK(?:-NOWTV)?\s*\|\s*')
+UK_STATION_ALIASES = {
+    '5ACTION': '5 ACTION',
+    'GREAT TV CHANNEL +1': 'GREAT TV +1',
+    'MORE4': 'MORE 4',
+    'RTE 1': 'RTE ONE',
+    'SKY ARTS 1': 'SKY ARTS',
+    'STV CENTRAL EAST': 'STV',
+    'STV CENTRAL WEST': 'STV',
+    'STV NORTH': 'STV',
+    'THAT S TV': 'THATS TV',
+}
 
 
 def station_key(row):
     category = str(row['category_id'])
-    if category not in {'2', '3', '4', '5', '6', '7', '8', '10', '11', '12', '13'}:
+    if category not in {'2', '3', '4', '5', '6', '7', '8', '10', '11', '13', '14', '15', '16', '17'}:
         return None
     name = row['name'].upper()
     if 'SKY SPORT' in name:
@@ -148,7 +161,13 @@ def station_key(row):
             )
             if not suffix or UK_REGIONAL_FEED.fullmatch(suffix):
                 return category, brand
-        return category, base
+        if base.startswith('ITV '):
+            suffix = base.removeprefix('ITV ')
+            if UK_REGIONAL_FEED.fullmatch(suffix):
+                return category, 'ITV1'
+            if suffix.startswith('+1 ') and UK_REGIONAL_FEED.fullmatch(suffix.removeprefix('+1 ')):
+                return category, 'ITV 1 +1'
+        return category, UK_STATION_ALIASES.get(base, base)
     # Keep market, affiliate, timeshift and language qualifiers outside the explicit UK families.
     base = ' '.join(QUALITY.sub(' ', name.replace('ᴿᴬᵂ', ' RAW ')).split())
     return (category, base) if base else None
@@ -376,16 +395,28 @@ def main():
                 print('UK_ENTERTAINMENT_STATIONS', json.dumps([[r['stream_id'], r['name']] for r in by[3]]))
             print('STATION_AUDIT', json.dumps({'checked': len(rows), 'groups': len(groups), 'remove': len(remove)}))
             if args.verify_stations:
-                if not release.startswith('vprod-stations-') or groups:
+                if (not release.startswith('vprod-stations-') or groups or len(cats) != 24
+                        or by[9] or any(str(c['category_id']) == '9' for c in cats)
+                        or sum(station_key(row) == ('3', 'BBC ONE') for row in rows) != 1):
                     raise ValueError('The active station release did not pass readback')
                 return
             if release != 'vprod-freeview-45145113439-1' or epg_release != release:
                 raise ValueError('Production catalogue or guide drifted before station release')
+            uhd = {row['stream_id'] for row in by[9]}
+            assert uhd and not uhd & remove
+            assert any(str(c['category_id']) == '9' and c['category_name'].endswith('4K UHD') for c in cats)
             catalogue = {key: content[key] for key in ('catalog/live_all.json', 'catalog/template.m3u')}
-            visible = apply_catalogue_removals(client, bucket, release, catalogue, rows, remove)
+            visible = apply_catalogue_removals(client, bucket, release, catalogue, rows, remove | uhd)
+            kept_categories = [c for c in cats if str(c['category_id']) != '9']
+            catalogue['catalog/live_categories.json'] = (json.dumps(kept_categories, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
             assert not station_duplicates(visible, guide_ids)
             assert sum(station_key(row) == ('3', 'BBC ONE') for row in visible) == 1
-            print('STATION_RELEASE_VALIDATED', json.dumps({'visible': len(visible), 'removed': len(remove)}))
+            assert json.loads(catalogue['catalog/by-category/9.json']) == []
+            assert not any(str(row['category_id']) == '9' for row in visible)
+            print('STATION_RELEASE_VALIDATED', json.dumps({
+                'visible': len(visible), 'categories': len(kept_categories),
+                'duplicates_removed': len(remove), 'uhd_removed': len(uhd),
+            }))
             if args.publish_stations:
                 publish(client, bucket, current_obj, pointer, catalogue, {})
             return
