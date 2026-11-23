@@ -9,7 +9,7 @@ from unittest.mock import patch
 import xml.etree.ElementTree as ET
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
-from refresh_epg import PRODUCTION_BUCKET, build_assets, compile_current
+from refresh_epg import FREEVIEW, PRODUCTION_BUCKET, build_assets, compile_current
 
 
 class RefreshTests(unittest.TestCase):
@@ -74,3 +74,27 @@ class RefreshTests(unittest.TestCase):
             visible[0]['epg_channel_id'] = 'ltv.wrong'
             with self.assertRaisesRegex(ValueError, 'visible production catalogue'):
                 compile_current(PrivateBucket(), self.now, PRODUCTION_BUCKET)
+
+    def test_maintenance_accepts_a_longer_guide_without_needing_a_coverage_gain(self):
+        for sid, guide_id in FREEVIEW.items():
+            self.mappings.append({
+                'playlist_index': len(self.catalogue), 'channel_name': 'Freeview',
+                'matched_tvg_id': guide_id, 'source': 'sample', 'source_id': guide_id,
+            })
+            self.catalogue.append({'stream_id': sid, 'epg_channel_id': guide_id})
+        ids = {item['matched_tvg_id'] for item in self.mappings}
+        previous = self.fixture(None, ids)
+        for entries in previous.values():
+            entries.append((self.now + timedelta(hours=1), self.now + timedelta(hours=2),
+                            '<programme><title>Upcoming fixture</title></programme>'))
+        visible = {1, *FREEVIEW}
+        unchanged, _ = build_assets(self.sources, self.mappings, self.catalogue, self.now,
+                                    lambda *_: previous, previous=previous, visible=visible, maintenance=True)
+        self.assertEqual(unchanged, {})
+        fresh = {key: list(rows) for key, rows in previous.items()}
+        fresh['ltv.0'].append((self.now + timedelta(hours=2), self.now + timedelta(hours=3),
+                               '<programme><title>New fixture</title></programme>'))
+        assets, _ = build_assets(self.sources, self.mappings, self.catalogue, self.now,
+                                  lambda *_: fresh, previous=previous, visible=visible, maintenance=True)
+        short = json.loads(gzip.decompress(assets['epg/short/1.json']))
+        self.assertEqual(len(short['epg_listings']), 3)
