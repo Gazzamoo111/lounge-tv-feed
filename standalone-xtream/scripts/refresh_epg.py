@@ -4,7 +4,7 @@ import argparse
 import base64
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import gzip
 import json
 import os
@@ -41,7 +41,8 @@ def download_events(source, wanted, cache_dir, now):
     return read_programmes(path, wanted, now)
 
 
-def build_assets(sources, mappings, catalogue, now, load_events, *, previous=None, visible=None):
+def build_assets(sources, mappings, catalogue, now, load_events, *,
+                 previous=None, visible=None, maintenance=False):
     """Emit a guide only when every approved channel has a genuine schedule."""
     indexed = {source['id']: source for source in sources}
     wanted = defaultdict(set)
@@ -76,6 +77,7 @@ def build_assets(sources, mappings, catalogue, now, load_events, *, previous=Non
     with ThreadPoolExecutor(max_workers=6) as pool:
         events = dict(zip(wanted, pool.map(load, wanted)))
     schedules = {}
+    extended = set()
     for guide_id, (source, ident) in winners.items():
         fresh = events[source].get(ident, [])
         if previous is not None:
@@ -88,6 +90,8 @@ def build_assets(sources, mappings, catalogue, now, load_events, *, previous=Non
             if (any(before and not after for before, after in zip(old_quality, new_quality))
                     or new_quality == old_quality and fresh_end < old_end):
                 fresh = old
+            elif fresh_end > old_end and any(new_quality):
+                extended.add(guide_id)
         schedules[guide_id] = fresh
     missing = sum(
         not any(best_program_quality(entries, now)) for entries in schedules.values()
@@ -107,8 +111,21 @@ def build_assets(sources, mappings, catalogue, now, load_events, *, previous=Non
             'next_12h_after': sum(quality[1] for quality in after.values()),
             'visible_regressions': lost, 'source_ids_without_near_term_programmes': missing,
         }), flush=True)
-        if lost or current_after <= current_before:
+        if lost or (not maintenance and current_after <= current_before):
             raise RuntimeError('Recovery did not improve coverage without regression')
+        if maintenance:
+            upcoming_after = sum(quality[1] for quality in after.values())
+            if current_after * 100 < len(after) * 95 or upcoming_after * 100 < len(after) * 95:
+                raise RuntimeError('Scheduled candidate is below the mapped-channel coverage floor')
+            if not all(after.get(sid) == (True, True) for sid in FREEVIEW):
+                raise RuntimeError('Scheduled candidate is missing a protected Freeview listing')
+            gained = any(before[sid] != after[sid] or streams[sid] in extended for sid in before)
+            print('EPG_SCHEDULE_FRESHNESS', json.dumps({
+                'mapped_visible': len(after), 'visible_schedules_extended': sum(
+                    streams[sid] in extended for sid in after), 'will_publish': gained,
+            }), flush=True)
+            if not gained:
+                return {}, 0
 
     guide = ET.Element('tv', {'generator-info-name': 'Lounge TV verified EPG'})
     for guide_id, name in display.items():
@@ -150,7 +167,7 @@ def build_assets(sources, mappings, catalogue, now, load_events, *, previous=Non
     return assets, count
 
 
-def compile_current(client, now, bucket=BUCKET, *, recover=False):
+def compile_current(client, now, bucket=BUCKET, *, recover=False, maintenance=False):
     def get(key):
         result = client.get_object(Bucket=bucket, Key=key)
         with result['Body'] as body:
@@ -200,19 +217,50 @@ def compile_current(client, now, bucket=BUCKET, *, recover=False):
         assets, count = build_assets(
             sources['sources'], mappings['items'], catalogue, now,
             lambda source, wanted: download_events(source, wanted, Path(cache_dir), now),
-            previous=previous, visible=visible,
+            previous=previous, visible=visible, maintenance=maintenance,
         )
     return current, etag, assets, count
 
 
-def publish(client, now, bucket=BUCKET, *, recover=False, dry_run=False):
-    current, etag, assets, count = compile_current(client, now, bucket, recover=recover)
+SCHEDULED_RELEASE = re.compile(r'vepg-auto-\d+-\d+\Z')
+RETENTION = timedelta(days=7)
+
+
+def remove_old_scheduled_assets(client, bucket, now, active, previous, active_etag):
+    """Keep the live guide and its rollback indefinitely; age out only our own retired assets."""
+    pages = client.get_paginator('list_objects_v2').paginate(Bucket=bucket, Prefix='releases/vepg-auto-')
+    candidates = []
+    for page in pages:
+        for obj in page.get('Contents', []):
+            _, release, path = obj['Key'].split('/', 2)
+            if (SCHEDULED_RELEASE.fullmatch(release) and path.startswith('epg/')
+                    and release not in {active, previous} and obj['LastModified'] < now - RETENTION):
+                candidates.append({'Key': obj['Key']})
+    if candidates:
+        current = client.get_object(Bucket=bucket, Key='current.json')
+        current['Body'].close()
+        if current['ETag'] != active_etag:
+            raise RuntimeError('Live guide changed before scheduled archive maintenance')
+        for i in range(0, len(candidates), 1000):
+            result = client.delete_objects(Bucket=bucket, Delete={'Objects': candidates[i:i+1000], 'Quiet': True})
+            if result.get('Errors'):
+                raise RuntimeError('Could not remove expired scheduled guide assets')
+        print('EPG_RETIRED_ASSETS_PRUNED', len(candidates), flush=True)
+
+
+def publish(client, now, bucket=BUCKET, *, recover=False, dry_run=False, maintenance=False):
+    current, etag, assets, count = compile_current(client, now, bucket, recover=recover, maintenance=maintenance)
     catalogue_release = current['release']
     epg_release = current.get('epg_release', catalogue_release)
+    if not assets:
+        print('EPG_SCHEDULE_VERIFIED_NO_CHANGE', epg_release, flush=True)
+        return
     if dry_run:
         print('EPG_RECOVERY_STAGED', json.dumps({'catalogue': catalogue_release, 'active_guide': epg_release,
               'streams': len(assets) - 1, 'programmes': count}), flush=True)
         return
+    if maintenance:
+        remove_old_scheduled_assets(client, bucket, now, epg_release, current.get('previous_epg_release'), etag)
     prior_usage = sum(
         obj['Size']
         for page in client.get_paginator('list_objects_v2').paginate(Bucket=bucket, Prefix='releases/vepg-')
@@ -224,7 +272,7 @@ def publish(client, now, bucket=BUCKET, *, recover=False, dry_run=False):
     attempt = os.environ['GITHUB_RUN_ATTEMPT']
     if not run_id.isdigit() or not attempt.isdigit():
         raise ValueError('Invalid CI release identifier')
-    release = f'vepg-{run_id}-{attempt}'
+    release = f'vepg-{"auto-" if maintenance else ""}{run_id}-{attempt}'
     def upload(item):
         path, raw = item
         params = {'ContentType': 'application/gzip'}
@@ -262,6 +310,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--recover-production', action='store_true')
+    parser.add_argument('--scheduled-production', action='store_true')
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     account = os.environ['R2_ACCOUNT_ID']
@@ -275,4 +324,7 @@ if __name__ == '__main__':
     bucket = os.environ.get('LTV_XTREAM_R2_BUCKET', BUCKET)
     if bucket not in (BUCKET, PRODUCTION_BUCKET):
         raise ValueError('Invalid Xtream R2 bucket')
-    publish(r2, datetime.now(timezone.utc), bucket, recover=args.recover_production, dry_run=args.dry_run)
+    if args.scheduled_production and bucket != PRODUCTION_BUCKET:
+        raise ValueError('Scheduled refresh must target the production bucket')
+    publish(r2, datetime.now(timezone.utc), bucket, recover=args.recover_production or args.scheduled_production,
+            dry_run=args.dry_run, maintenance=args.scheduled_production)
