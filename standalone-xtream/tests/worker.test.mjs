@@ -27,7 +27,7 @@ async function mock(){
           return {async first(){
             dbCalls.push({query,args});
             if(query.includes('FROM accounts'))return args[0]==='user1'&&args[1]===row.auth_digest&&row.enabled?row:null;
-            if(query.includes('FROM stream_ids'))return args[0]===12345?{stream_id:12345}:null;
+            if(query.includes('FROM stream_ids'))return [12345,900000001,900000002,900000003,900000004,900000005].includes(args[0])?{stream_id:args[0]}:null;
             return null;
           }};
         }
@@ -128,6 +128,61 @@ test('QA explicit HTTP BEST redirect preserves the approved numeric stream ID an
   assert.equal(response.headers.get('cache-control'),'private, no-store');
   assert.equal(response.headers.get('referrer-policy'),'no-referrer');
 });
+
+test('QA NZ HLS and DASH stream IDs redirect to verified public sources without BEST credentials',async()=>{
+  const {env}=await mock();
+  env.ENABLE_NZ_OVERRIDES='true';env.ENABLE_TVNZ_LICENSE_RELAY='true';
+  const hls=await worker.fetch(req('/live/user1/customer-pass/900000003.m3u8'),env);
+  assert.equal(hls.status,302);
+  assert.equal(hls.headers.get('location'),'https://i.mjh.nz/.r/three.m3u8');
+  assert.doesNotMatch(hls.headers.get('location'),/testprov1|testprov2/);
+  const tvnz=await worker.fetch(req('/live/user1/customer-pass/900000001.mpd'),env);
+  assert.equal(tvnz.status,302);
+  assert.equal(tvnz.headers.get('location'),'https://i.mjh.nz/.r/tvnz-1.mpd');
+});
+test('NZ synthetic IDs never fall through to BEST and DRM route fails closed when unconfigured',async()=>{
+  const {env}=await mock();
+  assert.equal((await worker.fetch(req('/live/user1/customer-pass/900000003.m3u8'),env)).status,503);
+  env.ENABLE_NZ_OVERRIDES='true';
+  assert.equal((await worker.fetch(req('/live/user1/customer-pass/900000001.mpd'),env)).status,503);
+  assert.equal((await worker.fetch(req('/live/user1/customer-pass/900000002.mpd'),env)).status,503);
+  assert.equal((await worker.fetch(req('/live/user1/bad/900000003.m3u8'),env)).status,401);
+  assert.equal((await worker.fetch(req('/live/user1/customer-pass/900000006.ts'),env)).status,404);
+  assert.equal((await worker.fetch(req('/nz-license.php?'+auth+'&ch=1'),env)).status,503);
+});
+test('NZ Xtream JSON includes customer-authenticated licence details only for known TVNZ IDs',async()=>{
+  const {env,data}=await mock();
+  env.ENABLE_NZ_OVERRIDES='true';env.ENABLE_TVNZ_LICENSE_RELAY='true';
+  data.set('catalog/by-category/1.json',JSON.stringify([{stream_id:900000001,name:'TVNZ 1',container_extension:'mpd'},{stream_id:900000003,name:'Three',container_extension:'m3u8'}]));
+  const r=await worker.fetch(req(api('get_live_streams')+'&category_id=1'),env);
+  assert.equal(r.status,200);
+  const rows=await r.json();
+  assert.equal(rows[0].lounge_drm_scheme,'widevine');
+  assert.equal(rows[0].lounge_drm_manifest,'mpd');
+  assert.equal(rows[0].lounge_drm_license,'https://xtream-qa.example.test/nz-license.php?ch=1&username=user1&password=customer-pass');
+  assert.equal(rows[1].lounge_drm_license,undefined);
+  assert.equal(rows[1].lounge_stream_url,'https://xtream-qa.example.test/live/user1/customer-pass/900000003.m3u8');
+});
+test('QA Nuvio optional M3U DRM fallback does not expose other channels',async()=>{
+  const {env}=await mock();
+  env.NUVIO_M3U_DRM_FALLBACK='true';
+  const r=await worker.fetch(req(api('get_live_streams')),env);
+  assert.equal(r.status,503);
+  assert.deepEqual(await r.json(),{error:'nuvio_m3u_drm_fallback_required'});
+  assert.equal((await worker.fetch(req('/get.php?'+auth),env)).status,200);
+  assert.equal((await worker.fetch(req(api('get_live_categories')),env)).status,200);
+});
+test('NZ Widevine endpoint requires Xtream account and rejects empty challenges',async()=>{
+  const {env}=await mock();
+  env.ENABLE_NZ_OVERRIDES='true';env.ENABLE_TVNZ_LICENSE_RELAY='true';
+  const url='https://xtream-qa.example.test/nz-license.php?ch=1';
+  assert.equal((await worker.fetch(new Request(url,{method:'OPTIONS'}),env)).status,204);
+  assert.equal((await worker.fetch(new Request(url,{method:'POST',body:new Uint8Array([1])}),env)).status,401);
+  const valid=url+'&'+auth;
+  assert.equal((await worker.fetch(new Request(valid,{method:'POST',body:new Uint8Array()}),env)).status,400);
+  assert.equal((await worker.fetch(new Request(valid,{method:'POST',body:new Uint8Array(130000)}),env)).status,413);
+});
+
 test('non GET/HEAD methods and missing bindings fail closed',async()=>{
   const {env}=await mock();
   assert.equal((await worker.fetch(new Request('https://xtream-qa.example.test/player_api.php',{method:'POST'}),env)).status,405);
