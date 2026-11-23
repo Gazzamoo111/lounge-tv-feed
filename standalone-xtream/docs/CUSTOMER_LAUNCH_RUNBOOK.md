@@ -1,6 +1,6 @@
 # Lounge TV | Customer launch runbook (Cloudflare-only live TV)
 
-**Status, 23 November 2026 NZDT:** QA accepted by the owner on physical Nuvio for browsing and playback; latest deployed QA catalogue is `v20261123-deduplicated25-au9` with **25 categories, 13,083 streams, 64 AU streams, and 6,756 event/PPV feeds**. QA Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4`; EPG `v20261123-issue22`. Existing production `connect.loungetv.nz` still depends on Supabase and MUST remain untouched until a separate cutover. Draft PR #24 is a QA branch, not an approved production deploy.
+**Status, 23 November 2026 NZDT.** The isolated Cloudflare production gateway is deployed at `https://tv.loungetv.nz`, version `8a90126d-709e-4f18-bd6c-1b631ac05bc4`, with the exact QA catalogue (`v20261123-deduplicated25-au9`) and XMLTV (`v20261123-issue22`). The permanent customer URL remains on the legacy Supabase-backed gateway pending acceptance. Current live evidence and rollback references are recorded in [ops/CURRENT_STATE.md](../../ops/CURRENT_STATE.md) and Issue #25.
 
 ## Customer contract and limits
 
@@ -10,7 +10,7 @@ A new customer enters **Xtream server URL + their own Lounge TV username + passw
 
 ## Production architecture (recommended first launch)
 
-**Isolated new-customer production hostname:** `tv.loungetv.nz` (proposed; do not state it is live). This avoids hijacking existing `connect.loungetv.nz` customers. Use a distinct production Cloudflare Worker, **independent production D1** and separate **private production R2**, with separate authentication HMAC pepper, 32-byte AES-GCM provider key, bucket-scoped deployment credentials and rollback pointers. Do not bind production to QA's D1 or share QA secrets. The exact immutable QA catalogue and guide should be copied and verified by object hashes; never recreate or silently re-curate them.
+**Isolated new-customer production hostname:** `tv.loungetv.nz` (live for isolated acceptance). This avoids hijacking existing `connect.loungetv.nz` customers. Use a distinct production Cloudflare Worker, **independent production D1** and separate **private production R2**, with separate authentication HMAC pepper, 32-byte AES-GCM provider key, bucket-scoped deployment credentials and rollback pointers. Do not bind production to QA's D1 or share QA secrets. The exact immutable QA catalogue and guide should be copied and verified by object hashes; never recreate or silently re-curate them.
 
 The current Worker is **Live TV-only**, with no automatic BEST provisioning, VOD, payments, CRM, device activation, billing or automated renewal. It **reports** `max_connections` in Xtream account_info but does **not** enforce a live session count. Do not claim enforced connection limits. Test real BEST-side concurrency limits per entitlement before selling a one-connection product.
 
