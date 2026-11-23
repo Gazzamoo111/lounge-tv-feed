@@ -70,14 +70,16 @@ def main():
         assert len(ppv)==6756,'PPV changed unexpectedly'
         assert cats[-1]['category_name']=='🏆 Live Sport | Events & PPV', 'PPV not last'
         assert 'ZZ | LIVE SPORTS EVENTS & PPV' not in content['catalog/template.m3u'].decode(), 'ZZ came back'
-        from cleanup_qa_catalog import run
-        result=run(catalog,expected_visible=len(rows),dry_run=True)
-        changes={k:v for k,v in result.items() if k not in ('decisions','nz_order_after')}
-        print('CLEANUP_DRY_RUN',json.dumps(changes,ensure_ascii=False))
+        from cleanup_qa_catalog import plan_uk, plan_us
+        decisions = plan_uk(by[3])[1] + plan_us(by[5])[1]
+        rows_by_id = {row['stream_id']: row for row in rows}
+        decisions = [d for d in decisions if rows_by_id[d['hidden_id']].get('epg_channel_id')
+                     and rows_by_id[d['hidden_id']]['epg_channel_id'] == rows_by_id[d['keep_id']].get('epg_channel_id')]
+        print('CONFIRMED_DUPLICATES', len(decisions))
         print('CLEANUP_KEEPLIST',json.dumps([
             {'group':d['group'],'keep_id':d['keep_id'],
              'hidden_id':d['hidden_id'],'reason':d['reason']}
-            for d in result['decisions']], ensure_ascii=False))
+            for d in decisions], ensure_ascii=False))
         guide=fetch(client,epg_release,'epg/guide.xml.gz')
         print('EPG_SHA256',hashlib.sha256(guide).hexdigest())
         prog_by=collections.defaultdict(list)
