@@ -5,7 +5,9 @@ from datetime import datetime,timezone,timedelta
 import gzip,json,tempfile,unittest
 import xml.etree.ElementTree as ET
 
-SPEC=importlib.util.spec_from_file_location('nz',Path(__file__).with_name('stage_nz_freeview_epg.py'))
+SOURCE=Path(__file__).resolve().parent.parent/'scripts'/'stage_nz_freeview_epg.py'
+if not SOURCE.is_file(): SOURCE=Path(__file__).with_name('stage_nz_freeview_epg.py')
+SPEC=importlib.util.spec_from_file_location('nz',SOURCE)
 nz=importlib.util.module_from_spec(SPEC);SPEC.loader.exec_module(nz)
 T=datetime(2026,11,23,6,10,tzinfo=timezone.utc)
 
