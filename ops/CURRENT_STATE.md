@@ -1,3 +1,11 @@
+## Automatic production guide refresh enabled | 24 November 2026 NZDT
+
+Production EPG refresh is enabled on `main` at 37 minutes past every six hours (02:37, 08:37, 14:37 and 20:37 UTC). The workflow uses a durable, production-bucket-scoped Cloudflare key through the existing GitHub environment. It fetches only existing approved EPG sources, keeps still-valid listings when a replacement is weaker, skips unnecessary publishes, and requires at least 95% current and next-12-hour coverage across mapped visible streams plus all five protected Freeview listings. Scheduled output has a 2 GB budget and prunes only its own retired releases older than seven days, excluding the live guide and immediate rollback. No catalogue, ordering, playback, account, or Supabase changes.
+
+Local verification passed 21 Python and 24 JavaScript tests. [Live dry run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45259388863) passed. The [first workflow run on main](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45260057646) used the durable key and published `vepg-auto-45260057646-1`, validating all 3,241 guide assets and confirming the active pointer. Current coverage was 1,829 streams, 1,830 had listings in the next 12 hours, and 500 streams gained a longer schedule with zero visible regressions. The 09:37 NZDT clock-triggered run was not yet listed as of 09:42 NZDT. Owner reported the prior guide visible and playback working in Nuvio; a newly provisioned customer login has not been independently tested. Rollback is an ETag-conditional EPG pointer restore to `vepg-45242777277-1` with catalogue `vprod-order-45153376801-1` retained.
+
+---
+
 ## Production EPG expiry and recovery | 24 November 2026 NZDT
 
 At 07:47 NZDT the live catalogue was still `vprod-order-45153376801-1`, and the production guide hash matched the prior release `vprod-freeview-45145113439-1`. On the same catalogue and same guide, 1,816 streams had a current listing at the prior evening's release time, 1,139 did at the first incident readback, and 677 had lost overnight coverage. At that readback, 699 mapped streams had no listings ending in the future. This was programme expiry, with the production EPG schedule inactive. No playlist reorder or mapping rollback was needed. [Incident readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45242099470).
