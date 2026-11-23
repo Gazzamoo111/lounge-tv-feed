@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import unicodedata
 from urllib.request import urlopen
 import xml.etree.ElementTree as ET
 
@@ -375,13 +376,108 @@ def audit_full_catalogue(client, bucket, release, catalogue):
     apply_catalogue_removals(client, bucket, release, catalogue, rows, remove)
 
 
-def publish(client, bucket, current, pointer, catalogue, guide):
+BROWSE_BASELINE = 'vprod-stations-45150504093-1'
+BROWSE_GUIDE = 'vprod-freeview-45145113439-1'
+FEATURED_CHANNELS = {
+    '1': r'TVNZ 1;TVNZ 2;THREE;WHAKAATA MAORI;TE REO;SKY SPORT 1;SKY SPORT 2;SKY SPORT 3;SKY SPORT 4;SKY SPORT 5;SKY SPORT 6;SKY SPORT 7;SKY SPORT 8;SKY SPORT 9;SKY SPORT SELECT;SKY OPEN',
+    '2': r'CHANNEL 7;CHANNEL 9;CHANNEL 10|NETWORK 10|TEN;ABC TV|ABC HD;SBS ONE|SBS HD|SBS;ABC NEWS;7MATE;7TWO;7FLIX;9GEM;9GO;9LIFE;10 BOLD;10 PEACH;SBS VICELAND;SBS WORLD MOVIES;NITV;ABC KIDS;FOX SPORTS;KAYO',
+    '3': r'BBC ONE|BBC 1;BBC TWO|BBC 2;ITV1|ITV 1;CHANNEL 4;CHANNEL 5;SKY ATLANTIC;SKY SHOWCASE;SKY MAX;SKY WITNESS;BBC NEWS;SKY NEWS;COMEDY CENTRAL;E4;ITV 2|ITV2;ITV 3|ITV3;ITV 4|ITV4;DAVE;GOLD;ALIBI;SYFY',
+    '4': r'SKY SPORTS MAIN EVENT;SKY SPORTS PREMIER LEAGUE;SKY SPORTS FOOTBALL;SKY SPORTS F1;SKY SPORTS CRICKET;SKY SPORTS GOLF;SKY SPORTS ACTION;SKY SPORTS ARENA;SKY SPORTS NEWS;TNT SPORTS 1;TNT SPORTS 2;TNT SPORTS 3;TNT SPORTS 4;PREMIER SPORTS? 1;PREMIER SPORTS? 2;EUROSPORT 1;EUROSPORT 2;RACING TV|RACING UK;MUTV;LFC',
+    '5': r'ABC;CBS;NBC;FOX;PBS;CW;HBO;SHOWTIME;FX;TNT;TBS;USA NETWORK;AMC;BRAVO;CNN;FOX NEWS;MSNBC;BET;COMEDY CENTRAL;DISCOVERY',
+    '6': r'ESPN;ESPN 2|ESPN2;FOX SPORTS 1|FS1;FOX SPORTS 2|FS2;CBS SPORTS;NBC SPORTS;NFL NETWORK;NBA TV;MLB NETWORK;NHL NETWORK;GOLF CHANNEL;TENNIS CHANNEL;ESPN U|ESPNU;SEC NETWORK;BIG TEN NETWORK;ACC NETWORK;YES NETWORK;NESN;SPORTSNET;BEIN SPORTS',
+    '7': r'ABC;NBC;CBS;FOX;PBS;CW;TELEMUNDO;UNIVISION;NEW YORK;LOS ANGELES;CHICAGO;PHILADELPHIA;DALLAS;SAN FRANCISCO;BOSTON;ATLANTA;SEATTLE;MIAMI;HOUSTON;DENVER',
+    '8': r'ESPN;FOX SPORTS;BEIN SPORTS;TNT SPORTS;EUROSPORT;DAZN;SPORTSNET;TSN;SUPERSPORT;NFL NETWORK;NBA TV;MLB NETWORK;NHL NETWORK;GOLF CHANNEL;TENNIS CHANNEL;RACING;UFC;MOTORSPORT;OLYMPIC;CRICKET',
+    '10': r'NETFLIX;DISNEY PLUS|DISNEY;PRIME VIDEO|AMAZON PRIME;HBO MAX|MAX;APPLE TV;PARAMOUNT PLUS|PARAMOUNT;HULU;PEACOCK;DISCOVERY PLUS;STAN;BINGE;KAYO;BRITBOX;CRUNCHYROLL;SHUDDER;MUBI;TUBI;PLUTO;ROKU;YOUTUBE',
+    '11': r'SKY CINEMA PREMIERE;SKY CINEMA HITS;SKY CINEMA ACTION;SKY CINEMA COMEDY;SKY CINEMA FAMILY;SKY CINEMA DRAMA;SKY CINEMA THRILLER;SKY CINEMA GREATS;FILM 4;HBO;HBO 2;CINEMAX;SHOWTIME;STARZ;TCM;GREAT MOVIES;AMC;LEGEND;MOVIE CHANNEL;FXM',
+    '12': r'SKY STORE;CINEMANIA;HOLLYWOOD;ACTION;COMEDY;FAMILY;THRILLER;HORROR;CLASSICS;SCI FI;DISNEY;MARVEL;STAR WARS;NETFLIX;PRIME;HBO;CHRISTMAS',
+    '13': r'CARTOON NETWORK;NICKELODEON;DISNEY CHANNEL;DISNEY JUNIOR;NICK JR;CBBC;CBEEBIES;BOOMERANG;PBS KIDS;ABC KIDS;SKY KIDS;NICKTOONS;TEENNICK;UNIVERSAL KIDS;BABY TV;CHUCHU;COCOMELON;BLUEY;PAW PATROL;PEPPA PIG',
+    '14': r'DISCOVERY;NATIONAL GEOGRAPHIC|NAT GEO;ANIMAL PLANET;HISTORY;BBC EARTH;BBC FOUR;SKY DOCUMENTARIES;SKY NATURE;SKY HISTORY;SMITHSONIAN;SCIENCE;INVESTIGATION DISCOVERY;TLC;HGTV;FOOD NETWORK;TRAVEL CHANNEL;DISCOVERY SCIENCE;DISCOVERY TURBO;SKY CRIME;CRIME',
+    '15': r'PLUTO;TUBI;ROKU;SAMSUNG;PLEX;FREEVEE;XUMO;BBC;CBS NEWS;SKY NEWS;NBC NEWS;REUTERS;TOP GEAR;BAYWATCH;HELLS KITCHEN;MST3K;UNSOLVED MYSTERIES;BOB ROSS;POKEMON;TRANSFORMERS',
+    '16': r'MTV;MTV CLASSIC;MTV HITS;MTV LIVE;VH1;VEVO;CMT;TRACE;MUSIC TELEVISION;NOW 70S;NOW 80S;NOW 90S;CLUBLAND;KERRANG;CLASSIC FM;STINGRAY;80S;90S;ROCK;COUNTRY',
+    '17': r'AQUARIUM;FIREPLACE;OCEAN;RAIN;NATURE;LOFI|LO FI;SLEEP;MEDITATION;FOREST;BEACH;WATERFALL;SNOW;SPACE;BIRDS;JAZZ;PIANO;YOGA;CALM;RELAX;AMBIENT',
+    '18': r'HARRY POTTER;STAR WARS;MARVEL;LORD OF THE RINGS;JAMES BOND;JURASSIC PARK;FAST AND FURIOUS;MISSION IMPOSSIBLE;JOHN WICK;BATMAN;SPIDER MAN;PIRATES OF THE CARIBBEAN;DISNEY;PIXAR;SHREK;ICE AGE;TOY STORY;ROCKY;WILL FERRELL;ADAM SANDLER',
+    '19': r'GAME OF THRONES;BREAKING BAD;THE SOPRANOS;THE WIRE;STRANGER THINGS;THE WALKING DEAD;YELLOWSTONE;SUITS;GREY S ANATOMY;HOUSE;THE OFFICE;FRIENDS;THE BIG BANG THEORY;MODERN FAMILY;BROOKLYN NINE NINE;SIMPSONS;FAMILY GUY;NCIS;LOST;DOCTOR WHO',
+    '20': r'THE OFFICE;FRIENDS;SEINFELD;THE BIG BANG THEORY;MODERN FAMILY;BROOKLYN NINE NINE;PARKS AND RECREATION;EVERYBODY LOVES RAYMOND;THE FRESH PRINCE;SCHITT S CREEK;CURB YOUR ENTHUSIASM;TOP GEAR;THE GRAND TOUR;MASTERCHEF;HELL S KITCHEN;SURVIVOR;THE AMAZING RACE;RUPAUL;LOVE ISLAND;MARRIED AT FIRST SIGHT',
+    '21': r'BREAKING BAD;BETTER CALL SAUL;THE SOPRANOS;THE WIRE;YELLOWSTONE;PEAKY BLINDERS;THE WALKING DEAD;DEXTER;TRUE DETECTIVE;LAW AND ORDER|LAW & ORDER;NCIS;CRIMINAL MINDS;CSI;BOSCH;BLUE BLOODS;PRISON BREAK;THE SHIELD;LUTHER;SHERLOCK;SUPERNATURAL',
+    '22': r'NETFLIX ACTION;NETFLIX COMEDY;NETFLIX CRIME;NETFLIX DRAMA;NETFLIX SCI FI;NETFLIX HORROR;HBO;DISNEY;PRIME;APPLE TV;ONEPLAY;PARAMOUNT;HULU;BOSCH;THE GRAND TOUR;STRANGER THINGS;MARVEL;STAR WARS;DC;PIXAR',
+    '23': r'BLUEY;PAW PATROL;PEPPA PIG;POKEMON;SPONGEBOB;THE SIMPSONS;FAMILY GUY;RICK AND MORTY;BOB S BURGERS;AMERICAN DAD;TOM AND JERRY;LOONEY TUNES;SCOOBY DOO;TEEN TITANS;AVATAR;DRAGON BALL;NARUTO;ONE PIECE;DUCKTALES;THE SMURFS',
+    '24': r'HOME ALONE;THE GRINCH;ELF;THE POLAR EXPRESS;THE SANTA CLAUSE;CHRISTMAS VACATION;THE HOLIDAY;LOVE ACTUALLY;A CHRISTMAS CAROL;MIRACLE ON 34TH STREET;THE NIGHTMARE BEFORE CHRISTMAS;HALLMARK;SKY CINEMA;CHRISTMAS MOVIES;CHRISTMAS MUSIC;CHRISTMAS;SANTA;HOLIDAY;WINTER;DISNEY',
+    '25': r'ALL BLACKS;SUPER RUGBY;NRL;STATE OF ORIGIN;UFC;BOXING;FORMULA 1|F1;UEFA CHAMPIONS LEAGUE;PREMIER LEAGUE;FIFA;NBA;NFL;MLB;NHL;AFL;CRICKET;ICC;WIMBLEDON;PGA;WWE',
+}
+
+
+def browse_name(name):
+    value = unicodedata.normalize('NFKD', name.upper())
+    value = ''.join(ch for ch in value if not unicodedata.combining(ch))
+    value = re.sub(r'^\s*(?:[A-Z]{2,5}(?:-NOWTV)?|24/7)\s*[|:]\s*', '', value)
+    value = re.sub(r'^\s*24\s*/\s*7\s+', '', value)
+    return ' '.join(re.sub(r'[^A-Z0-9+&]+', ' ', value).split())
+
+
+def alphabetic_key(name):
+    return tuple((1, int(part)) if part.isdigit() else (0, part)
+                 for part in re.split(r'(\d+)', browse_name(name)))
+
+
+def order_category(rows, category):
+    featured = []
+    remaining = {row['stream_id']: row for row in rows}
+    names = {sid: browse_name(row['name']) for sid, row in remaining.items()}
+    for selector in FEATURED_CHANNELS[category].split(';'):
+        pattern = re.compile(r'(?:^| )(?:(?:' + selector + r'))(?= |$)')
+        matches = [sid for sid in remaining if pattern.search(names[sid]) and not re.search(r'\+\s*1\b', names[sid])]
+        if matches:
+            sid = min(matches, key=lambda item: (names[item] != selector, len(names[item])))
+            featured.append(remaining.pop(sid))
+    # Retain the existing editorial order for featured slots without a named match.
+    for sid in list(remaining)[:max(0, min(20, len(rows)) - len(featured))]:
+        featured.append(remaining.pop(sid))
+    return featured + sorted(remaining.values(), key=lambda row: alphabetic_key(row['name']))
+
+
+def channel_order_changes(client, bucket, release, rows, cats, template):
+    grouped = collections.defaultdict(list)
+    for row in rows:
+        grouped[str(row['category_id'])].append(row)
+    header, blocks = blocks_from_m3u(template.decode())
+    assert list(blocks) == [row['stream_id'] for row in rows], 'M3U and Xtream baseline order differs'
+    assert {str(cat['category_id']) for cat in cats} == set(grouped) == set(FEATURED_CHANNELS)
+    reordered = []
+    changes = {}
+
+    def encode(items):
+        return (json.dumps(items, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
+
+    for cat in cats:
+        key = str(cat['category_id'])
+        path = f'catalog/by-category/{key}.json'
+        original = fetch(client, bucket, release, path)
+        assert json.loads(original) == grouped[key]
+        ordered = order_category(grouped[key], key)
+        positions = sorted(row['num'] for row in grouped[key])
+        result = [dict(row, num=position) for row, position in zip(ordered, positions, strict=True)]
+        original_by_id = {row['stream_id']: row for row in grouped[key]}
+        assert all(row == dict(original_by_id[row['stream_id']], num=row['num']) for row in result)
+        assert result[20:] == sorted(result[20:], key=lambda row: alphabetic_key(row['name']))
+        print('CHANNEL_ORDER_CATEGORY', json.dumps([key, cat['category_name'], len(result),
+            [row['name'] for row in result[:20]], [row['name'] for row in result[20:23]]], ensure_ascii=False))
+        reordered.extend(result)
+        if result != grouped[key]:
+            changes[path] = encode(result)
+    assert len(reordered) == len(rows) and {row['stream_id'] for row in reordered} == set(blocks)
+    if reordered != rows:
+        changes['catalog/live_all.json'] = encode(reordered)
+        changes['catalog/template.m3u'] = (header + ''.join(blocks[row['stream_id']] for row in reordered)).encode()
+    return changes
+
+
+def publish(client, bucket, current, pointer, catalogue, guide, *, catalogue_kind='stations'):
     run = os.environ['GITHUB_RUN_ID']
     attempt = os.environ['GITHUB_RUN_ATTEMPT']
     if not run.isdigit() or not attempt.isdigit():
         raise ValueError('Invalid CI release identifier')
     target = 'prod' if bucket == PRODUCTION_BUCKET else 'qa'
-    kind = 'freeview' if guide else 'stations'
+    kind = 'freeview' if guide else catalogue_kind
     release = f'v{target}-{kind}-{run}-{attempt}'
     destination = f'releases/{release}/'
 
@@ -401,7 +497,7 @@ def publish(client, bucket, current, pointer, catalogue, guide):
         prefix = f'releases/{prior}/'
         unchanged.update({key.removeprefix(prefix): (key, size) for key, size in objects(prefix + scope + '/').items()
                           if key.removeprefix(prefix) not in changes})
-    if len(unchanged) < (3000 if guide else 12):
+    if len(unchanged) + len(changes) < (3000 if guide else 28):
         raise ValueError('The existing QA catalogue or guide is incomplete')
 
     def copy(entry):
@@ -449,6 +545,9 @@ def main():
     stations.add_argument('--audit-remaining', action='store_true')
     stations.add_argument('--publish-remaining', action='store_true')
     stations.add_argument('--verify-remaining', action='store_true')
+    stations.add_argument('--stage-order', action='store_true')
+    stations.add_argument('--publish-order', action='store_true')
+    stations.add_argument('--verify-order', action='store_true')
     args = parser.parse_args()
     bucket = PRODUCTION_BUCKET if args.production else QA_BUCKET
     target = 'PRODUCTION' if args.production else 'QA'
@@ -532,6 +631,22 @@ def main():
             r['stream_id'] for r in by[1]
             if r['stream_id'] in FREEVIEW and (not r.get('epg_channel_id') or r['epg_channel_id'] not in guide_ids)
         ]))
+        if args.stage_order or args.publish_order or args.verify_order:
+            target_ok = release.startswith('vprod-order-') if args.verify_order else release == BROWSE_BASELINE
+            if (not args.production or not target_ok or epg_release != BROWSE_GUIDE
+                    or len(rows) != 12714 or len(cats) != 24 or len(ppv) != 6756 or by[9]
+                    or hashlib.sha256(guide).hexdigest() != QA_RELEASE_HASHES['epg/guide.xml.gz']):
+                raise ValueError('Production baseline or protected assets changed before channel ordering')
+            changes = channel_order_changes(client, bucket, release, rows, cats, content['catalog/template.m3u'])
+            if args.verify_order:
+                assert not changes, 'The live catalogue is not in the verified featured and alphabetic order'
+                print('CHANNEL_ORDER_LIVE_VERIFIED', release, len(rows), len(cats))
+                return
+            digest = hashlib.sha256(changes['catalog/template.m3u']).hexdigest()
+            print('CHANNEL_ORDER_VALIDATED', len(rows), len(cats), len(changes), digest)
+            if args.publish_order:
+                publish(client, bucket, current_obj, pointer, changes, {}, catalogue_kind='order')
+            return
         if args.audit_remaining:
             if not args.production:
                 raise ValueError('Remaining station audit requires production')
