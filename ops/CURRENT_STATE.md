@@ -1,3 +1,11 @@
+## Featured channel order live on production | 23 November 2026 NZDT
+
+Published catalogue `vprod-order-45153376801-1` at `tv.loungetv.nz`. All 24 categories now start with 20 featured entries selected using editorial recognition (and the previous curated order to fill unmatched slots), followed by an A–Z tail that sorts numeric names naturally. NZ begins TVNZ 1, TVNZ 2, Three, Whakaata Māori, Te Reo, and Sky Sport. UK TV & Entertainment begins BBC One, BBC Two, ITV1, Channel 4, and Channel 5. The same order is used in Xtream category lists and M3U. Top PPV picks skip identified dividers and no-event placeholders. This release changes channel positions/`num` only, preserves the 12,714 IDs and all playback blocks, and keeps categories, names, logos, and guide mappings intact. No 4K UHD category was reintroduced. All 6,756 PPV stream IDs are retained.
+
+[Dry run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45153268267), [publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45153376801), and [live readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45153641962) passed. Production keeps guide `vprod-freeview-45145113439-1` and its previous SHA. Public HTTPS responded; Nuvio display and device playback were not directly tested. For rollback, conditionally restore the previous catalogue `vprod-stations-45150504093-1`, retaining guide `vprod-freeview-45145113439-1` and previous guide `v20261123-issue22`. QA, Worker, accounts, and Supabase were untouched.
+
+---
+
 ## Production follow-up duplicate cleanup | 23 November 2026 NZDT
 
 Published catalogue `vprod-stations-45150504093-1` at `tv.loungetv.nz`. Reviewed 98 additional pairs in the active catalogue using market and normalized names, including 27 pairs across categories, and kept one feed per pair. Existing valid guide data won when only one variant had it. Examples include UK SYFY, TNT Sports 1 and 4, Premier Sports 1 and 2, UK Nickelodeon, US BET, and repeated 24/7 titles. Distinct regional/language labels and timeshift qualifiers were preserved. The catalogue now has 12,714 unique stream IDs, 24 categories, no 4K UHD category, and all 6,756 PPV entries. NZ and Sky Sport routes were protected. The unified guide remained `vprod-freeview-45145113439-1` with the same SHA-256 and all five Freeview mappings.
