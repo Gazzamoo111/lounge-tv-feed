@@ -1,4 +1,4 @@
-name: Lounge TV read-only live R2 QA release preflight
+name: Lounge TV production channel order preview
 on:
   push:
     branches:
@@ -16,7 +16,7 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    environment: lounge-tv-xtream-qa-refresh
+    environment: lounge-tv-xtream-production-refresh
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,9 +24,9 @@ jobs:
           python-version: '3.12'
       - name: Install pinned R2 client
         run: python -m pip install boto3==1.42.78
-      - name: Read exact active QA R2 release and dry-run PR27 (never writes)
+      - name: Validate the featured and A–Z order on production catalogue data
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
-        run: python standalone-xtream/scripts/live_r2_preflight.py
+        run: python standalone-xtream/scripts/live_r2_preflight.py --production --stage-order
