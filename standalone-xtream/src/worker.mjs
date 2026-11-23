@@ -52,6 +52,9 @@ async function liveAction(url,account,env){
     const x=await asset(env,'catalog/live_categories.json');return x?bytesResponse(x):problem('catalogue_not_ready',503);
   }
   if(action==='get_live_streams'){
+    // Optional QA-only compatibility mode: Nuvio falls back to get.php and reads
+    // #KODIPROP Widevine metadata that Xtream JSON has no standard field for.
+    if(env.NUVIO_M3U_DRM_FALLBACK==='true')return problem('nuvio_m3u_drm_fallback_required',503);
     const category=url.searchParams.get('category_id');
     if(category&&!/^\d{1,5}$/.test(category))return problem('invalid_category');
     const x=await asset(env,category?`catalog/by-category/${category}.json`:'catalog/live_all.json');
