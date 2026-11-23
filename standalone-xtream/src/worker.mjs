@@ -135,8 +135,10 @@ async function redirectStream(url,env,parts){
   if(!/^\d{1,12}$/.test(streamId))return problem('unknown_stream',404);
   const match=await env.DB.prepare('SELECT stream_id FROM stream_ids WHERE stream_id = ?').bind(Number(streamId)).first();
   if(!match)return problem('unknown_stream',404);
-  const nz=env.ENABLE_NZ_OVERRIDES==='true'?nzSource(streamId):null;
+  const nz=nzSource(streamId);
   if(nz){
+    // Fail closed for reserved NZ IDs; never rewrite them as BEST-provider IDs.
+    if(env.ENABLE_NZ_OVERRIDES!=='true')return problem('nz_source_not_configured',503);
     if(nz.drm&&env.ENABLE_TVNZ_LICENSE_RELAY!=='true')return problem('nz_drm_not_configured',503);
     return new Response(null,{status:302,headers:{
       Location:nz.url,'Cache-Control':'private, no-store',
