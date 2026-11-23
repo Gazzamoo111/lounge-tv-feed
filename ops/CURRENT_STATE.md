@@ -1,3 +1,11 @@
+## QA-only duplicate and Freeview follow-up | 23 November 2026 NZDT
+
+The signed-in Cloudflare dashboard confirmed QA R2 `current.json` points to catalogue `v20261123-deduplicated25-au9` and unified EPG `v20261123-issue22`. Running PR #27's existing UK/US planners against the active category JSON previews (162 UK, 157 US) found 13 UK and one US candidates. Twelve UK pairs and the US TNT pair shared a non-empty guide ID. UK Sky Arts 1 FHD/HD had blank guide IDs on both rows and remains unconfirmed. The requested scope excludes 4K removal and Sky Sport reordering.
+
+The five `epg_channel_id` values for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo were blank in both the active catalogue and the archived `v20261123-premium25-nz5` NZ category. The earlier working mapping/configuration has not been recovered. The browser did not deliver the full catalogue download to the release workspace, and a conditional pointer write remains unavailable through the dashboard. No QA or production deployment. Existing tests passed (24 Node, 20 Python). Live QA returned `auth: 0` without credentials. Updated catalogue/guide and physical Nuvio verification remain pending. Active/rollback pair: `v20261123-deduplicated25-au9` + `v20261123-issue22`.
+
+---
+
 ## Issue #26 direct Cloudflare R2 read blocked | 23 November 2026 NZDT
 
 Read-only live QA preflight added to [draft PR #27](https://github.com/Gazzamoo111/lounge-tv-feed/pull/27): `standalone-xtream/scripts/live_r2_preflight.py` and `.github/workflows/xtream-r2-live-preflight.yml`. [Run 45126061821](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45126061821) failed prior to contacting Cloudflare because the existing GitHub Actions `lounge-tv-xtream-qa-refresh` environment exposed **empty** `vars.LTV_XTREAM_R2_ACCOUNT_ID`, `secrets.LTV_XTREAM_R2_ACCESS_KEY_ID` and `secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY`. These secrets were not fetched or printed. Direct chat has no Cloudflare connector and container DNS is unavailable. This is a verified access blocker, not an EPG compilation failure.
