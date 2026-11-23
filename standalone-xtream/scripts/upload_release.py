@@ -25,9 +25,7 @@ def main():
         total=sum(pool.map(upload,files))
     print(json.dumps({'uploaded_files':len(files),'bytes':total,'release':a.release,'activated':False}))
     if a.activate:
-        # Do not activate until the matching D1 stream_ids_seed.sql has been applied.
-        confirm=input('Confirm D1 stream IDs seeded and new release QA checked. Type ACTIVATE: ')
-        if confirm!='ACTIVATE':sys.exit('Activation cancelled')
-        client.put_object(Bucket=env['R2_BUCKET'],Key='current.json',Body=json.dumps({'release':a.release}).encode(),ContentType='application/json',CacheControl='no-store')
-        print('New release pointer active')
+        # This option must never rewrite current.json without an ETag conditional.
+        # The active pointer may also include a separately refreshed epg_release.
+        sys.exit('UNSAFE ACTIVATION BLOCKED: perform a conditional QA R2 current.json update preserving existing epg_release; use the Cloudflare release procedure.')
 if __name__=='__main__':main()
