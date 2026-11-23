@@ -1,0 +1,35 @@
+name: Refresh Lounge TV Xtream Production EPG
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '37 2,8,14,20 * * *'
+  push:
+    branches: [main]
+    paths: ['.github/workflows/xtream-production-epg-refresh.yml']
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-xtream-production-epg
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: b50f4d8bcfe64a46a46a74786f6f2345a737438b
+          persist-credentials: false
+          sparse-checkout: standalone-xtream/scripts
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - name: Validate and refresh only the production guide
+        env:
+          LTV_XTREAM_R2_BUCKET: loungetv-xtream-production-private
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+        run: python standalone-xtream/scripts/refresh_epg.py --scheduled-production
