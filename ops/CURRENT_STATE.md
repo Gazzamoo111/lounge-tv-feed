@@ -1,3 +1,11 @@
+## Phantom PPV category repair verified live in QA | 23 November 2026 NZDT
+
+QA serves new immutable catalogue `v20261123-deduplicated25-ppv-meta`. Applied `fix_ppv_group_metadata.py` from PR #24 commit `89626c0a892bec29bf2802e8444d737efaf30bec` to a fresh snapshot of active `v20261123-deduplicated25`. Dry run, application and idempotent rerun passed. The sole event display name change is for stream 2189718. Exactly three of 28 QA catalogue objects changed, including exactly one M3U EXTINF line. Category definitions and order, original canonical logo, all stream IDs, all URLs, PPV row order, and every other item field remained exact.
+
+Activated with an ETag-conditioned QA R2 pointer switch, keeping EPG release `v20261123-issue22`. Verified authenticated live HTTPS Xtream categories and the full M3U, with exactly 25 categories, 13,086 streams, 6,756 PPV entries, one group-title per EXTINF, and no legacy ZZ group. Both served sources have `🏆 Live Sport | Events & PPV` last. The live gzip XMLTV and exact redirects for the repaired PPV event, Sky Sport 1 and TVNZ 1 matched the pre-change checks. Nuvio's physical refresh and client-side sorting were not verified.
+
+QA Worker remains `ad8494b3-1905-4205-99dd-4af8c25c08a4`. Worker, D1, account bindings, production and Supabase were untouched. Rollback is a conditional QA `current.json` restore to `{"release":"v20261123-deduplicated25","epg_release":"v20261123-issue22"}`.
+
 ## QA catalogue deduplication and protected PPV | 23 November 2026 NZDT
 
 QA now serves immutable R2 catalogue `v20261123-deduplicated25` on Worker `ad8494b3-1905-4205-99dd-4af8c25c08a4`. The EPG pointer still uses `v20261123-issue22`. Verified 25 categories in the approved sequence with the original emojis and flags, ending in `🏆 Live Sport | Events & PPV`. The label changed from `🏆 Live Events`; its category ID stayed 25.
