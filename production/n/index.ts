@@ -1,3 +1,4 @@
+import { buildVodCatalogue, vodCatalogueRows } from "./vod-catalogue.mjs";
 import { nzSourceForBinding, nzPlaylistLines } from "./nz-routing.mjs";
 import { qaEpgAlias } from "./qa-epg-alias.mjs";
 import { nuvioChannelPriority } from "./channel-priority.mjs";
@@ -75,65 +76,8 @@ const LIVE_M3U_URL=SUPABASE_URL+"/functions/v1/lounge-core-live-m3u";
 const LIVE_XMLTV_URL=SUPABASE_URL+"/functions/v1/lounge-core-live-xmltv";
 const accountCache=new Map<string,{until:number,ok:boolean,payload:any}>();
 const accountInflight=new Map<string,Promise<{ok:boolean,payload:any}>>();
-const vodEntitlementCache=new Map<string,{until:number,ids:Set<number>}>();
-const vodEntitlementInflight=new Map<string,Promise<Set<number>|null>>();
 const catalogueCache=new Map<string,{until:number,rows:any[]}>();
 const catalogueInflight=new Map<string,Promise<any[]>>();
-let movieProbeCredsCache:{until:number,base:string,username:string,password:string}|null=null;
-
-async function movieProbeCredentials(){
-  if(movieProbeCredsCache&&movieProbeCredsCache.until>Date.now()) return movieProbeCredsCache;
-  const rows=await sql`
-    select decrypted_secret::jsonb as c
-    from vault.decrypted_secrets
-    where name='lounge_best_xtream_catalogue_credentials'
-    limit 1
-  `;
-  const c:any=rows[0]?.c;
-  if(!c?.username||!c?.password) return null;
-  const out={
-    until:Date.now()+10*60*1000,
-    base:String(c.server_url||BEST_BASE).replace(/\/+$/,""),
-    username:String(c.username),
-    password:String(c.password)
-  };
-  movieProbeCredsCache=out;
-  return out;
-}
-
-async function runtimeProbeMovieSource(source:any){
-  const creds=await movieProbeCredentials();
-  if(!creds)return false;
-  const ext=String(source.file_ext||"mp4").replace(/[^a-z0-9]/gi,"")||"mp4";
-  const target=creds.base+"/movie/"+encodeURIComponent(creds.username)+"/"+encodeURIComponent(creds.password)+"/"+Number(source.provider_item_id)+"."+ext;
-  let ok=false;
-  let status:number|null=null;
-  try{
-    const r=await fetch(target,{
-      headers:{Range:"bytes=0-65535",Accept:"*/*","User-Agent":"LoungeTV-VOD-Probe/1.0"},
-      signal:AbortSignal.timeout(7000)
-    });
-    status=r.status;
-    if(r.status===200||r.status===206){
-      const reader=r.body?.getReader();
-      if(reader){
-        const first=await reader.read();
-        ok=(first.value?.byteLength||0)>0;
-        try{await reader.cancel();}catch{}
-      }
-    }
-  }catch{}
-  const health=ok?"good":(status===404||status===410?"dead":"degraded");
-  await sql`
-    update lounge_core.sources
-    set runtime_health=${health},
-        runtime_verified=${ok},
-        last_runtime_verified_at=now(),
-        updated_at=now()
-    where id=${String(source.source_id)}::uuid
-  `;
-  return ok;
-}
 async function shareCatalogue(key:string,load:()=>Promise<any[]>){
   const existing=catalogueInflight.get(key);
   if(existing) return await existing;
@@ -142,47 +86,6 @@ async function shareCatalogue(key:string,load:()=>Promise<any[]>){
   try{return await task;}finally{catalogueInflight.delete(key);}
 }
 
-async function customerVodIds(base:string,u:string,p:string,action:"get_vod_streams"|"get_series"){
-  const key=u+"::"+p+"::"+action;
-  const hit=vodEntitlementCache.get(key);
-  if(hit&&hit.until>Date.now()) return hit.ids;
-  const existing=vodEntitlementInflight.get(key);
-  if(existing) return await existing;
-
-  const task=(async()=>{
-    if(vodEntitlementCache.size>50){
-      for(const [k,v] of vodEntitlementCache){
-        if(v.until<=Date.now()) vodEntitlementCache.delete(k);
-      }
-    }
-
-    const q=new URL(base+"/player_api.php");
-    q.searchParams.set("username",u);
-    q.searchParams.set("password",p);
-    q.searchParams.set("action",action);
-    try{
-      const r=await fetch(q,{
-        headers:{Accept:"application/json","User-Agent":"LoungeTV-Gateway/1.0"},
-        signal:AbortSignal.timeout(30000),
-      });
-      const payload=await r.json().catch(()=>null);
-      if(!r.ok||!Array.isArray(payload)) return null;
-      const ids=new Set<number>();
-      const field=action==="get_series"?"series_id":"stream_id";
-      for(const row of payload){
-        const id=Number(row?.[field]);
-        if(Number.isFinite(id)&&id>0) ids.add(id);
-      }
-      vodEntitlementCache.set(key,{until:Date.now()+1800000,ids});
-      return ids;
-    }catch{
-      return null;
-    }
-  })();
-
-  vodEntitlementInflight.set(key,task);
-  try{return await task;}finally{vodEntitlementInflight.delete(key);}
-}
 async function providerSeriesIdForEpisode(episodeId:number){
   const rows=await sql`
     select es.provider_series_item_id
@@ -1449,73 +1352,114 @@ function loungeMovieCapabilities(row:any){
   return [loungeMovieCodecLabel(row?.video_codec),loungeMovieCodecLabel(row?.audio_codec)]
     .filter(Boolean).join(" • ");
 }
-async function releaseVodRows(type:"movie"|"series",categoryId:number|null){
-  const rel=await activeRelease(); if(!rel)return [];
-  const cacheKey="release-vod:"+rel.id+":"+type+":"+(categoryId??"all");
-  const hit=catalogueCache.get(cacheKey);
-  if(hit&&hit.until>Date.now()) return hit.rows;
-  return await shareCatalogue(cacheKey,async()=>{
-    const secondHit=catalogueCache.get(cacheKey);
-    if(secondHit&&secondHit.until>Date.now()) return secondHit.rows;
-    const rows=await sql`
-      with primary_cat as (
-        select distinct on (m.canonical_id)
-          m.canonical_id,c.id category_id,c.display_name category_name
-        from lounge_delivery.category_members m
-        join lounge_delivery.categories c
-          on c.id=m.category_id and c.release_id=m.release_id
-         and c.kind=${type} and c.enabled
-         and c.category_key not in ('featured','new-releases','trending','popular')
-        where m.release_id=${rel.id}::uuid
-          and m.item_kind=${type}::lounge_delivery.item_kind
-        order by m.canonical_id,c.sort_order,c.id
-      )
-      select i.external_id,v.title_id,v.display_name,v.poster_url,v.backdrop_url,v.sort_order,v.editorial,
-             coalesce(src.provider_item_id,(v.editorial->>'primary_provider_item_id')::bigint) provider_item_id,
-             src.file_ext,src.resolution_height,src.video_codec,src.audio_codec,
-             pc.category_id,pc.category_name
+type VodKind = "movie" | "series";
+type VodCatalogue = ReturnType<typeof buildVodCatalogue>;
+const vodCatalogueCache = new Map<VodKind, { release: string; until: number; catalogue: VodCatalogue }>();
+const vodCatalogueInflight = new Map<string, Promise<VodCatalogue>>();
+
+async function loadVodCatalogue(type: VodKind, releaseId: string) {
+  const cache = vodCatalogueCache.get(type);
+  if (cache?.release === releaseId && cache.until > Date.now()) return cache.catalogue;
+  const key = type + ":" + releaseId;
+  const existing = vodCatalogueInflight.get(key);
+  if (existing) return await existing;
+
+  const task = (async () => {
+    const rows = await sql`
+      select i.external_id, v.display_name, v.poster_url, v.backdrop_url,
+             t.release_year, t.release_date, t.overview, t.runtime_minutes,
+             t.primary_audio_language, t.content_rating,
+             t.metadata->>'vote_average' rating, t.metadata->>'vote_count' votes,
+             t.metadata->>'popularity' popularity,
+             t.metadata->>'type' format,
+             t.metadata->'cast' cast,
+             bi.first_seen_at, src.file_ext, src.resolution_height, src.video_codec,
+             src.audio_codec, src.runtime_verified,
+             genre.names genres, collection.name collection, collection.sequence_order collection_order,
+             series.latest_episode_added_at
       from lounge_delivery.vod_release_items v
       join lounge_delivery.item_ids i
         on i.item_kind=${type}::lounge_delivery.item_kind and i.canonical_id=v.title_id
-      left join primary_cat pc on pc.canonical_id=v.title_id
+      join lounge_core.titles t on t.id=v.title_id and t.status<>'excluded'
+      join lounge_sync.best_inventory_items bi
+        on bi.kind=case when ${type}::text='movie' then 'movies' else 'series' end
+        and bi.provider_item_id=(v.editorial->>'primary_provider_item_id')::bigint
+        and bi.is_present and bi.is_adult is not true
       left join lateral (
-        select s.provider_item_id,s.file_ext,s.resolution_height,s.video_codec,s.audio_codec
+        select array_agg(g.name order by g.name) names
+        from lounge_core.title_genres tg
+        join lounge_core.genres g on g.id=tg.genre_id
+        where tg.title_id=v.title_id
+      ) genre on true
+      left join lateral (
+        select c.name, tc.sequence_order
+        from lounge_core.title_collections tc
+        join lounge_core.collections c on c.id=tc.collection_id
+        where ${type}::text='movie' and tc.title_id=v.title_id
+          and c.tmdb_collection_id is not null
+        order by c.sort_order, c.id
+        limit 1
+      ) collection on true
+      left join lateral (
+        select s.file_ext, s.resolution_height, s.video_codec, s.audio_codec,
+               (s.runtime_verified and s.runtime_health='good') runtime_verified
         from lounge_core.sources s
         join public.providers p on p.id=s.provider_id and p.name='BEST'
-        left join lounge_sync.best_inventory_items bi
-          on bi.kind='movies' and bi.provider_item_id=s.provider_item_id
-        where ${type}::text='movie'
-          and s.title_id=v.title_id
+        join lounge_sync.best_inventory_items source_inventory on source_inventory.kind='movies'
+          and source_inventory.provider_item_id=s.provider_item_id and source_inventory.is_present
+          and source_inventory.is_adult is not true
+        where ${type}::text='movie' and s.title_id=v.title_id and s.provider_kind='movies'
           and s.status not in ('rejected','missing','hidden')
-          and coalesce(bi.is_present,true)
+          and s.is_cam is not true and s.runtime_health is distinct from 'dead'
         order by
-          case when s.runtime_health='good' and s.runtime_verified=true
-                    and s.last_runtime_verified_at>now()-interval '24 hours' then 0
-               when s.runtime_health='good' and s.runtime_verified=true then 1
-               when s.runtime_health in ('unknown','degraded') then 2
-               else 3 end,
-          case when s.provider_item_id=(v.editorial->>'primary_provider_item_id')::bigint then 0 else 1 end,
-          case s.status when 'verified' then 0 when 'candidate' then 1 when 'degraded' then 2 else 3 end,
-          s.quality_score desc nulls last,
-          s.provider_item_id
+          case when s.runtime_verified and s.runtime_health='good' then 0 else 1 end,
+          case when s.provider_item_id=bi.provider_item_id then 0 else 1 end,
+          case s.status when 'verified' then 0 when 'candidate' then 1 else 2 end,
+          s.quality_score desc nulls last, s.provider_item_id
         limit 1
       ) src on true
-      where v.release_id=${rel.id}::uuid
-        and v.content_type=${type}
-        and v.admission='keep'
-        and (${categoryId}::bigint is null or exists(
-          select 1 from lounge_delivery.category_members mx
-          where mx.release_id=v.release_id
-            and mx.item_kind=${type}::lounge_delivery.item_kind
-            and mx.canonical_id=v.title_id
-            and mx.category_id=${categoryId}
-        ))
-      order by v.sort_order,i.external_id
+      left join lateral (
+        select count(*) episode_count,
+               max(e.created_at) filter (
+                 where e.release_date between current_date - 30 and current_date
+               ) latest_episode_added_at
+        from lounge_core.seasons se
+        join lounge_core.episodes e on e.season_id=se.id and e.status<>'excluded'
+        join lounge_delivery.item_ids ei on ei.item_kind='episode' and ei.canonical_id=e.id
+        where ${type}::text='series' and se.series_title_id=v.title_id and se.status<>'excluded'
+          and exists (
+            select 1 from lounge_core.episode_sources es
+            join public.providers p on p.id=es.provider_id and p.name='BEST'
+            where es.episode_id=e.id and es.provider_series_item_id=bi.provider_item_id
+              and es.status in ('verified','candidate','degraded')
+              and es.runtime_health is distinct from 'dead'
+          )
+      ) series on true
+      where v.release_id=${releaseId}::uuid and v.content_type=${type} and v.admission='keep'
+        and (case when ${type}::text='movie' then src.file_ext is not null else series.episode_count>0 end)
     `;
-    catalogueCache.set(cacheKey,{until:Date.now()+600000,rows});
-    return rows;
-  });
+    const catalogue = buildVodCatalogue(type, rows);
+    const previous = vodCatalogueCache.get(type);
+    if (!catalogue.rows.length && previous?.release === releaseId && previous.until + 30 * 60000 > Date.now()) {
+      return previous.catalogue;
+    }
+    vodCatalogueCache.set(type, { release: releaseId, until: Date.now() + 600000, catalogue });
+    return catalogue;
+  })();
+  vodCatalogueInflight.set(key, task);
+  try {
+    return await task;
+  } catch (error) {
+    const previous = vodCatalogueCache.get(type);
+    if (previous?.release === releaseId && previous.until + 30 * 60000 > Date.now()) {
+      return previous.catalogue;
+    }
+    throw error;
+  } finally {
+    vodCatalogueInflight.delete(key);
+  }
 }
+
 async function releaseLivePlayback(externalId:number){
   const rel=await activeRelease(); if(!rel)return null;
   const rows=await sql`
@@ -1547,7 +1491,9 @@ async function releaseMoviePlayback(externalId:number){
     join lounge_sync.best_inventory_items bi
       on bi.kind='movies' and bi.provider_item_id=s.provider_item_id and bi.is_present=true
     where i.item_kind='movie' and i.external_id=${externalId}
-      and s.status not in ('rejected','missing','hidden')
+      and s.provider_kind='movies' and s.status not in ('rejected','missing','hidden')
+      and bi.is_adult is not true and s.is_cam is not true
+      and s.runtime_health is distinct from 'dead'
     order by
       case when s.runtime_health='good' and s.runtime_verified=true
                  and s.last_runtime_verified_at>now()-interval '24 hours' then 0
@@ -1558,28 +1504,9 @@ async function releaseMoviePlayback(externalId:number){
       case s.status when 'verified' then 0 when 'candidate' then 1 when 'degraded' then 2 else 3 end,
       s.quality_score desc nulls last,
       s.provider_item_id
+    limit 1
   `;
-  if(!rows.length)return null;
-
-  // A source proven good in the last 24h opens immediately.
-  const freshGood=rows.find((r:any)=>
-    r.runtime_health==='good'&&r.runtime_verified===true&&r.last_runtime_verified_at&&
-    (Date.now()-new Date(r.last_runtime_verified_at).getTime())<24*60*60*1000
-  );
-  if(freshGood)return freshGood;
-
-  // Never make the customer discover a dead file. Probe up to three candidate copies
-  // with Lounge's dedicated catalogue line, then redirect the customer's own line only
-  // after bytes have actually been observed.
-  const candidates=rows.filter((r:any)=>{
-    if(r.runtime_health!=='dead'||!r.last_runtime_verified_at)return true;
-    return (Date.now()-new Date(r.last_runtime_verified_at).getTime())>24*60*60*1000;
-  }).slice(0,3);
-
-  for(const source of candidates){
-    if(await runtimeProbeMovieSource(source))return source;
-  }
-  return null;
+  return rows[0] || null;
 }
 async function releaseEpisodePlayback(externalId:number){
   const rel=await activeRelease(); if(!rel)return null;
@@ -1593,14 +1520,22 @@ async function releaseEpisodePlayback(externalId:number){
     join lateral (
       select x.provider_episode_id,x.provider_series_item_id,x.file_ext
       from lounge_core.episode_sources x
+      join public.providers p on p.id=x.provider_id and p.name='BEST'
       where x.episode_id=e.id and x.status in ('verified','candidate','degraded')
+        and x.runtime_health is distinct from 'dead'
+        and x.provider_series_item_id=(v.editorial->>'primary_provider_item_id')::bigint
       order by
-        case when x.provider_series_item_id=(v.editorial->>'primary_provider_item_id')::bigint then 0 else 1 end,
         case x.status when 'verified' then 0 when 'candidate' then 1 else 2 end,
         x.runtime_verified desc,x.quality_score desc
       limit 1
     ) es on true
     where i.item_kind='episode' and i.external_id=${externalId}
+      and e.status<>'excluded' and se.status<>'excluded'
+      and exists (
+        select 1 from lounge_sync.best_inventory_items bi
+        where bi.kind='series' and bi.provider_item_id=es.provider_series_item_id
+          and bi.is_present and bi.is_adult is not true
+      )
     limit 1
   `;
   return rows[0]||null;
@@ -1609,12 +1544,8 @@ async function releaseMovieInfo(externalId:number){
   const rel=await activeRelease(); if(!rel)return null;
   const rows=await sql`
     select i.external_id,v.title_id,v.display_name,v.poster_url,v.backdrop_url,v.editorial,
-           t.release_year,t.release_date,t.overview,t.runtime_minutes,t.metadata,
-           (v.editorial->>'primary_provider_item_id')::bigint provider_item_id,
-           coalesce((select s.file_ext from lounge_core.sources s
-             where s.title_id=v.title_id and s.provider_item_id=(v.editorial->>'primary_provider_item_id')::bigint
-               and s.status not in ('rejected','missing','hidden')
-             order by case s.source_role when 'primary' then 0 when 'backup' then 1 else 2 end,s.quality_score desc limit 1),'mp4') file_ext
+           t.release_year,t.release_date,t.overview,t.runtime_minutes,t.content_rating,t.tmdb_id,t.metadata,
+           v.editorial->>'primary_provider_item_id' provider_item_id
     from lounge_delivery.item_ids i
     join lounge_delivery.vod_release_items v
       on v.title_id=i.canonical_id and v.release_id=${rel.id}::uuid and v.content_type='movie' and v.admission='keep'
@@ -1623,14 +1554,16 @@ async function releaseMovieInfo(externalId:number){
     limit 1
   `;
   if(!rows.length)return null;
+  const source=await releaseMoviePlayback(externalId);
+  if(!source)return null;
   const r:any=rows[0],m=r.metadata||{};
   const genres=await sql`select g.name from lounge_core.title_genres tg join lounge_core.genres g on g.id=tg.genre_id where tg.title_id=${String(r.title_id)}::uuid order by g.name`;
   const cast=Array.isArray(m.cast)?m.cast.map((x:any)=>x?.name).filter(Boolean).slice(0,15).join(", "):"";
   return {
-    info:{tmdb_id:m.tmdb_id??r.editorial?.tmdb_id??null,name:r.display_name,original_name:r.display_name,movie_image:r.poster_url||"",plot:r.overview||"",description:r.overview||"",
-      releasedate:r.release_date||"",year:r.release_year||null,genre:genres.map((x:any)=>x.name).join(", "),cast,rating:Number(m.vote_average||0),
+    info:{tmdb_id:r.tmdb_id??null,name:r.display_name,original_name:r.display_name,movie_image:r.poster_url||"",plot:r.overview||"",description:r.overview||"",
+      releasedate:r.release_date||"",year:r.release_year||null,genre:genres.map((x:any)=>x.name).join(", "),cast,rating:m.vote_average??null,mpaa_rating:r.content_rating||"",
       duration_secs:r.runtime_minutes?Number(r.runtime_minutes)*60:0,backdrop_path:r.backdrop_url?[r.backdrop_url]:[]},
-    movie_data:{stream_id:Number(r.external_id),name:r.display_name,container_extension:r.file_ext||"mp4",custom_sid:null,direct_source:""},
+    movie_data:{stream_id:Number(r.external_id),name:r.display_name,container_extension:source.file_ext,custom_sid:null,direct_source:""},
     provider_item_id:Number(r.provider_item_id)
   };
 }
@@ -1638,11 +1571,16 @@ async function releaseSeriesInfo(externalId:number){
   const rel=await activeRelease(); if(!rel)return null;
   const srows=await sql`
     select i.external_id,v.title_id,v.display_name,v.poster_url,v.backdrop_url,v.editorial,
-           t.overview,t.release_date,t.release_year,t.metadata
+           t.overview,t.release_date,t.release_year,t.content_rating,t.metadata
     from lounge_delivery.item_ids i
     join lounge_delivery.vod_release_items v on v.title_id=i.canonical_id and v.release_id=${rel.id}::uuid and v.content_type='series' and v.admission='keep'
     join lounge_core.titles t on t.id=v.title_id
     where i.item_kind='series' and i.external_id=${externalId}
+      and exists (
+        select 1 from lounge_sync.best_inventory_items bi
+        where bi.kind='series' and bi.provider_item_id=(v.editorial->>'primary_provider_item_id')::bigint
+          and bi.is_present and bi.is_adult is not true
+      )
     limit 1
   `;
   if(!srows.length)return null;
@@ -1659,9 +1597,11 @@ async function releaseSeriesInfo(externalId:number){
     join lateral (
       select es.file_ext
       from lounge_core.episode_sources es
+      join public.providers p on p.id=es.provider_id and p.name='BEST'
       where es.episode_id=e.id and es.status in ('verified','candidate','degraded')
+        and es.runtime_health is distinct from 'dead'
+        and es.provider_series_item_id=${primarySeriesProviderItemId}
       order by
-        case when es.provider_series_item_id=${primarySeriesProviderItemId} then 0 else 1 end,
         case es.status when 'verified' then 0 when 'candidate' then 1 else 2 end,
         es.runtime_verified desc,es.quality_score desc
       limit 1
@@ -1669,6 +1609,7 @@ async function releaseSeriesInfo(externalId:number){
     where se.series_title_id=${String(s.title_id)}::uuid and se.status<>'excluded'
     order by se.season_number,e.episode_number
   `;
+  if (!rows.length) return null;
   const episodes:Record<string,unknown[]>={};const seasons=new Map<number,any>();
   for(const r of rows){
     const n=Number(r.season_number),k=String(n);
@@ -1678,9 +1619,13 @@ async function releaseSeriesInfo(externalId:number){
       release_date:r.release_date?new Date(r.release_date).toISOString().slice(0,10):null,info:{plot:r.overview||"",movie_image:r.still_url||""}});
   }
   const m=s.metadata||{};
+  const expected = Number(m.number_of_episodes) || 0;
+  const completeness = expected > 0 && rows.length < expected
+    ? { expected_episodes: expected, available_episodes: rows.length }
+    : {};
   return {
     info:{name:s.display_name,cover:s.poster_url||"",plot:s.overview||"",cast:Array.isArray(m.cast)?m.cast.map((x:any)=>x?.name).filter(Boolean).slice(0,15).join(", "):"",
-      rating:Number(m.vote_average||0),releaseDate:s.release_date||"",year:s.release_year||null,backdrop_path:s.backdrop_url?[s.backdrop_url]:[]},
+      rating:m.vote_average??null,mpaa_rating:s.content_rating||"",...completeness,releaseDate:s.release_date||"",year:s.release_year||null,backdrop_path:s.backdrop_url?[s.backdrop_url]:[]},
     seasons:[...seasons.values()].sort((a:any,b:any)=>a.season_number-b.season_number),episodes,
     provider_item_id:Number(s.editorial?.primary_provider_item_id)
   };
@@ -1863,7 +1808,8 @@ Deno.serve(async(req)=>{
   }
   if(parts[0]==="movie"||parts[0]==="series"){
     const kind=parts[0] as "movie"|"series";const {u,p}=credentials(url,parts);const idPart=parts[3]||"";
-    const externalId=Number(idPart.split(".")[0]);if(!u||!p||!Number.isFinite(externalId)) return json({error:"not_allowed"},403);
+    const externalId=Number(idPart.split(".")[0]);if(!u||!p||!Number.isSafeInteger(externalId)||externalId<1) return json({error:"not_allowed"},403);
+    if(!(await catalogueAccountState(base,u,p)).ok) return json({error:"not_allowed"},403);
     if(kind==="movie"){
       const mapped:any=await releaseMoviePlayback(externalId);
       if(!mapped)return json({error:"movie_source_unavailable"},503);
@@ -1937,43 +1883,43 @@ Deno.serve(async(req)=>{
       added:"0",category_id:r.category_id?String(r.category_id):"0",custom_sid:"",tv_archive:0,direct_source:"",tv_archive_duration:0
     })));
   }
-  if(action==="get_vod_categories") return json(await releaseCategories("movie"));
-  if(action==="get_series_categories") return json(await releaseCategories("series"));
-  if(action==="get_vod_streams"){
-    const wantedRaw=Number(url.searchParams.get("category_id")||0);const wanted=Number.isFinite(wantedRaw)&&wantedRaw>0?wantedRaw:null;
-    const rows=await releaseVodRows("movie",wanted);
-    return json(rows.map((r:any,i:number)=>({
-      num:i+1,name:String(r.display_name),stream_type:"movie",stream_id:Number(r.external_id),
-      stream_icon:r.poster_url||"",rating:0,rating_5based:0,
-      added:"0",category_id:r.category_id?String(r.category_id):"0",container_extension:String(r.file_ext||"mp4"),
-      lounge_quality_rank:loungeMovieQualityRank(r.resolution_height),
-      lounge_capabilities:loungeMovieCapabilities(r),
-      custom_sid:null,direct_source:"",plot:""
+  if (["get_vod_categories", "get_vod_streams", "get_series_categories", "get_series"].includes(action)) {
+    const type: VodKind = action.startsWith("get_vod") ? "movie" : "series";
+    const release = await activeRelease();
+    if (!release) return json({error:"curated_catalogue_unavailable"},503);
+    const catalogue = await loadVodCatalogue(type, release.id);
+    if (action.endsWith("_categories")) return json(catalogue.categories);
+    const rows = vodCatalogueRows(catalogue, url.searchParams.get("category_id") || null);
+    if (type === "movie") {
+      return json(rows.map((r: any) => ({
+        num: r.position, name: r.display_name, stream_type: "movie", stream_id: Number(r.external_id),
+        stream_icon: r.poster_url || "", rating: r.rating, rating_5based: r.rating_5based,
+        added: r.added, category_id: r.category_id, category_ids: r.category_ids,
+        container_extension: r.file_ext, lounge_quality_rank: loungeMovieQualityRank(r.resolution_height),
+        lounge_capabilities: loungeMovieCapabilities(r), custom_sid: null, direct_source: "",
+      })));
+    }
+    return json(rows.map((r: any) => ({
+      num: r.position, name: r.display_name, series_id: Number(r.external_id), cover: r.poster_url || "",
+      plot: r.overview || "",
+      cast: Array.isArray(r.cast) ? r.cast.map((person: any) => person?.name).filter(Boolean).slice(0, 15).join(", ") : "",
+      director: "", genre: r.genres.join(", "), releaseDate: r.release_date || "",
+      last_modified: r.last_modified, rating: r.rating, rating_5based: r.rating_5based,
+      backdrop_path: r.backdrop_url ? [r.backdrop_url] : [], youtube_trailer: "",
+      episode_run_time: r.runtime_minutes ? String(r.runtime_minutes) : "",
+      category_id: r.category_id, category_ids: r.category_ids, year: r.release_year ?? null,
     })));
   }
   if(action==="get_vod_info"){
     const externalId=Number(url.searchParams.get("vod_id")||0);const info:any=await releaseMovieInfo(externalId);
     if(!info)return json({error:"not_found"},404);
-    const ids=await customerVodIds(base,u,p,"get_vod_streams");if(!ids)return json({error:"entitlement_unavailable"},502);
-    if(!ids.has(Number(info.provider_item_id)))return json({error:"not_allowed"},403);
+    // The account is authenticated above. This response is editorial metadata
+    // only. BEST validates the customer's assigned credentials at playback.
     const {provider_item_id,...publicInfo}=info;return json(publicInfo);
-  }
-  if(action==="get_series"){
-    const wantedRaw=Number(url.searchParams.get("category_id")||0);const wanted=Number.isFinite(wantedRaw)&&wantedRaw>0?wantedRaw:null;
-    const rows=await releaseVodRows("series",wanted);
-    return json(rows.map((r:any,i:number)=>({
-      num:i+1,name:String(r.display_name),series_id:Number(r.external_id),cover:r.poster_url||"",
-      plot:"",cast:"",director:"",genre:"",releaseDate:"",
-      last_modified:"0",rating:0,rating_5based:0,
-      backdrop_path:r.backdrop_url?[r.backdrop_url]:[],youtube_trailer:"",episode_run_time:"",
-      category_id:r.category_id?String(r.category_id):"0",year:null
-    })));
   }
   if(action==="get_series_info"){
     const externalId=Number(url.searchParams.get("series_id")||0);const info:any=await releaseSeriesInfo(externalId);
     if(!info)return json({error:"not_found"},404);
-    const ids=await customerVodIds(base,u,p,"get_series");if(!ids)return json({error:"entitlement_unavailable"},502);
-    if(!ids.has(Number(info.provider_item_id)))return json({error:"not_allowed"},403);
     const {provider_item_id,...publicInfo}=info;
     // Lounge Android's pinned OwnTV parser accepts the documented flat-array
     // variant reliably. Keep the standard season-keyed object for third-party
