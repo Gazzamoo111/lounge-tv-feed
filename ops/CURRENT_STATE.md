@@ -1,3 +1,9 @@
+## Pre-VOD Worker restored | 25 November 2026 NZDT
+
+[Rollback run 45470783899](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45470783899), job 138717863138, restoration step succeeded. Logs confirm `ROLLBACK VERIFIED: 8a90126d-709e-4f18-bd6c-1b631ac05bc4` and public health/auth rejection checks passed. Deployment readback verifies original Worker at 100%. Failed VOD trial no longer serving. Existing device Live TV/EPG playback remains untested after rollback. No catalogue, R2 pointer, credentials, Supabase or TorBox configuration changed. Preserve all migration assets; On Demand integration paused. Separate authorised TorBox setup is not completed by this rollback.
+
+---
+
 ## Pause integrated VOD; restore pre-VOD live gateway | 25 November 2026 NZDT
 
 Owner stated to switch to TorBox if integrated VOD could not be brought to an acceptable state. Given failed device acceptance and unresolved Nuvio import and playback compatibility, operator chose to stop the trial rather than continue speculative production changes. Guarded rollback workflow [45470783899](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45470783899), commit `18bdd471f62e063f9eb5f2c9371b013b8cfc1555`, triggered to restore original live-only Worker `8a90126d-709e-4f18-bd6c-1b631ac05bc4` only if active version is failed trial `3c8ebb6c-df07-4daa-ba41-1d09b7ff193b` (or verify already restored). Health/auth rejection checks and deployment readback required. Rollback result pending at this record. Preserve approved snapshot, VOD release `v0474549ed95eb581b84507c4`, migration branch, all Supabase services, account bindings and live/EPG pointers. No TorBox configuration or account changes performed. Actual TV live/EPG playback and separate authorised on-demand setup require validation. Do not merge temporary deployment workflows or remove Supabase.
