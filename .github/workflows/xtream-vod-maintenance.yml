@@ -1,5 +1,12 @@
 name: Lounge TV On Demand catalogue
 on:
+  pull_request:
+    paths:
+      - 'standalone-xtream/src/worker.mjs'
+      - 'standalone-xtream/src/vod.mjs'
+      - 'standalone-xtream/tests/worker.test.mjs'
+      - 'standalone-xtream/vod/**'
+      - '.github/workflows/xtream-vod-maintenance.yml'
   workflow_dispatch:
     inputs:
       operation:
@@ -14,8 +21,24 @@ concurrency:
   group: lounge-tv-xtream-vod
   cancel-in-progress: false
 jobs:
+  tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test standalone-xtream/tests/*.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s standalone-xtream/tests -p 'test_*.py'
   catalogue:
-    if: github.event_name == 'workflow_dispatch' || vars.LTV_VOD_AUTOMATION == 'enabled'
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.LTV_VOD_AUTOMATION == 'enabled')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: lounge-tv-xtream-production-refresh
