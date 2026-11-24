@@ -12,6 +12,8 @@ from urllib.parse import urlencode, urlsplit
 from urllib.request import HTTPRedirectHandler, build_opener
 
 import boto3
+from botocore.config import Config
+from botocore.exceptions import ClientError
 
 ROOT = Path(__file__).resolve().parent
 PREFIX = "vod/"
@@ -78,17 +80,61 @@ def with_inventory(seed):
 def storage():
     return boto3.client("s3", endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
                         aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],
-                        aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"], region_name="auto")
+                        aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"], region_name="auto",
+                        config=Config(max_pool_connections=12, retries={"mode": "standard", "total_max_attempts": 6},
+                                      request_checksum_calculation="when_required", response_checksum_validation="when_required",
+                                      connect_timeout=10, read_timeout=60))
+
+
+def error_status(exc):
+    return exc.response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+
+
+def r2_failure(operation, exc):
+    # Never emit response bodies, object contents, request URLs or headers.
+    code = exc.response.get("Error", {}).get("Code", "")
+    safe_codes = {"AccessDenied", "NoSuchKey", "NoSuchBucket", "PreconditionFailed",
+                  "SlowDown", "TooManyRequests", "InternalError", "ServiceUnavailable",
+                  "InvalidRequest", "InvalidArgument", "SignatureDoesNotMatch",
+                  "BadDigest", "RequestTimeout", "OperationAborted", "ObjectLockedByBucketPolicy"}
+    status = error_status(exc)
+    return RuntimeError(f"R2 {operation}: HTTP {status if isinstance(status, int) else 'unknown'} "
+                        f"({code if code in safe_codes else 'other'})")
 
 
 def read(s3, bucket, key):
     try:
         return s3.get_object(Bucket=bucket, Key=key)
-    except s3.exceptions.NoSuchKey:
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") == "NoSuchKey":
+            return None
+        raise r2_failure("GetObject", exc) from None
+
+
+def read_bytes(s3, bucket, key):
+    obj = read(s3, bucket, key)
+    if obj is None:
         return None
+    try:
+        return obj["Body"].read()
+    finally:
+        obj["Body"].close()
 
 
-def publish(s3, bucket, output, active):
+def immutable(s3, bucket, key, body, known):
+    if not known:
+        try:
+            s3.put_object(Bucket=bucket, Key=key, Body=body, IfNoneMatch="*")
+        except ClientError as exc:
+            # A previous attempt or a lost successful response can leave the object.
+            if error_status(exc) != 412:
+                raise r2_failure("PutObject immutable", exc) from None
+    actual = read_bytes(s3, bucket, key)
+    if actual is None or hashlib.sha256(actual).digest() != hashlib.sha256(body).digest():
+        raise RuntimeError("VOD immutable object readback mismatch")
+
+
+def publish(s3, bucket, output, active, bootstrap=False):
     manifest = {}
     for file in sorted(output.rglob("*")):
         if file.is_file():
@@ -96,36 +142,55 @@ def publish(s3, bucket, output, active):
                 manifest[file.relative_to(output).as_posix()] = hashlib.file_digest(stream, "sha256").hexdigest()
     raw = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
     release = "v" + hashlib.sha256(raw).hexdigest()[:24]
-    previous = json.load(active["Body"])["release"] if active else None
-    if release == previous:
-        print(f"Unchanged VOD release {release}")
-        return
+    previous = None
+    if active:
+        try:
+            previous = json.load(active["Body"])["release"]
+        finally:
+            active["Body"].close()
+    if bootstrap and previous and previous != release:
+        raise RuntimeError("Bootstrap refuses to replace a different active VOD release")
     prefix = f"{PREFIX}releases/{release}/"
-    objects = {
-        item["Key"]: item["Size"]
-        for page in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=PREFIX)
-        for item in page.get("Contents", [])
-    }
-    bytes_to_add = sum((output / key).stat().st_size for key in manifest if prefix + key not in objects)
-    if sum(objects.values()) + bytes_to_add + len(raw) + 512 > VOD_BUDGET:
-        raise RuntimeError("VOD storage budget exhausted. Keep the active and rollback releases and archive older VOD versions.")
-    for key, sha in manifest.items():
+    try:
+        objects = {
+            item["Key"]: item["Size"]
+            for page in s3.get_paginator("list_objects_v2").paginate(Bucket=bucket, Prefix=PREFIX)
+            for item in page.get("Contents", [])
+        }
+    except ClientError as exc:
+        raise r2_failure("ListObjectsV2", exc) from None
+    missing = [key for key in manifest if prefix + key not in objects]
+    bytes_to_add = sum((output / key).stat().st_size for key in missing)
+    bytes_to_add += len(raw) if prefix + "manifest.json" not in objects else 0
+    print(f"VOD release {release}: {len(manifest)} objects, {len(missing)} missing, "
+          f"{sum(objects.values())} existing bytes, {bytes_to_add} additional bytes", flush=True)
+    if sum(objects.values()) + bytes_to_add + 512 > VOD_BUDGET:
+        raise RuntimeError("VOD storage budget exhausted. Keep active and rollback releases.")
+    def verify(key):
         body = (output / key).read_bytes()
-        stored = read(s3, bucket, prefix + key)
-        if not stored:
-            s3.put_object(Bucket=bucket, Key=prefix + key, Body=body, IfNoneMatch="*")
-            stored = read(s3, bucket, prefix + key)
-        if not stored or hashlib.sha256(stored["Body"].read()).hexdigest() != sha:
-            raise RuntimeError("VOD release readback check failed")
-    if prefix + "manifest.json" not in objects:
-        s3.put_object(Bucket=bucket, Key=prefix + "manifest.json", Body=raw, IfNoneMatch="*")
+        if hashlib.sha256(body).hexdigest() != manifest[key]:
+            raise RuntimeError("Local VOD object changed during publication")
+        immutable(s3, bucket, prefix + key, body, prefix + key in objects)
+    # Bounded concurrency; never overwrite existing immutable objects.
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        for index, _ in enumerate(pool.map(verify, manifest), 1):
+            if index % 250 == 0 or index == len(manifest):
+                print(f"Verified {index}/{len(manifest)} VOD objects", flush=True)
+    immutable(s3, bucket, prefix + "manifest.json", raw, prefix + "manifest.json" in objects)
+    if previous == release:
+        print(f"Verified existing VOD release {release}; pointer unchanged", flush=True)
+        return
     condition = {"IfMatch": active["ETag"]} if active else {"IfNoneMatch": "*"}
-    s3.put_object(Bucket=bucket, Key=POINTER, ContentType="application/json", CacheControl="no-store",
-                  Body=json.dumps({"release": release, "previous_release": previous}).encode(), **condition)
-    current = read(s3, bucket, POINTER)
-    if not current or json.load(current["Body"])["release"] != release:
-        raise RuntimeError("VOD pointer readback check failed")
-    print(f"VOD release {release}, rollback {previous or 'disabled'}")
+    try:
+        s3.put_object(Bucket=bucket, Key=POINTER, ContentType="application/json", CacheControl="no-store",
+                      Body=json.dumps({"release": release, "previous_release": previous}).encode(), **condition)
+    except ClientError as exc:
+        if error_status(exc) != 412:
+            raise r2_failure("PutObject VOD pointer", exc) from None
+    current = read_bytes(s3, bucket, POINTER)
+    if not current or json.loads(current) != {"release": release, "previous_release": previous}:
+        raise RuntimeError("VOD pointer readback check failed; refusing to overwrite")
+    print(f"VOD release {release}, rollback {previous or 'disabled'}", flush=True)
 
 
 def main():
@@ -136,12 +201,13 @@ def main():
     s3 = storage()
     bucket = os.environ["LTV_VOD_BUCKET"]
     active = read(s3, bucket, POINTER)
-    if args.bootstrap and args.publish and active:
-        raise RuntimeError("Bootstrap publication requires an empty VOD pointer")
     approved = read(s3, bucket, SEED)
     if not approved:
         raise RuntimeError("Approved private VOD snapshot has not been staged")
-    seed = json.load(approved["Body"])
+    try:
+        seed = json.load(approved["Body"])
+    finally:
+        approved["Body"].close()
     snapshot = seed if args.bootstrap else with_inventory(seed)
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
@@ -152,14 +218,16 @@ def main():
                                    capture_output=True, text=True, check=False)
         if completed.returncode:
             raise RuntimeError("Approved VOD catalogue validation failed")
-        print(completed.stdout.strip())
+        print(completed.stdout.strip(), flush=True)
         if args.publish:
-            publish(s3, bucket, out, active)
+            publish(s3, bucket, out, active, bootstrap=args.bootstrap)
 
 
 if __name__ == "__main__":
     try:
         main()
+    except ClientError as error:
+        raise SystemExit(str(r2_failure("request", error))) from None
     except Exception as error:
         # Third-party exception bodies can contain private URLs and credentials.
         message = str(error) if type(error) is RuntimeError else type(error).__name__

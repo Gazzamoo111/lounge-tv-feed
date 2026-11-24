@@ -7,6 +7,8 @@ on:
       - 'standalone-xtream/tests/worker.test.mjs'
       - 'standalone-xtream/vod/**'
       - '.github/workflows/xtream-vod-maintenance.yml'
+  push:
+    branches: ['feature/cloudflare-vod-20261124']
   workflow_dispatch:
     inputs:
       operation:
@@ -22,7 +24,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   tests:
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[vod-bootstrap-recovery-20261125]'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -36,9 +38,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
       - run: python -m unittest discover -s standalone-xtream/tests -p 'test_*.py'
   catalogue:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && vars.LTV_VOD_AUTOMATION == 'enabled')
+    needs: tests
+    if: always() && ((github.event_name == 'workflow_dispatch' && needs.tests.result == 'skipped') || (github.event_name == 'schedule' && needs.tests.result == 'skipped' && vars.LTV_VOD_AUTOMATION == 'enabled') || (github.event_name == 'push' && needs.tests.result == 'success' && contains(github.event.head_commit.message, '[vod-bootstrap-recovery-20261125]')))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: lounge-tv-xtream-production-refresh
@@ -69,7 +73,7 @@ jobs:
       - name: Compile and validate the VOD release
         if: inputs.operation != 'stage'
         env:
-          OPERATION: ${{ inputs.operation || 'refresh' }}
+          OPERATION: ${{ github.event_name == 'push' && 'bootstrap' || inputs.operation || 'refresh' }}
           LTV_VOD_BUCKET: loungetv-xtream-production-private
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
