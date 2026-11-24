@@ -1,3 +1,9 @@
+## VOD migration continuation | 24 November 2026 NZDT
+
+PR #31 original head `29ff7c6` passed the [Node and Python CI job](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45365692414); catalogue job skipped. Subsequent candidate changes fix Xtream `category_id=0` for both VOD lists, add regression assertions, and add a manual private export/stage operation to the existing VOD workflow. Staging uses a read-only PostgreSQL connection (`LTV_VOD_EXPORT_DATABASE_URL`, protected environment secret) and existing R2 credential names, with counts and SHA-256 checked and no pointer mutation. These new changes have not yet been verified by CI. Workflow is absent on default branch, so manual UI dispatch registration remains unresolved. Regular Chat connector lacks workflow dispatch, secret configuration and Cloudflare control; connected browser requires the originating browser session. R2 access has not been retested. No private data exported, no production changes, no Supabase writes or retirement. Legacy VOD QA v1 still present. Authorised supplier intake of new titles/episodes remains unimplemented; current refresh only filters approved inventory. Rollback baseline recorded below. Do not activate VOD or retire legacy services before validation.
+
+---
+ 
 ## Cloudflare On Demand migration candidate | 24 November 2026 NZDT
 
 [Issue #29](https://github.com/Gazzamoo111/lounge-tv-feed/issues/29). The Cloudflare dashboard confirms `tv.loungetv.nz` serves `loungetv-xtream-production` `8a90126d-709e-4f18-bd6c-1b631ac05bc4` at 100%, backed by its existing D1 and private R2. The standalone source currently gives empty authenticated VOD results. Legacy Supabase `n` v39, Plus v8 and standalone VOD QA v1 remain deployed. The read-only approved export counted 5,142 movie IDs, 1,641 series IDs and 48,369 distinct episode IDs.
