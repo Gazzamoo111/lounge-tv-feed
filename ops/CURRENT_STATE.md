@@ -1,3 +1,9 @@
+## Approved private VOD export | 24 November 2026 NZDT
+
+Owner reports successful local export through the Supabase read-only Management API: 5,142 movies, 1,641 series, 48,369 episodes, exactly matching the approved baseline. No database password reset or new database role required. Local file remains private; no catalogue data committed. R2 staging, compiled validation, supplier access and release remain pending. Evidence is owner-reported terminal output, not independent file readback. No production changes made.
+
+---
+
 ## Private VOD stage attempt | 24 November 2026 NZDT
 
 Owner successfully dispatched [run 45369513198](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45369513198) on the migration branch. Setup completed; private export/stage failed before any database or R2 call: `Missing authorised read-only export connection`. The protected `LTV_VOD_EXPORT_DATABASE_URL` secret was empty or unavailable. R2 permissions remain untested. No production change or pointer write. Previous regression run 45367127250 passed Node and Python. Configure the protected read-only export connection in `lounge-tv-xtream-production-refresh` and retry the failed job.
