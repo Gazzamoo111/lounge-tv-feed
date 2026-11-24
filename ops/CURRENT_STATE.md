@@ -1,3 +1,9 @@
+## R2 catalogue validation passed | 24 November 2026 NZDT
+
+Owner staged the approved snapshot at `vod/approved.json` in the existing private R2 bucket. [Validation run 45375220812](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45375220812), job 138379528587, completed successfully. The actual builder printed `{"movie":5142,"series":1641,"episodes":48369}`. This confirms R2 read access and full catalogue compilation; write access and immutable release readback remain to be tested via `bootstrap`. Validation did not publish a pointer or deploy a Worker. Next: bootstrap VOD-only release, then authenticated candidate and physical device checks before production promotion. No changes to live/EPG pointers or Supabase. Existing Worker rollback reference `8a90126d-709e-4f18-bd6c-1b631ac05bc4`.
+
+---
+
 ## Private VOD snapshot file verification | 24 November 2026 NZDT
 
 Uploaded copy of approved.json independently parsed: 45,030,410 bytes, SHA-256 `ee65f17ce9d5365b07b7d4e575d2ec2bc9490d0ef97d3d2634f9ded1c293190e`. Counts 5,142 movies, 1,641 series, 48,369 episodes, all IDs unique within kind and valid; zero missing provider IDs, orphan episodes, empty series or duplicate episode coordinates. No credential-like top-level record field names observed. Structural checks only; full builder and R2 readback still pending. No production changes.
