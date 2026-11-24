@@ -1,3 +1,9 @@
+## VOD bootstrap publication failed | 25 November 2026 NZDT
+
+[Run 45375972898](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45375972898), job 138382274009, completed with failure after ~14 minutes of the compilation/publication step. Actual builder counts still match 5,142 movies, 1,641 series and 48,369 episodes. Error output is only `ClientError` (publisher sanitises third-party exceptions); exact failed R2 operation/status is unknown. Partial immutable objects may exist; pointer creation/readback not confirmed. Do not delete or overwrite staged data or live/EPG pointers. Inspect VOD prefix and improve safe error diagnostics before resuming publication. No Worker deployment or Supabase retirement performed. Rollback Worker reference remains `8a90126d-709e-4f18-bd6c-1b631ac05bc4`.
+
+---
+
 ## R2 catalogue validation passed | 24 November 2026 NZDT
 
 Owner staged the approved snapshot at `vod/approved.json` in the existing private R2 bucket. [Validation run 45375220812](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45375220812), job 138379528587, completed successfully. The actual builder printed `{"movie":5142,"series":1641,"episodes":48369}`. This confirms R2 read access and full catalogue compilation; write access and immutable release readback remain to be tested via `bootstrap`. Validation did not publish a pointer or deploy a Worker. Next: bootstrap VOD-only release, then authenticated candidate and physical device checks before production promotion. No changes to live/EPG pointers or Supabase. Existing Worker rollback reference `8a90126d-709e-4f18-bd6c-1b631ac05bc4`.
