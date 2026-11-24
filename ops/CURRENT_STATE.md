@@ -1,3 +1,9 @@
+## BEST Relax entitlement enabled | 24 November 2026 NZDT
+
+The signed-in BEST reseller portal listed one enabled line. The live `4K UHD 3840P` bouquet was disabled and the portal listed no separate Relax bouquet. Enabled that single live-TV entitlement and reopened the package to verify persistence. Compared all 128 checkbox states and confirmed only that one changed. No catalogue or EPG deploy. The separate 4K UHD category stays excluded from the Lounge TV catalogue; Relax retains all 46 entries. Awaiting owner playback confirmation on the existing Nuvio login. Rollback is to clear only the `4K UHD 3840P` checkbox for the same enabled line in the provider portal. [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28)
+
+---
+
 ## Relax playback still failing | 24 November 2026 NZDT
 
 The owner confirmed none of the 46 Relax entries play after the catalogue release. A read-only search found separate archived BEST IDs in curator groups 1745 and 1747. All 45 archived playable-name entries in those groups are marked absent by the historical provider import and have no verified current media response. No current BEST reseller session or valid production test login was available. Failure hop remains unconfirmed. No additional deployment. Next verification requires the Relax inventory and an authenticated playback check on the BEST line assigned to production. [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28)
