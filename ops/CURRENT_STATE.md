@@ -1,3 +1,9 @@
+## Relax playback restored and extra entries removed | 24 November 2026 NZDT
+
+The owner confirmed Relax playback recovered after the BEST entitlement change and requested removal of the 21 extra test entries. [Production cleanup and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45347800545) verified all 28 catalogue assets and changed only the catalogue pointer from `vprod-relax-45345094940-1` to `vprod-order-45153376801-1`, leaving the active EPG pointer intact. Relax has 25 original entries and the overall catalogue has 12,714. The BEST live 4K package remains enabled. The 21 D1 IDs remain available for rollback. To restore the overflow, switch only the catalogue pointer to `vprod-relax-45345094940-1` using the current ETag. Playback after removing the extra catalogue entries has not been separately verified.
+
+---
+
 ## BEST Relax entitlement enabled | 24 November 2026 NZDT
 
 The signed-in BEST reseller portal listed one enabled line. The live `4K UHD 3840P` bouquet was disabled and the portal listed no separate Relax bouquet. Enabled that single live-TV entitlement and reopened the package to verify persistence. Compared all 128 checkbox states and confirmed only that one changed. No catalogue or EPG deploy. The separate 4K UHD category stays excluded from the Lounge TV catalogue; Relax retains all 46 entries. Awaiting owner playback confirmation on the existing Nuvio login. Rollback is to clear only the `4K UHD 3840P` checkbox for the same enabled line in the provider portal. [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28)
