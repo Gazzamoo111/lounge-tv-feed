@@ -1,3 +1,9 @@
+## Relax playback still failing | 24 November 2026 NZDT
+
+The owner confirmed none of the 46 Relax entries play after the catalogue release. A read-only search found separate archived BEST IDs in curator groups 1745 and 1747. All 45 archived playable-name entries in those groups are marked absent by the historical provider import and have no verified current media response. No current BEST reseller session or valid production test login was available. Failure hop remains unconfirmed. No additional deployment. Next verification requires the Relax inventory and an authenticated playback check on the BEST line assigned to production. [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28)
+
+---
+
 ## Older Relax variants live | 24 November 2026 NZDT
 
 Owner authorised adding the older Relax variants alongside the existing channels. [Production release and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45345094940) activated `vprod-relax-45345094940-1` on `tv.loungetv.nz`. Relax has 46 unique IDs and total catalogue count is 12,735. Added BEST IDs 895154–895174 to D1 (0 before, 21 verified after). Three catalogue objects changed and all 28 release objects were verified. All prior entries and positions, the category list, NZ, AU, PPV and EPG pointer `vepg-auto-45329870461-1` were preserved. New variants have blank guide IDs. Authenticated Nuvio playback is pending. To roll back, conditionally restore catalogue `vprod-order-45153376801-1` while retaining the guide active at rollback time. After the pointer restore, remove only the 21 additive D1 entries if a full rollback is required.
