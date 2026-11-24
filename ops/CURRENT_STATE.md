@@ -1,3 +1,9 @@
+## VOD Worker credential retry | 25 November 2026 NZDT
+
+Owner confirmed configuring the protected `CLOUDFLARE_API_TOKEN`. Retried existing candidate workflow 45464188035 through GitHub. Attempt 2 job 138699930201 passed all 26 Node tests and the Cloudflare deployment preflight, confirming `8a90126d-709e-4f18-bd6c-1b631ac05bc4` serving 100%. Zero-traffic candidate upload in progress at this record. No production promotion command is in the workflow. No new account, customer playlist, live/EPG pointer or Supabase change. Device verification and promotion still pending.
+
+---
+
 ## VOD Worker deployment attempt | 25 November 2026 NZDT
 
 Owner authorised deployment. Candidate config commit `dc0d38420aa921ba665ed04296b9d6c0c63533e7` enables native Xtream VOD and leaves combined M3U VOD disabled; existing live/DRM/D1/R2 settings preserved. Removed temporary bootstrap recovery trigger in `6f589f94d6cc59ffef0e48c25969f1ae72631b65`. One-time branch-restricted candidate upload workflow commit `0cf35c512a47ad8b6048bc500c3bf1bad2395686` ran [45464188035](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45464188035). Job 138694556785 passed 26/26 Node tests and failed closed at credential preflight: configured `CLOUDFLARE_API_TOKEN` or account ID missing (R2 account ID previously verified). Upload step skipped. No Cloudflare Worker version or traffic changes; no Supabase change. Next: authorise a narrowly scoped Workers deployment credential in protected environment or use local Wrangler OAuth, verify current active version, upload candidate without changing traffic, authenticated verification, then promote after release gates. Rollback reference `8a90126d-709e-4f18-bd6c-1b631ac05bc4` remains recorded; actual current deployment could not be rechecked without access. VOD storage release remains verified at `v0474549ed95eb581b84507c4`. Remove one-time candidate workflow before merging.
