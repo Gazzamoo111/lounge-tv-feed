@@ -24,9 +24,11 @@ jobs:
           python-version: '3.12'
       - name: Install pinned R2 client
         run: python -m pip install boto3==1.42.78
-      - name: Validate the 21 missing Relax entries against production
+      - name: Publish the validated Relax catalogue and independently read it back
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
-        run: python standalone-xtream/scripts/live_r2_preflight.py --production --stage-relax
+        run: |
+          python standalone-xtream/scripts/live_r2_preflight.py --production --publish-relax
+          python standalone-xtream/scripts/live_r2_preflight.py --production --verify-relax
