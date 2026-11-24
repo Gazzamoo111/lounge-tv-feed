@@ -1,3 +1,9 @@
+## Private VOD snapshot file verification | 24 November 2026 NZDT
+
+Uploaded copy of approved.json independently parsed: 45,030,410 bytes, SHA-256 `ee65f17ce9d5365b07b7d4e575d2ec2bc9490d0ef97d3d2634f9ded1c293190e`. Counts 5,142 movies, 1,641 series, 48,369 episodes, all IDs unique within kind and valid; zero missing provider IDs, orphan episodes, empty series or duplicate episode coordinates. No credential-like top-level record field names observed. Structural checks only; full builder and R2 readback still pending. No production changes.
+
+---
+
 ## Approved private VOD export | 24 November 2026 NZDT
 
 Owner reports successful local export through the Supabase read-only Management API: 5,142 movies, 1,641 series, 48,369 episodes, exactly matching the approved baseline. No database password reset or new database role required. Local file remains private; no catalogue data committed. R2 staging, compiled validation, supplier access and release remain pending. Evidence is owner-reported terminal output, not independent file readback. No production changes made.
