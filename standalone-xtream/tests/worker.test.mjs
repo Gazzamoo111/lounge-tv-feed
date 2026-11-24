@@ -259,6 +259,16 @@ test('VOD build and all six same-login actions preserve stable identities and re
     assert.doesNotMatch(JSON.stringify(body),/provider_item_id|testprov/);
     check(body);
   }
+  for(const [action,field,expected] of [
+    ['get_vod_streams','stream_id',[2801,2802,2803]],
+    ['get_series','series_id',[2811,2812,2813]],
+  ]){
+    const unfiltered=await (await worker.fetch(req(api(action)),env)).json();
+    const all=await (await worker.fetch(req(api(action)+'&category_id=0'),env)).json();
+    assert.deepEqual(all,unfiltered);
+    assert.deepEqual([...new Set(all.map(row=>row[field]))].sort((a,b)=>a-b),expected);
+    assert.deepEqual(await (await worker.fetch(req(api(action)+'&category_id=invalid'),env)).json(),[]);
+  }
   const live=await worker.fetch(req('/get.php?'+auth),env);
   const before=await live.text();
   assert.equal((await worker.fetch(req(api('get_live_streams')),env)).status,503);
