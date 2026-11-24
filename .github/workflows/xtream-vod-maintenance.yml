@@ -1,0 +1,49 @@
+name: Lounge TV On Demand catalogue
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [validate, bootstrap, refresh]
+        default: validate
+  schedule:
+    - cron: '13 15 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-xtream-vod
+  cancel-in-progress: false
+jobs:
+  catalogue:
+    if: github.event_name == 'workflow_dispatch' || vars.LTV_VOD_AUTOMATION == 'enabled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - name: Compile and validate the VOD release
+        env:
+          OPERATION: ${{ inputs.operation || 'refresh' }}
+          LTV_VOD_BUCKET: loungetv-xtream-production-private
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          LTV_VOD_SUPPLIER_ORIGIN: ${{ vars.LTV_VOD_SUPPLIER_ORIGIN }}
+          LTV_VOD_SUPPLIER_USERNAME: ${{ secrets.LTV_VOD_SUPPLIER_USERNAME }}
+          LTV_VOD_SUPPLIER_PASSWORD: ${{ secrets.LTV_VOD_SUPPLIER_PASSWORD }}
+        run: |
+          case "$OPERATION" in
+            validate) python standalone-xtream/vod/refresh.py --bootstrap ;;
+            bootstrap) python standalone-xtream/vod/refresh.py --bootstrap --publish ;;
+            refresh) python standalone-xtream/vod/refresh.py --publish ;;
+            *) exit 1 ;;
+          esac

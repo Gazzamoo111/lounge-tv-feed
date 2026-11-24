@@ -2,6 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto,createCipheriv,randomBytes} from 'node:crypto';
 import {gzipSync} from 'node:zlib';
+import {mkdtemp, readdir, readFile, rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {buildRelease} from '../vod/build.mjs';
 import worker,{internal} from '../src/worker.mjs';
 if(!globalThis.crypto)globalThis.crypto=webcrypto;
 const ENC=new TextEncoder();
@@ -40,7 +44,7 @@ async function mock(){
     if(!data.has(lookup))return null;
     const value=data.get(lookup);
     const bytes=typeof value==='string'?ENC.encode(value):value;
-    return {body:new Blob([bytes]).stream(),text:async()=>typeof value==='string'?value:new TextDecoder().decode(value),size:bytes.byteLength};
+    return {body:new Blob([bytes]).stream(),text:async()=>typeof value==='string'?value:new TextDecoder().decode(value),json:async()=>JSON.parse(new TextDecoder().decode(bytes)),size:bytes.byteLength};
   }};
   const env={AUTH_PEPPER:'very-secret-pepper',PROVIDER_AES_KEY_BASE64:AES.toString('base64'),UPSTREAM_ORIGIN:'https://provider.example.test',DB,ASSETS};
   return {env,row,data,reads,dbCalls};
@@ -211,4 +215,81 @@ test('short EPG drops expired programmes and computes now-playing at request tim
   ]}));
   const response = await worker.fetch(req(api('get_short_epg')+'&stream_id=12345&limit=1'),env);
   assert.deepEqual((await response.json()).epg_listings.map(row=>[row.title,row.now_playing]),[['current',1]]);
+});
+
+
+test('VOD build and all six same-login actions preserve stable identities and require auth',async t=>{
+  const tmp=await mkdtemp(join(tmpdir(),'ltv-vod-'));
+  t.after(()=>rm(tmp,{recursive:true,force:true}));
+  const titles=[1,2,3].map(n=>({
+    external_id:2800+n, provider_item_id:6700+n, display_name:'A title '+n,
+    file_ext:'mp4', genres:['Action'], overview:'Synopsis', poster_url:'https://art.example/poster.jpg',
+  }));
+  const shows=titles.map(row=>({...row,external_id:row.external_id+10}));
+  const episodes=shows.map(row=>({
+    series_external_id:row.external_id, external_id:row.external_id+100,
+    provider_item_id:row.provider_item_id+100, file_ext:'mkv', season_number:1,
+    episode_number:1, title:'Episode One',
+  }));
+  assert.deepEqual(await buildRelease({movies:titles,series:shows,episodes},tmp),
+    {movie:3,series:3,episodes:3});
+  await assert.rejects(buildRelease({movies:[...titles,titles[0]],series:shows,episodes},tmp),/Duplicate title ID/);
+  const {env,row,data,reads}=await mock();
+  env.ENABLE_VOD='true';
+  env.NUVIO_M3U_DRM_FALLBACK='true';
+  for(const file of await readdir(tmp,{recursive:true,withFileTypes:true})){
+    if(!file.isFile())continue;
+    const path=join(file.parentPath,file.name);
+    data.set('vod/releases/vapproved/'+path.slice(tmp.length+1),await readFile(path,'utf8'));
+  }
+  data.set('vod/current.json',JSON.stringify({release:'vapproved'}));
+  const routes=[
+    ['get_vod_categories','',body=>assert.equal(body[0].category_id,'2810109')],
+    ['get_vod_streams','&category_id=2810109',body=>assert.equal(body[0].stream_id,2801)],
+    ['get_vod_info','&vod_id=2801',body=>assert.equal(body.movie_data.stream_id,2801)],
+    ['get_series_categories','',body=>assert.equal(body[0].category_id,'2820108')],
+    ['get_series','',body=>assert.equal(body[0].series_id,2811)],
+    ['get_series_info','&series_id=2811',body=>assert.equal(body.episodes['1'][0].id,'2911')],
+  ];
+  for(const [action,params,check] of routes){
+    const response=await worker.fetch(req(api(action)+params),env);
+    assert.equal(response.status,200);
+    assert.equal(response.headers.get('cache-control'),'private, no-store');
+    const body=await response.json();
+    assert.doesNotMatch(JSON.stringify(body),/provider_item_id|testprov/);
+    check(body);
+  }
+  const live=await worker.fetch(req('/get.php?'+auth),env);
+  const before=await live.text();
+  assert.equal((await worker.fetch(req(api('get_live_streams')),env)).status,503);
+  env.ENABLE_VOD_M3U='true';
+  const merged=await (await worker.fetch(req('/get.php?'+auth+'&type=m3u_plus'),env)).text();
+  assert.ok(merged.startsWith(before));
+  assert.match(merged,/https:\/\/xtream-qa.example.test\/movie\/user1\/customer-pass\/2801.mp4/);
+  assert.match(merged,/A title 1 S01E01/);
+  assert.doesNotMatch(merged,/testprov|provider.example/);
+  for(const [path,upstream] of [['movie/2801.mkv','movie/testprov1/testprov2/6701.mp4'],
+    ['series/2911.mkv','series/testprov1/testprov2/6801.mkv']]){
+    const [kind,file]=path.split('/');
+    const response=await worker.fetch(req(`/${kind}/user1/customer-pass/${file}`),env);
+    assert.equal(response.status,302);
+    assert.equal(response.headers.get('location'),`https://provider.example.test/${upstream}`);
+  }
+  assert.equal((await worker.fetch(req('/movie/user1/customer-pass/6701.mp4'),env)).status,404);
+  row.enabled=0;
+  reads.length=0;
+  assert.equal((await (await worker.fetch(req(api('get_series')),env)).json()).user_info.auth,0);
+  assert.equal((await worker.fetch(req('/series/user1/customer-pass/2911.mkv'),env)).status,401);
+  assert.deepEqual(reads,[]);
+});
+
+test('missing or malformed VOD pointer leaves the live fallback available',async()=>{
+  const {env,data}=await mock();
+  env.ENABLE_VOD='true';
+  env.ENABLE_VOD_M3U='true';
+  const playlist=await (await worker.fetch(req('/get.php?'+auth),env)).text();
+  assert.deepEqual(await (await worker.fetch(req(api('get_vod_categories')),env)).json(),[]);
+  data.set('vod/current.json','{"release":"../live"}');
+  assert.equal((await worker.fetch(req(api('get_series')),env)).status,503);
+  assert.equal(await (await worker.fetch(req('/get.php?'+auth),env)).text(),playlist);
 });

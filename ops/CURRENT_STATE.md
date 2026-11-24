@@ -1,3 +1,11 @@
+## Cloudflare On Demand migration candidate | 24 November 2026 NZDT
+
+[Issue #29](https://github.com/Gazzamoo111/lounge-tv-feed/issues/29). The Cloudflare dashboard confirms `tv.loungetv.nz` serves `loungetv-xtream-production` `8a90126d-709e-4f18-bd6c-1b631ac05bc4` at 100%, backed by its existing D1 and private R2. The standalone source currently gives empty authenticated VOD results. Legacy Supabase `n` v39, Plus v8 and standalone VOD QA v1 remain deployed. The read-only approved export counted 5,142 movie IDs, 1,641 series IDs and 48,369 distinct episode IDs.
+
+The candidate adds six authenticated Xtream VOD actions, account-bound playback and an independently gated same-playlist M3U extension. The VOD publisher only writes under the private bucket's `vod/` prefix. 26 Node tests and 21 existing Python tests passed locally. No Cloudflare release, catalogue pointer change, account change, VOD-specific Supabase retirement or paid upgrade occurred. Supplier access, private snapshot staging, Fire TV import and sustained movie/episode playback remain open. Rollback reference is the Worker version above and a VOD-only pointer restore. See the [VOD runbook](../standalone-xtream/vod/README.md).
+
+---
+
 ## Relax playback restored and extra entries removed | 24 November 2026 NZDT
 
 The owner confirmed Relax playback recovered after the BEST entitlement change and requested removal of the 21 extra test entries. [Production cleanup and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45347800545) verified all 28 catalogue assets and changed only the catalogue pointer from `vprod-relax-45345094940-1` to `vprod-order-45153376801-1`, leaving the active EPG pointer intact. Relax has 25 original entries and the overall catalogue has 12,714. The BEST live 4K package remains enabled. The 21 D1 IDs remain available for rollback. To restore the overflow, switch only the catalogue pointer to `vprod-relax-45345094940-1` using the current ETag. Playback after removing the extra catalogue entries has not been separately verified.
