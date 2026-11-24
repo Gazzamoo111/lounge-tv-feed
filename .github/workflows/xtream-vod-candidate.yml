@@ -1,0 +1,64 @@
+name: Lounge TV VOD Worker candidate
+on:
+  push:
+    branches: [feature/cloudflare-vod-20261124]
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-vod-candidate-upload
+  cancel-in-progress: false
+jobs:
+  candidate:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/cloudflare-vod-20261124' && contains(github.event.head_commit.message, '[vod-candidate-upload-20261125]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Worker regression suite
+        run: node --test standalone-xtream/tests/*.test.mjs
+      - name: Confirm existing Worker deployment and authorised access
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+        run: |
+          python - <<'PY'
+          import json, os, urllib.request, urllib.error
+          token = os.environ.get("CLOUDFLARE_API_TOKEN")
+          account = os.environ.get("CLOUDFLARE_ACCOUNT_ID")
+          if not token or not account:
+              raise SystemExit("BLOCKED: existing protected environment has no configured CLOUDFLARE_API_TOKEN or account ID for Worker deployment")
+          endpoint = f"https://api.cloudflare.com/client/v4/accounts/{account}/workers/scripts/loungetv-xtream-production/deployments"
+          request = urllib.request.Request(endpoint, headers={"Authorization": f"Bearer {token}"})
+          try:
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  data = json.load(response)
+          except urllib.error.HTTPError as error:
+              raise SystemExit(f"BLOCKED: Cloudflare Worker deployment read returned HTTP {error.code}")
+          except urllib.error.URLError:
+              raise SystemExit("BLOCKED: Cloudflare Worker deployment API unreachable")
+          if not data.get("success"):
+              raise SystemExit("BLOCKED: Cloudflare rejected deployment read")
+          active = data["result"]["deployments"][0]["versions"]
+          expected = [{"version_id":"8a90126d-709e-4f18-bd6c-1b631ac05bc4","percentage":100}]
+          if active != expected:
+              raise SystemExit("BLOCKED: active Worker has changed; reconcile baseline before upload")
+          print("Verified expected existing Worker serving 100% of traffic")
+          PY
+      - name: Upload candidate version without changing traffic
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          if ! npx --yes wrangler@4 versions upload --config standalone-xtream/wrangler.production.jsonc --keep-vars --experimental-provision=false --experimental-auto-create=false --message 'VOD candidate: native Xtream actions, M3U extension disabled' > "$RUNNER_TEMP/vod-upload.log" 2>&1; then
+            echo "BLOCKED: Wrangler candidate upload failed; full output withheld to protect configuration"
+            exit 1
+          fi
+          grep -E 'Version ID: [0-9a-f-]{36}' "$RUNNER_TEMP/vod-upload.log" || true
+          echo "Candidate upload completed. No production deployment command executed."
