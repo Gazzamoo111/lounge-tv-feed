@@ -8,10 +8,10 @@ import urllib.error
 import urllib.request
 
 WORKER = "loungetv-xtream-production"
-BASE = "8a90126d-709e-4f18-bd6c-1b631ac05bc4"
-CANDIDATE = "26671536-cd71-4606-b694-8d38820a75cf"
+BASE = os.environ.get("LTV_TRIAL_BASE", "8a90126d-709e-4f18-bd6c-1b631ac05bc4")
+CANDIDATE = os.environ.get("LTV_TRIAL_CANDIDATE", "26671536-cd71-4606-b694-8d38820a75cf")
 ORIGIN = "https://tv.loungetv.nz"
-EXPECTED_FLAGS = {"ENABLE_VOD": "true", "ENABLE_VOD_M3U": "false"}
+EXPECTED_FLAGS = {"ENABLE_VOD": "true", "ENABLE_VOD_M3U": os.environ.get("LTV_TRIAL_M3U", "false")}
 
 def cf(path, data=None):
     url = f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}/workers/scripts/{WORKER}/{path}"

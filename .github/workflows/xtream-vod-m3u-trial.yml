@@ -1,0 +1,91 @@
+name: Lounge TV Nuvio M3U VOD trial
+on:
+  push:
+    branches: [feature/cloudflare-vod-20261124]
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-vod-candidate-upload
+  cancel-in-progress: false
+jobs:
+  trial:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/cloudflare-vod-20261124' && contains(github.event.head_commit.message, '[vod-m3u-trial-20261125]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test standalone-xtream/tests/*.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - name: Verify actual private VOD M3U and native catalogue objects
+        env:
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import boto3, os, json, hashlib
+          s3=boto3.client("s3",endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],region_name="auto")
+          bucket="loungetv-xtream-production-private"
+          def read(key):
+              with s3.get_object(Bucket=bucket,Key=key)["Body"] as body:
+                  return body.read()
+          release=json.loads(read("vod/current.json"))["release"]
+          assert release=="v0474549ed95eb581b84507c4", "Unexpected VOD pointer"
+          prefix="vod/releases/"+release+"/"
+          manifest=json.loads(read(prefix+"manifest.json"))
+          def verified(key):
+              b=read(prefix+key)
+              assert hashlib.sha256(b).hexdigest()==manifest[key], "VOD object hash mismatch"
+              return b
+          counts=json.loads(verified("counts.json"))
+          assert counts=={"movie":5142,"series":1641,"episodes":48369}
+          for kind,count,ident in [("movie",5142,"stream_id"),("series",1641,"series_id")]:
+              categories=json.loads(verified(kind+"/categories.json"))
+              rows=json.loads(verified(kind+"/list/all.json"))
+              assert categories and len(rows)==count
+              verified(kind+"/detail/"+str(rows[0][ident])+".json")
+          data=verified("playlist.m3u").decode("utf-8").splitlines()
+          assert len(data)==2*(5142+48369)
+          assert all(data[i].startswith("#EXTINF:") for i in range(0,len(data),2))
+          paths=data[1::2]
+          assert sum(x.startswith("/movie/") for x in paths)==5142
+          assert sum(x.startswith("/series/") for x in paths)==48369
+          assert all(x.startswith(("/movie/","/series/")) and x.count("/")==2 for x in paths)
+          live=json.loads(read("current.json"))
+          live_key="releases/"+live["release"]+"/catalog/template.m3u"
+          live_body=read(live_key)
+          assert live_body.startswith(b"#EXTM3U")
+          print("Verified native catalogue objects, 53,511 VOD M3U entries and existing live template; live/EPG pointers read only.")
+          PY
+      - name: Upload candidate and verify same-origin trial
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+          LTV_TRIAL_BASE: '26671536-cd71-4606-b694-8d38820a75cf'
+          LTV_TRIAL_M3U: 'true'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "standalone-xtream/scripts")
+          import vod_worker_trial as trial
+          assert trial.current()=={trial.BASE:100}, "Active baseline changed"
+          PY
+          if ! npx --yes wrangler@4 versions upload --config standalone-xtream/wrangler.production.jsonc --keep-vars --experimental-provision=false --experimental-auto-create=false --message 'Owner-authorised Nuvio VOD M3U trial' > "$RUNNER_TEMP/vod-upload.log" 2>&1; then
+            echo "Candidate upload failed; protected output withheld"
+            exit 1
+          fi
+          export LTV_TRIAL_CANDIDATE="$(grep -oE 'Worker Version ID: [0-9a-f-]{36}' "$RUNNER_TEMP/vod-upload.log" | tail -1 | cut -d' ' -f4)"
+          test -n "$LTV_TRIAL_CANDIDATE"
+          echo "Candidate version: $LTV_TRIAL_CANDIDATE"
+          python standalone-xtream/scripts/vod_worker_trial.py
