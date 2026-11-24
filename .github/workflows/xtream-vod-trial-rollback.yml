@@ -1,0 +1,47 @@
+name: Restore pre-VOD Lounge TV Worker
+on:
+  push:
+    branches: [feature/cloudflare-vod-20261124]
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-vod-candidate-upload
+  cancel-in-progress: false
+jobs:
+  rollback:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/cloudflare-vod-20261124' && contains(github.event.head_commit.message, '[vod-trial-rollback-20261125]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Restore original live-only Worker and verify
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+        run: |
+          python - <<'PY'
+          import sys, time
+          sys.path.insert(0, "standalone-xtream/scripts")
+          import vod_worker_trial as t
+          baseline="8a90126d-709e-4f18-bd6c-1b631ac05bc4"
+          failed="3c8ebb6c-df07-4daa-ba41-1d09b7ff193b"
+          active=t.current()
+          if active == {baseline:100}:
+              t.smoke()
+              print("Original Worker already active")
+          elif active == {failed:100}:
+              t.deploy(baseline, "Restore pre-VOD live service after failed device acceptance")
+              for attempt in range(3):
+                  try:
+                      time.sleep(8)
+                      t.smoke()
+                      break
+                  except Exception:
+                      if attempt==2: raise
+              print("ROLLBACK VERIFIED: "+baseline)
+          else:
+              raise SystemExit("Unexpected deployment; refusing to alter production")
+          PY
