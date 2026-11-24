@@ -1,3 +1,9 @@
+## Private VOD stage attempt | 24 November 2026 NZDT
+
+Owner successfully dispatched [run 45369513198](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45369513198) on the migration branch. Setup completed; private export/stage failed before any database or R2 call: `Missing authorised read-only export connection`. The protected `LTV_VOD_EXPORT_DATABASE_URL` secret was empty or unavailable. R2 permissions remain untested. No production change or pointer write. Previous regression run 45367127250 passed Node and Python. Configure the protected read-only export connection in `lounge-tv-xtream-production-refresh` and retry the failed job.
+
+---
+
 ## VOD migration continuation | 24 November 2026 NZDT
 
 PR #31 original head `29ff7c6` passed the [Node and Python CI job](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45365692414); catalogue job skipped. Subsequent candidate changes fix Xtream `category_id=0` for both VOD lists, add regression assertions, and add a manual private export/stage operation to the existing VOD workflow. Staging uses a read-only PostgreSQL connection (`LTV_VOD_EXPORT_DATABASE_URL`, protected environment secret) and existing R2 credential names, with counts and SHA-256 checked and no pointer mutation. These new changes have not yet been verified by CI. Workflow is absent on default branch, so manual UI dispatch registration remains unresolved. Regular Chat connector lacks workflow dispatch, secret configuration and Cloudflare control; connected browser requires the originating browser session. R2 access has not been retested. No private data exported, no production changes, no Supabase writes or retirement. Legacy VOD QA v1 still present. Authorised supplier intake of new titles/episodes remains unimplemented; current refresh only filters approved inventory. Rollback baseline recorded below. Do not activate VOD or retire legacy services before validation.
