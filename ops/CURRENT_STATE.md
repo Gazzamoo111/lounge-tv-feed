@@ -1,3 +1,9 @@
+## Resumable VOD publication recovery | 25 November 2026 NZDT
+
+Recovery commit `f34b99b7cc5575cffbcab26c606881841753f5c7` changes only the VOD publisher and test/workflow infrastructure. It adds bounded concurrent immutable writes/readback, standard transient retries, safe R2 operation and HTTP diagnostics, verifies existing manifests, accepts identical partial writes after conditional conflicts, and refuses replacing a different VOD pointer during bootstrap. A branch-only commit-marker push trigger was used to execute the already-authorised bootstrap without another manual command. [Recovery run 45452617304](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45452617304) test job 138653492337 passed 26 Node and 26 Python tests, including five new recovery regressions. Catalogue job 138653633930 is in progress at this record; actual R2 recovery/activation is not yet confirmed. No Worker or Supabase change. Live/EPG and customer credentials untouched; rollback Worker reference unchanged. Original ClientError cause remains unknown until R2 evidence arrives.
+
+---
+
 ## VOD bootstrap publication failed | 25 November 2026 NZDT
 
 [Run 45375972898](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45375972898), job 138382274009, completed with failure after ~14 minutes of the compilation/publication step. Actual builder counts still match 5,142 movies, 1,641 series and 48,369 episodes. Error output is only `ClientError` (publisher sanitises third-party exceptions); exact failed R2 operation/status is unknown. Partial immutable objects may exist; pointer creation/readback not confirmed. Do not delete or overwrite staged data or live/EPG pointers. Inspect VOD prefix and improve safe error diagnostics before resuming publication. No Worker deployment or Supabase retirement performed. Rollback Worker reference remains `8a90126d-709e-4f18-bd6c-1b631ac05bc4`.
