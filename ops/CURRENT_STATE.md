@@ -1,3 +1,11 @@
+## Older Relax variants live | 24 November 2026 NZDT
+
+Owner authorised adding the older Relax variants alongside the existing channels. [Production release and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45345094940) activated `vprod-relax-45345094940-1` on `tv.loungetv.nz`. Relax has 46 unique IDs and total catalogue count is 12,735. Added BEST IDs 895154–895174 to D1 (0 before, 21 verified after). Three catalogue objects changed and all 28 release objects were verified. All prior entries and positions, the category list, NZ, AU, PPV and EPG pointer `vepg-auto-45329870461-1` were preserved. New variants have blank guide IDs. Authenticated Nuvio playback is pending. To roll back, conditionally restore catalogue `vprod-order-45153376801-1` while retaining the guide active at rollback time. After the pointer restore, remove only the 21 additive D1 entries if a full rollback is required.
+
+See [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28).
+
+---
+
 ## Relax playback incident | 24 November 2026 NZDT
 
 The owner reports all Relax channels fail in Nuvio. The production catalogue readback for `vprod-order-45153376801-1` lists 25 channels in Relax, all labelled 4K. The checked Worker source uses the customer's BEST line for ordinary stream IDs, and the legacy Relax inventory has no mapped backups. Live authentication boundary returned HTTP 401 for invalid credentials and 24 local Worker tests passed. The owner then confirmed HTTP 405 on all 25. Live GET and HEAD with invalid credentials received 401, while POST and OPTIONS returned the Worker's `method_not_allowed` 405. Cloudflare confirms Worker `8a90126d` still serves 100% of traffic and a temporary live trace captured the synthetic control. An earlier BEST trial had UHD/Relax entitlement gaps, and the historical production login was rejected. A current same-account playback comparison is needed to identify which server returned the device's 405. No release or rollback. See [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28).
