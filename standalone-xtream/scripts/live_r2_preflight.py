@@ -480,6 +480,47 @@ def channel_order_changes(client, bucket, release, rows, cats, template):
     return changes
 
 
+RELAX_CATEGORY = '17'
+RELAX_SOURCE_IDS = set(range(895154, 895175))
+RELAX_BASELINE = 'vprod-order-45153376801-1'
+
+
+def relax_changes(rows, cats, template, current_group):
+    category = [cat for cat in cats if str(cat['category_id']) == RELAX_CATEGORY]
+    assert len(category) == 1 and category[0]['category_name'] == '🌿 Relax'
+    group = category[0]['category_name']
+    assert len(rows) == 12714 and len(cats) == 24 and len(current_group) == 25
+    assert current_group == [r for r in rows if str(r['category_id']) == RELAX_CATEGORY]
+    header, blocks = blocks_from_m3u(template.decode())
+    assert list(blocks) == [r['stream_id'] for r in rows] and not RELAX_SOURCE_IDS.intersection(blocks)
+
+    inventory_path = Path(__file__).resolve().parents[2] / 'config/master_v5.json'
+    inventory = json.loads(inventory_path.read_text(encoding='utf-8'))['records']
+    sources = {int(r['cuid']): r['name'] for r in inventory
+               if r.get('rail') == 'Relax' and int(r['cuid']) in RELAX_SOURCE_IDS}
+    assert set(sources) == RELAX_SOURCE_IDS
+    additions = []
+    first_num = max(row['num'] for row in rows) + 1
+    for num, (sid, name) in enumerate(sorted(sources.items(), key=lambda item: item[1]), first_num):
+        assert re.fullmatch(r'RX: RELAX [A-Z ]+ 4K', name)
+        additions.append({'num': num, 'name': name, 'stream_type': 'live', 'stream_id': sid,
+                          'stream_icon': '', 'epg_channel_id': '', 'added': '0', 'category_id': RELAX_CATEGORY,
+                          'custom_sid': '', 'tv_archive': 0, 'direct_source': '', 'tv_archive_duration': 0,
+                          'is_adult': 0, 'container_extension': 'ts'})
+        blocks[sid] = (f'#EXTINF:-1 tvg-id="" tvg-name="{name}" tvg-logo="" group-title="{group}",{name}\n'
+                       f'{{{{BASE}}}}/live/{{{{USER}}}}/{{{{PASS}}}}/{sid}.ts\n')
+
+    end = rows.index(current_group[-1]) + 1
+    expanded = rows[:end] + additions + rows[end:]
+    rendered = header + ''.join(blocks[r['stream_id']] for r in expanded)
+    _, rendered_blocks = blocks_from_m3u(rendered)
+    assert list(rendered_blocks) == [r['stream_id'] for r in expanded]
+    assert [r for r in expanded if r['stream_id'] not in RELAX_SOURCE_IDS] == rows
+    return {'catalog/live_all.json': json.dumps(expanded, ensure_ascii=False, separators=(',', ':')).encode(),
+            f'catalog/by-category/{RELAX_CATEGORY}.json': json.dumps(current_group + additions, ensure_ascii=False, separators=(',', ':')).encode(),
+            'catalog/template.m3u': rendered.encode()}
+
+
 def publish(client, bucket, current, pointer, catalogue, guide, *, catalogue_kind='stations'):
     run = os.environ['GITHUB_RUN_ID']
     attempt = os.environ['GITHUB_RUN_ATTEMPT']
@@ -557,6 +598,9 @@ def main():
     stations.add_argument('--stage-order', action='store_true')
     stations.add_argument('--publish-order', action='store_true')
     stations.add_argument('--verify-order', action='store_true')
+    stations.add_argument('--stage-relax', action='store_true')
+    stations.add_argument('--publish-relax', action='store_true')
+    stations.add_argument('--verify-relax', action='store_true')
     args = parser.parse_args()
     bucket = PRODUCTION_BUCKET if args.production else QA_BUCKET
     target = 'PRODUCTION' if args.production else 'QA'
@@ -577,6 +621,27 @@ def main():
     release=pointer['release']
     epg_release=pointer.get('epg_release',release)
     print(f'ACTIVE_{target}_RELEASE',release,'EPG_RELEASE',epg_release,'ETAG',current_obj['ETag'])
+    if args.stage_relax or args.publish_relax or args.verify_relax:
+        assert args.production, 'Relax restoration requires the designated production catalogue'
+        assert release.startswith('vprod-relax-') if args.verify_relax else release == RELAX_BASELINE
+        catalogue = 'catalog/live_all.json'
+        group_path = f'catalog/by-category/{RELAX_CATEGORY}.json'
+        template_path = 'catalog/template.m3u'
+        category_path = 'catalog/live_categories.json'
+        source = {key: fetch(client, bucket, RELAX_BASELINE, key)
+                  for key in (catalogue, group_path, template_path, category_path)}
+        changes = relax_changes(json.loads(source[catalogue]), json.loads(source[category_path]),
+                                source[template_path], json.loads(source[group_path]))
+        if args.verify_relax:
+            expected = dict(changes, **{category_path: source[category_path]})
+            protected = ['catalog/by-category/1.json', 'catalog/by-category/2.json', 'catalog/by-category/25.json']
+            expected.update({key: fetch(client, bucket, RELAX_BASELINE, key) for key in protected})
+            assert all(fetch(client, bucket, release, key) == raw for key, raw in expected.items())
+        print('RELAX_CATALOGUE_VALIDATED', 'RELAX', len(json.loads(changes[group_path])),
+              'TOTAL', len(json.loads(changes[catalogue])), 'EPG', epg_release, 'ADDED', sorted(RELAX_SOURCE_IDS))
+        if args.publish_relax:
+            publish(client, bucket, current_obj, pointer, changes, {}, catalogue_kind='relax')
+        return
     with tempfile.TemporaryDirectory() as tmp:
         catalog = Path(tmp) / 'catalog'
         catalog.mkdir()
