@@ -1,3 +1,9 @@
+## Same-login VOD device trial | 25 November 2026 NZDT
+
+Candidate upload [45464188035](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45464188035), attempt 2, job 138699930201 succeeded: Cloudflare version `26671536-cd71-4606-b694-8d38820a75cf` uploaded with no traffic change. Owner requested trial on existing TV/login. Trial is an explicitly authorised, reversible test on existing `tv.loungetv.nz`, not final production acceptance; no separate endpoint, new credentials or M3U extension. [Trial workflow 45466549140](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45466549140) runs 26 gateway tests, compares existing/candidate binding and runtime metadata, checks health and synthetic invalid-auth requests, then attempts candidate activation and readback; on smoke failure, restores baseline version `8a90126d-709e-4f18-bd6c-1b631ac05bc4` if the candidate is active. No force deployment or database/R2 writes. Job 138702855399 in progress; activation and authenticated real-device playback not yet verified. Keep Supabase and VOD storage release unchanged. Trial script `standalone-xtream/scripts/vod_worker_trial.py` and one-time workflow are on migration branch only. Final promotion decision remains gated by owner device results. Remove temporary deployment workflows before merge.
+
+---
+
 ## VOD Worker credential retry | 25 November 2026 NZDT
 
 Owner confirmed configuring the protected `CLOUDFLARE_API_TOKEN`. Retried existing candidate workflow 45464188035 through GitHub. Attempt 2 job 138699930201 passed all 26 Node tests and the Cloudflare deployment preflight, confirming `8a90126d-709e-4f18-bd6c-1b631ac05bc4` serving 100%. Zero-traffic candidate upload in progress at this record. No production promotion command is in the workflow. No new account, customer playlist, live/EPG pointer or Supabase change. Device verification and promotion still pending.
