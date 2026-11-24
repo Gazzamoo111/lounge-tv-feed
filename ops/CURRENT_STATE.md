@@ -1,3 +1,9 @@
+## Relax playback incident | 24 November 2026 NZDT
+
+The owner reports all Relax channels fail in Nuvio. The production catalogue readback for `vprod-order-45153376801-1` lists 25 channels in Relax, all labelled 4K. The checked Worker source uses the customer's BEST line for ordinary stream IDs, and the legacy Relax inventory has no mapped backups. Live authentication boundary returned HTTP 401 for invalid credentials and 24 local Worker tests passed. A same-account playback comparison remains pending. No release or rollback. See [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28).
+
+---
+
 ## Automatic production guide refresh enabled | 24 November 2026 NZDT
 
 Production EPG refresh is enabled on `main` at 37 minutes past every six hours (02:37, 08:37, 14:37 and 20:37 UTC). The workflow uses a durable, production-bucket-scoped Cloudflare key through the existing GitHub environment. It fetches only existing approved EPG sources, keeps still-valid listings when a replacement is weaker, skips unnecessary publishes, and requires at least 95% current and next-12-hour coverage across mapped visible streams plus all five protected Freeview listings. Scheduled output has a 2 GB budget and prunes only its own retired releases older than seven days, excluding the live guide and immediate rollback. No catalogue, ordering, playback, account, or Supabase changes.
