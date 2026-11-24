@@ -32,7 +32,7 @@ export async function vodAction(url, env, action, json, problem) {
   if (!prefix) return json(operation === 'detail' ? {} : []);
   const value = url.searchParams.get(parameter ?? 'category_id');
   if (operation === 'detail' && !idPattern.test(value ?? '')) return problem('not_found', 404);
-  if (operation === 'list' && value && !idPattern.test(value)) return json([]);
+  if (operation === 'list' && value && value !== '0' && !idPattern.test(value)) return json([]);
   const filter = operation === 'list' && value && value !== '0' ? value : null;
   const key = operation === 'detail' ? `detail/${value}.json` :
     operation === 'categories' ? 'categories.json' : `list/${filter ?? 'all'}.json`;
