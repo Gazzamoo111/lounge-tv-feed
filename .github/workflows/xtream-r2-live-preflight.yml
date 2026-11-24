@@ -1,4 +1,4 @@
-name: Lounge TV read-only live R2 QA release preflight
+name: Lounge TV remove extra Relax entries
 on:
   push:
     branches:
@@ -16,7 +16,7 @@ jobs:
   preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    environment: lounge-tv-xtream-qa-refresh
+    environment: lounge-tv-xtream-production-refresh
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -24,9 +24,58 @@ jobs:
           python-version: '3.12'
       - name: Install pinned R2 client
         run: python -m pip install boto3==1.42.78
-      - name: Read exact active QA R2 release and dry-run PR27 (never writes)
+      - name: Validate and restore the original 25 Relax entries
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
-        run: python standalone-xtream/scripts/live_r2_preflight.py
+        run: |
+          PYTHONPATH=standalone-xtream/scripts python - <<'PY'
+          import json
+          import os
+          from concurrent.futures import ThreadPoolExecutor
+          
+          import boto3
+          
+          from live_r2_preflight import PRODUCTION_BUCKET, RELAX_BASELINE, RELAX_CATEGORY, fetch, relax_changes
+          
+          client = boto3.client(
+              's3', endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",
+              region_name='auto', aws_access_key_id=os.environ['R2_ACCESS_KEY_ID'],
+              aws_secret_access_key=os.environ['R2_SECRET_ACCESS_KEY'],
+          )
+          bucket = PRODUCTION_BUCKET
+          current = client.get_object(Bucket=bucket, Key='current.json')
+          with current['Body'] as body:
+              pointer = json.load(body)
+          active = pointer['release']
+          assert active == 'vprod-relax-45345094940-1', active
+          guide = pointer['epg_release']
+          
+          def catalog_paths(release):
+              prefix = f'releases/{release}/catalog/'
+              return {obj['Key'].removeprefix(f'releases/{release}/')
+                      for page in client.get_paginator('list_objects_v2').paginate(Bucket=bucket, Prefix=prefix)
+                      for obj in page.get('Contents', [])}
+          
+          paths = catalog_paths(RELAX_BASELINE)
+          assert paths == catalog_paths(active) and len(paths) == 28
+          category_key = f'catalog/by-category/{RELAX_CATEGORY}.json'
+          with ThreadPoolExecutor(max_workers=12) as pool:
+              prior = dict(zip(sorted(paths), pool.map(lambda path: fetch(client, bucket, RELAX_BASELINE, path), sorted(paths)), strict=True))
+              live = dict(zip(sorted(paths), pool.map(lambda path: fetch(client, bucket, active, path), sorted(paths)), strict=True))
+          expected = relax_changes(json.loads(prior['catalog/live_all.json']), json.loads(prior['catalog/live_categories.json']),
+                                   prior['catalog/template.m3u'], json.loads(prior[category_key]))
+          assert paths.issuperset(expected) and live == (prior | expected)
+          assert len(json.loads(prior[category_key])) == 25 and len(json.loads(live[category_key])) == 46
+          print('VALIDATED_21_RELAX_ONLY', active, 'GUIDE', guide, flush=True)
+          
+          updated = dict(pointer, release=RELAX_BASELINE)
+          client.put_object(Bucket=bucket, Key='current.json', Body=json.dumps(updated).encode(),
+                            ContentType='application/json', CacheControl='no-store', IfMatch=current['ETag'])
+          with client.get_object(Bucket=bucket, Key='current.json')['Body'] as body:
+              result = json.load(body)
+          assert result['release'] == RELAX_BASELINE and result['epg_release'] == guide
+          assert fetch(client, bucket, result['release'], category_key) == prior[category_key]
+          print('LIVE_RELAX_25', result['release'], 'GUIDE', guide, 'ROLLBACK_CATALOGUE', active)
+          PY
