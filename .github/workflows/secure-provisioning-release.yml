@@ -1,0 +1,48 @@
+name: Deploy locked secure provisioning form
+on:
+  push:
+    branches: [feature/secure-provisioning-20261125]
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-vod-candidate-upload
+  cancel-in-progress: false
+jobs:
+  release:
+    if: contains(github.event.head_commit.message, '[secure-provisioning-release-20261125]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test standalone-xtream/tests/*.test.mjs
+      - name: Upload and activate guarded live-only candidate
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "standalone-xtream/scripts")
+          import provision_release as t
+          assert t.current()=={t.BASE:100}, "Active baseline changed"
+          old,_=t.bindings(t.BASE)
+          assert "PROVISION_ADMIN_TOKEN" not in old
+          assert not any(old.get(k,{}).get("text")=="true" for k in ("ENABLE_VOD","ENABLE_VOD_M3U"))
+          t.smoke()
+          PY
+          if ! npx --yes wrangler@4 versions upload --config standalone-xtream/wrangler.production.jsonc --keep-vars --experimental-provision=false --experimental-auto-create=false --message 'Locked owner provisioning interface, live-only baseline' > "$RUNNER_TEMP/provision-upload.log" 2>&1; then
+            echo "Candidate upload failed; protected output withheld"
+            exit 1
+          fi
+          export LTV_TRIAL_CANDIDATE="$(grep -oE 'Worker Version ID: [0-9a-f-]{36}' "$RUNNER_TEMP/provision-upload.log" | tail -1 | cut -d' ' -f4)"
+          test -n "$LTV_TRIAL_CANDIDATE"
+          echo "Candidate version: $LTV_TRIAL_CANDIDATE"
+          python standalone-xtream/scripts/provision_release.py

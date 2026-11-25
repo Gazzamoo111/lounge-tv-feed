@@ -30,10 +30,10 @@ el('create').addEventListener('submit',async event=>{
  const data={username:user,password:pass,provider_username:el('providerUser').value.trim(),provider_password:el('providerPass').value,expires_at:expiry,max_connections:Number(el('connections').value)};
  try{
  const r=await fetch('/operator/provision',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+el('token').value.trim()},body:JSON.stringify(data),cache:'no-store',credentials:'omit',redirect:'error'});
- const out=await r.json();if(!r.ok){el('status').textContent='Registration failed: '+String(out.error||r.status);return;}
+ const out=await r.json();if(!r.ok){el('status').textContent='Registration failed: '+String(out.error||r.status)+' (attempted username: '+user+')';return;}
  latest='Server: https://tv.loungetv.nz\\nUsername: '+user+'\\nPassword: '+pass;
  el('credentials').textContent=latest;el('result').hidden=false;el('providerUser').value='';el('providerPass').value='';el('expiry').value='';el('status').textContent='Account registered. Playback still needs verification.';
- }catch{el('status').textContent='Network or response error. Do not retry blindly; check whether the account was created.';}finally{el('submit').disabled=false;}
+ }catch{el('status').textContent='Network or response error. Check the generated username before retrying: '+user+'';}finally{el('submit').disabled=false;}
 });
 el('copy').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(latest);el('status').textContent='Copied. Send privately.';}catch{el('status').textContent='Select and copy the displayed login.';}});
 `;
