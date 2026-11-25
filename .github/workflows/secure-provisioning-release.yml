@@ -34,11 +34,12 @@ jobs:
           import provision_release as t
           assert t.current()=={t.BASE:100}, "Active baseline changed"
           old,_=t.bindings(t.BASE)
+          print("Existing binding names:", ",".join(sorted(old)))
           assert "PROVISION_ADMIN_TOKEN" not in old
           assert not any(old.get(k,{}).get("text")=="true" for k in ("ENABLE_VOD","ENABLE_VOD_M3U"))
           t.smoke()
           PY
-          if ! npx --yes wrangler@4 versions upload --config standalone-xtream/wrangler.production.jsonc --keep-vars --experimental-provision=false --experimental-auto-create=false --message 'Locked owner provisioning interface, live-only baseline' > "$RUNNER_TEMP/provision-upload.log" 2>&1; then
+          if ! npx --yes wrangler@4 versions upload --config standalone-xtream/wrangler.production.jsonc --experimental-provision=false --experimental-auto-create=false --message 'Locked owner provisioning interface, live-only baseline' > "$RUNNER_TEMP/provision-upload.log" 2>&1; then
             echo "Candidate upload failed; protected output withheld"
             exit 1
           fi
