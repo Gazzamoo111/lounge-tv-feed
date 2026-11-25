@@ -1,0 +1,70 @@
+name: Legacy Supabase retirement read-only preflight
+on:
+  push:
+    branches: [feature/cloudflare-vod-20261124]
+permissions:
+  contents: read
+jobs:
+  preflight:
+    if: contains(github.event.head_commit.message, '[legacy-retirement-preflight-20261125]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install boto3==1.42.78
+      - name: Check current deployment and private inputs without modification
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+        run: |
+          python - <<'PY'
+          import sys,json,gzip,re,os,datetime,xml.etree.ElementTree as ET
+          from urllib.parse import urlsplit
+          import boto3
+          sys.path.insert(0, "standalone-xtream/scripts")
+          import vod_worker_trial as t
+          assert t.current()=={"8a90126d-709e-4f18-bd6c-1b631ac05bc4":100}, "Unexpected Worker version"
+          t.smoke()
+          bucket="loungetv-xtream-production-private"
+          s=boto3.client("s3",endpoint_url=f"https://{os.environ['R2_ACCOUNT_ID']}.r2.cloudflarestorage.com",aws_access_key_id=os.environ["R2_ACCESS_KEY_ID"],aws_secret_access_key=os.environ["R2_SECRET_ACCESS_KEY"],region_name="auto")
+          def read(key):
+              with s.get_object(Bucket=bucket,Key=key)["Body"] as body:
+                  return body.read()
+          pointer=json.loads(read("current.json"))
+          release=pointer["release"]; epg=pointer.get("epg_release") or release
+          for value in (release,epg):
+              assert re.fullmatch(r"[A-Za-z0-9._-]{1,100}",value)
+          sources=read("refresh-inputs/Accepted_Sources.json")
+          mappings=read("refresh-inputs/LoungeTV_EPG_Mappings.json")
+          live=read("releases/"+release+"/catalog/live_all.json")
+          template=read("releases/"+release+"/catalog/template.m3u")
+          categories=read("releases/"+release+"/catalog/live_categories.json")
+          guide=read("releases/"+epg+"/epg/guide.xml.gz")
+          legacy=re.compile(rb"supabase\.(?:co|com|in)|liqocisegeqzbyuqloql|(?:connect|n)\.loungetv\.nz",re.I)
+          for label,data in [("accepted sources",sources),("EPG mappings",mappings),("live catalogue",live),("live template",template),("live categories",categories)]:
+              print(label+": legacy reference matches="+str(len(legacy.findall(data))))
+          urls=[str(x.get("url","")) for x in json.loads(sources)["sources"]]
+          print("Configured EPG source count:",len(urls))
+          root=ET.fromstring(gzip.decompress(guide))
+          now=datetime.datetime.now(datetime.timezone.utc)
+          active=set()
+          for p in root.iter("programme"):
+              try:
+                  start=datetime.datetime.strptime(p.get("start"),"%Y%m%d%H%M%S %z")
+                  stop=datetime.datetime.strptime(p.get("stop"),"%Y%m%d%H%M%S %z")
+                  if start<=now<stop: active.add(p.get("channel"))
+              except (ValueError,TypeError): pass
+          rows=json.loads(live)
+          print("LIVE_RELEASE",release,"EPG_RELEASE",epg,"CHANNELS",len(rows),"CATEGORIES",len(json.loads(categories)),"NOW_GUIDE_IDS",len(active))
+          assert len(rows)>0 and len(active)>0
+          print("READ_ONLY_PREFLIGHT_COMPLETE")
+          PY
