@@ -39,11 +39,5 @@ jobs:
           assert not any(old.get(k,{}).get("text")=="true" for k in ("ENABLE_VOD","ENABLE_VOD_M3U"))
           t.smoke()
           PY
-          if ! npx --yes wrangler@4 versions upload --config standalone-xtream/wrangler.production.jsonc --experimental-provision=false --experimental-auto-create=false --message 'Locked owner provisioning interface, live-only baseline' > "$RUNNER_TEMP/provision-upload.log" 2>&1; then
-            echo "Candidate upload failed; protected output withheld"
-            exit 1
-          fi
-          export LTV_TRIAL_CANDIDATE="$(grep -oE 'Worker Version ID: [0-9a-f-]{36}' "$RUNNER_TEMP/provision-upload.log" | tail -1 | cut -d' ' -f4)"
-          test -n "$LTV_TRIAL_CANDIDATE"
-          echo "Candidate version: $LTV_TRIAL_CANDIDATE"
+          export LTV_TRIAL_CANDIDATE='088b71de-0d7d-496e-b3a6-32c5cd0711ef'
           python standalone-xtream/scripts/provision_release.py

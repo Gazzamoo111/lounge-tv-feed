@@ -92,16 +92,34 @@ def deploy(version, message):
 
 def check_operator():
     url=ORIGIN+"/operator/provision"
-    with urllib.request.urlopen(url, timeout=12) as r:
-        if r.status!=200 or b"Register a customer" not in r.read(16000) or r.headers.get("Cache-Control")!="no-store":
-            raise RuntimeError("Operator form response invalid")
-    req=urllib.request.Request(url, data=b"{}",headers={"Content-Type":"application/json","Origin":ORIGIN,"Authorization":"Bearer invalid-probe"})
+    headers={"User-Agent":"LoungeTV-release-check","Cache-Control":"no-cache","Accept":"text/html"}
+    def check_get(path, marker, expected_type):
+        req=urllib.request.Request(ORIGIN+path,headers=headers)
+        try:
+            with urllib.request.urlopen(req,timeout=12) as r:
+                body=r.read(16000)
+                if r.status!=200 or marker not in body or expected_type not in r.headers.get("Content-Type","") or "no-store" not in r.headers.get("Cache-Control",""):
+                    raise RuntimeError("Operator response failed content checks: "+path)
+                print("Operator GET passed: "+path,flush=True)
+        except urllib.error.HTTPError as exc:
+            body=exc.read(8192)
+            try: error=json.loads(body).get("error","")
+            except Exception: error=""
+            if error not in ("not_found","unauthorised","forbidden","temporarily_unavailable"): error="non-application response"
+            raise RuntimeError(f"Operator GET {path} HTTP {exc.code}; {error}; CF challenge={exc.headers.get('cf-mitigated')=='challenge'}") from None
+    check_get("/operator/provision",b"Register a customer","text/html")
+    check_get("/operator/provision.js",b"crypto.getRandomValues","javascript")
+    req=urllib.request.Request(url,data=b"{}",headers={**headers,"Content-Type":"application/json","Origin":ORIGIN,"Authorization":"Bearer invalid-probe"})
     try:
         with urllib.request.urlopen(req,timeout=12): pass
     except urllib.error.HTTPError as exc:
-        if exc.code==401:
+        body=exc.read(8192)
+        try: error=json.loads(body).get("error","")
+        except Exception: error=""
+        if exc.code==401 and error=="unauthorised":
             print("Operator form available; unauthorised registration denied",flush=True)
             return
+        raise RuntimeError(f"Operator POST HTTP {exc.code}; expected application-level 401; CF challenge={exc.headers.get('cf-mitigated')=='challenge'}") from None
     raise RuntimeError("Operator authentication boundary failed")
 
 def main():
