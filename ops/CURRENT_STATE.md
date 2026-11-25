@@ -1,3 +1,9 @@
+## Entire legacy Supabase project pause initiated | 25 November 2026 NZDT
+
+Following owner-confirmed device acceptance after all 22 scheduled jobs were disabled, Supabase pause_project returned success for Lounge TV ref `liqocisegeqzbyuqloql`. Status readback `PAUSING`; final INACTIVE state not yet confirmed. Reversible retirement test, not deletion. Trigger read-only Cloudflare preflight for continued independence; check exact timing relative to completed project pause before interpreting result. No Cloudflare Worker, live catalogue, EPG, D1 or customer changes. No full independent backup verified. Rollback: resume exact project via Supabase dashboard or restore_project, then re-enable only the previously enabled 14 jobs if required. Retain legacy data and recovery until final deletion checks pass. Issue #32.
+
+---
+
 ## Owner device acceptance after legacy schedule shutdown | 25 November 2026 NZDT
 
 Owner reported "everything works perfect" in response to requested TVNZ, Sky Sport, representative AU/UK playback, guide and playlist refresh checks after pausing all legacy schedules. Treat as owner-reported overall device acceptance, not independently timed/channel-by-channel tests. Post-shutdown preflight [45552573174](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45552573174), job 138996921133, passed: 12,714 channels, 24 categories, 2,792 current guide IDs, 45 configured sources, zero legacy references in five private inputs. Rechecked project name Lounge TV, ref liqocisegeqzbyuqloql, ACTIVE_HEALTHY and 0/22 active jobs. Given explicit prior retirement authorisation and positive owner report, proceed with reversible project pause (not deletion), retain recovery data, and verify Cloudflare while old backend offline. Independent complete offsite backup remains unverified; do not permanently delete. Rollback resume project and only re-enable previously active jobs if necessary.
