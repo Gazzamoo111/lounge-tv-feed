@@ -1,3 +1,9 @@
+## Secure provisioning interface | 25 November 2026 NZDT
+
+Issue #33. Owner authorised reducing manual per-customer account registration. Isolated branch `feature/secure-provisioning-20261125` based on original live-only Cloudflare branch, not VOD migration. Implemented `/operator/provision` and static JS using existing D1/HMAC/AES-GCM bindings; separate randomly generated customer credentials, provider expiry and 1/2 connections, create-only D1 insert, bounded JSON, same-origin POST, strong separate bearer secret, no browser storage or credential logging. Existing account cannot be overwritten. Regression run 45558441099 passed. Guarded release commit `ed9bc33848bd4ad615f141649f4411ff0cc35389` run 45558534999 verifies original active version, exact binding/runtime parity, smoke checks and rejects unauthorised provisioning. Rollback original Worker `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. Release pending at this record. Separate `PROVISION_ADMIN_TOKEN` secret must be configured by owner before live form accepts requests; no real customer created or tested. Provider entitlement and expiry remain operator responsibility; renewals/revocation manual. No Supabase changes.
+
+---
+
 ## Isolated Cloudflare production deployed | 23 November 2026 NZDT
 
 Issue #25 is open. The production acceptance origin is **https://tv.loungetv.nz**. Worker `loungetv-xtream-production` is on version `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. It uses dedicated D1 `loungetv-xtream-production` and private Standard R2 `loungetv-xtream-production-private`, with independent authentication and encryption secrets. The bucket has public and custom domains disabled. The production Worker has its workers.dev and preview endpoints disabled.
