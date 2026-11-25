@@ -1,4 +1,5 @@
 import {nzSource,nzLicenseRelay} from './nz-live.mjs';
+import {isVodAction,vodAction,vodPlayback,vodPlaylistSuffix,withVodSuffix} from './vod.mjs';
 // Lounge TV's independent Xtream-compatible Live TV control plane.
 // No Supabase, no shared provider credentials, no media byte proxying.
 const js = (body, status=200) => new Response(JSON.stringify(body), {status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','Access-Control-Allow-Origin':'*','X-Content-Type-Options':'nosniff'}});
@@ -94,8 +95,8 @@ async function liveAction(url,account,env){
     for (const row of listings) row.now_playing = Number(row.start_timestamp <= now);
     return js({epg_listings:listings});
   }
-  if(['get_vod_categories','get_vod_streams','get_series_categories','get_series','get_live_info'].includes(action))return js([]);
-  if(['get_vod_info','get_series_info'].includes(action))return js({});
+  if(isVodAction(action))return vodAction(url,env,action,js,problem);
+  if(action==='get_live_info')return js([]);
   return problem('unsupported_action',400);
 }
 async function xmltv(request,env){
@@ -129,7 +130,13 @@ async function m3u(url,account,env){
     .replaceAll('{{BASE}}',url.origin)
     .replaceAll('{{USER}}',encodeURIComponent(account.username))
     .replaceAll('{{PASS}}',encodeURIComponent(account.password));
-  return new Response(template,{headers:{'Content-Type':'audio/x-mpegurl; charset=utf-8','Content-Disposition':'attachment; filename="lounge-tv.m3u"','Cache-Control':'private, no-store','Access-Control-Allow-Origin':'*'}});
+  let suffix;
+  try {
+    suffix=await vodPlaylistSuffix(url,account,env);
+  } catch {
+    // A VOD read failure must never prevent the DRM-aware live playlist import.
+  }
+  return new Response(suffix?withVodSuffix(template,suffix):template,{headers:{'Content-Type':'audio/x-mpegurl; charset=utf-8','Content-Disposition':'attachment; filename="lounge-tv.m3u"','Cache-Control':'private, no-store','Access-Control-Allow-Origin':'*'}});
 }
 async function redirectStream(url,env,parts){
   const [username,password,streamId]=parts;
@@ -184,6 +191,13 @@ export default {
       if(path.startsWith('/live/')){
         const m=path.match(/^\/live\/([^/]+)\/([^/]+)\/(\d{1,12})(?:\.(?:ts|m3u8|mpd))?$/);
         return m?await redirectStream(url,env,m.slice(1)):problem('unknown_stream',404);
+      }
+      const vodPath=path.match(/^\/(movie|series)\/([^/]+)\/([^/]+)\/([1-9]\d{0,11})(?:\.[a-z0-9]{1,8})?$/);
+      if(vodPath&&env.ENABLE_VOD==='true'){
+        const [,kind,username,password,id]=vodPath;
+        const a=await auth(url,env,{username:decodeURIComponent(username),password:decodeURIComponent(password)});
+        if(!a)return problem('unauthorised',401);
+        return await vodPlayback(kind,id,a,env,providerCredentials,problem);
       }
       if(!['/player_api.php','/xmltv.php','/get.php'].includes(path))return problem('not_found',404);
       const a=await auth(url,env);

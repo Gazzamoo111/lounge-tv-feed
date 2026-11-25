@@ -1,0 +1,89 @@
+name: Lounge TV On Demand catalogue
+on:
+  pull_request:
+    paths:
+      - 'standalone-xtream/wrangler.production.jsonc'
+      - 'standalone-xtream/src/worker.mjs'
+      - 'standalone-xtream/src/vod.mjs'
+      - 'standalone-xtream/tests/worker.test.mjs'
+      - 'standalone-xtream/vod/**'
+      - '.github/workflows/xtream-vod-maintenance.yml'
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [stage, validate, bootstrap, refresh]
+        default: validate
+  schedule:
+    - cron: '13 15 * * *'
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-xtream-vod
+  cancel-in-progress: false
+jobs:
+  tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test standalone-xtream/tests/*.test.mjs
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - run: python -m unittest discover -s standalone-xtream/tests -p 'test_*.py'
+  catalogue:
+    needs: tests
+    if: always() && ((github.event_name == 'workflow_dispatch' && needs.tests.result == 'skipped') || (github.event_name == 'schedule' && needs.tests.result == 'skipped' && vars.LTV_VOD_AUTOMATION == 'enabled'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - name: Export and stage approved VOD metadata
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'stage'
+        env:
+          PGDATABASE: ${{ secrets.LTV_VOD_EXPORT_DATABASE_URL }}
+          LTV_VOD_BUCKET: loungetv-xtream-production-private
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+        run: |
+          test -n "$PGDATABASE" || { echo 'Missing authorised read-only export connection'; exit 1; }
+          test -n "$R2_ACCOUNT_ID" && test -n "$R2_ACCESS_KEY_ID" && test -n "$R2_SECRET_ACCESS_KEY" || { echo 'Missing existing R2 environment configuration'; exit 1; }
+          command -v psql >/dev/null || { echo 'PostgreSQL client unavailable'; exit 1; }
+          python standalone-xtream/vod/stage_approved.py --export --stage
+      - name: Compile and validate the VOD release
+        if: inputs.operation != 'stage'
+        env:
+          OPERATION: ${{ inputs.operation || 'refresh' }}
+          LTV_VOD_BUCKET: loungetv-xtream-production-private
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          LTV_VOD_SUPPLIER_ORIGIN: ${{ vars.LTV_VOD_SUPPLIER_ORIGIN }}
+          LTV_VOD_SUPPLIER_USERNAME: ${{ secrets.LTV_VOD_SUPPLIER_USERNAME }}
+          LTV_VOD_SUPPLIER_PASSWORD: ${{ secrets.LTV_VOD_SUPPLIER_PASSWORD }}
+        run: |
+          case "$OPERATION" in
+            validate) python standalone-xtream/vod/refresh.py --bootstrap ;;
+            bootstrap) python standalone-xtream/vod/refresh.py --bootstrap --publish ;;
+            refresh) python standalone-xtream/vod/refresh.py --publish ;;
+            *) exit 1 ;;
+          esac

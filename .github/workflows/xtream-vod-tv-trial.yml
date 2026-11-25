@@ -1,0 +1,28 @@
+name: Lounge TV authorised VOD TV trial
+on:
+  push:
+    branches: [feature/cloudflare-vod-20261124]
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-vod-candidate-upload
+  cancel-in-progress: false
+jobs:
+  trial:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/feature/cloudflare-vod-20261124' && contains(github.event.head_commit.message, '[vod-tv-trial-20261125]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test standalone-xtream/tests/*.test.mjs
+      - name: Guarded same-origin trial and rollback on smoke failure
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+        run: python standalone-xtream/scripts/vod_worker_trial.py

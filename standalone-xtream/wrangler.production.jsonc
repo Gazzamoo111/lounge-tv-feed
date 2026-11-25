@@ -14,6 +14,8 @@
     "ENABLE_NZ_OVERRIDES": "true",
     "ENABLE_TVNZ_LICENSE_RELAY": "true",
     "NUVIO_M3U_DRM_FALLBACK": "true",
+    "ENABLE_VOD": "true",
+    "ENABLE_VOD_M3U": "true",
     "UPSTREAM_ORIGIN": "http://line.loungeconnect247.xyz"
   },
   "r2_buckets": [

@@ -1,3 +1,142 @@
+## Entire legacy Supabase project pause initiated | 25 November 2026 NZDT
+
+Following owner-confirmed device acceptance after all 22 scheduled jobs were disabled, Supabase pause_project returned success for Lounge TV ref `liqocisegeqzbyuqloql`. Status readback `PAUSING`; final INACTIVE state not yet confirmed. Reversible retirement test, not deletion. Trigger read-only Cloudflare preflight for continued independence; check exact timing relative to completed project pause before interpreting result. No Cloudflare Worker, live catalogue, EPG, D1 or customer changes. No full independent backup verified. Rollback: resume exact project via Supabase dashboard or restore_project, then re-enable only the previously enabled 14 jobs if required. Retain legacy data and recovery until final deletion checks pass. Issue #32.
+
+---
+
+## Owner device acceptance after legacy schedule shutdown | 25 November 2026 NZDT
+
+Owner reported "everything works perfect" in response to requested TVNZ, Sky Sport, representative AU/UK playback, guide and playlist refresh checks after pausing all legacy schedules. Treat as owner-reported overall device acceptance, not independently timed/channel-by-channel tests. Post-shutdown preflight [45552573174](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45552573174), job 138996921133, passed: 12,714 channels, 24 categories, 2,792 current guide IDs, 45 configured sources, zero legacy references in five private inputs. Rechecked project name Lounge TV, ref liqocisegeqzbyuqloql, ACTIVE_HEALTHY and 0/22 active jobs. Given explicit prior retirement authorisation and positive owner report, proceed with reversible project pause (not deletion), retain recovery data, and verify Cloudflare while old backend offline. Independent complete offsite backup remains unverified; do not permanently delete. Rollback resume project and only re-enable previously active jobs if necessary.
+
+---
+
+## All legacy Supabase schedules paused | 25 November 2026 NZDT
+
+Issue #32. Read-only production preflight [45552401638](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45552401638), job 138996377674, passed: original Worker `8a90126d-709e-4f18-bd6c-1b631ac05bc4` active, public health/auth rejection passed, private catalogue `vprod-order-45153376801-1` 12,714 channels/24 categories, EPG `vepg-auto-45541817800-1` with 2,792 guide IDs with current programme, 45 configured sources. Zero legacy/Supabase references in accepted sources, mappings, live catalogue, template and categories. Direct SQL: seven legacy subscriptions and seven assignments, zero unexpired and zero null assignment expiry. Seven intake requests all approved/declined, all activation/trial/admin notices sent, no intake or notices created/updated in last seven days. Browser inspection of existing public homepage confirms trial/orders/payment requests directed to WhatsApp, no website account required; full website source and all routes not independently reviewed. Last 24h historical legacy n/core requests still had successful responses; cannot infer current paying customers. Owner explicitly retired old app and admin. Reversibly disabled media jobs 15,19,20,21,22,27,29,30 and legacy expiry/notification/admin/retention jobs 4,5,6,8,33. SQL readback: **0 enabled of 22 jobs**. Earlier job 7 was already paused; original eight VOD jobs inactive. Restore previously enabled jobs with `select cron.alter_job(jobid, active := true) from cron.job where jobid in (4,5,6,7,8,15,19,20,21,22,27,29,30,33);` (schedules unchanged). No data, functions or project deleted; no Cloudflare live/EPG pointer, D1 or customer changes. Post-pause read-only preflight triggered by this commit; require device live/EPG confirmation, verify private recovery backup and remaining external consumers before irreversible project deletion. All retired schedules remain reversible. Original VOD archive retained.
+
+---
+## Legacy Supabase retirement initiated | 25 November 2026 NZDT
+
+Owner authorised retiring old app and obsolete sports events, custom VOD and admin infrastructure; track separately in Issue #32. Cloudflare Worker remains original live-only version `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. Main production EPG workflow checks out pinned `b50f4d8bcfe64a46a46a74786f6f2345a737438b`, runs with R2 credentials only, and uses the GitHub epg-data guide; reviewed player NZ/AU/US/UK generation workflows do not require the Supabase guide database. Private refresh input URLs and live execution evidence still need checking. Last 24h aggregate Supabase Edge logs: n 561 requests/4 HTTP 2xx–3xx, lounge-core-xtream 51/23, shared EPG sync 286/286, sports calendar 96/96, sports-event refresh 95/95. Sports-event refresh v16 writes legacy live release items, bindings and categories; preserve until legacy consumers reconciled. Eight specifically VOD-related jobs already inactive. Disabled old operational/admin health snapshot cron job 7 with `cron.alter_job(7, active := false)`; readback confirmed inactive. Rollback `select cron.alter_job(7, active := true);` (original schedule unchanged). Thirteen jobs remain enabled: 4,5,6,8,15,19,20,21,22,27,29,30,33. Prior stated active count of 13 was an undercount; before change 14. Website repo lookup unavailable, so current intake/admin dependencies not yet confirmed. No tables/functions deleted, no Worker or EPG changes, no customer records changed. No physical playback test after rollback. Supabase project not safe to delete yet. Preserve approved VOD archive and verify private backup and all remaining consumers before irreversible deletion.
+
+---
+
+## Pre-VOD Worker restored | 25 November 2026 NZDT
+
+[Rollback run 45470783899](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45470783899), job 138717863138, restoration step succeeded. Logs confirm `ROLLBACK VERIFIED: 8a90126d-709e-4f18-bd6c-1b631ac05bc4` and public health/auth rejection checks passed. Deployment readback verifies original Worker at 100%. Failed VOD trial no longer serving. Existing device Live TV/EPG playback remains untested after rollback. No catalogue, R2 pointer, credentials, Supabase or TorBox configuration changed. Preserve all migration assets; On Demand integration paused. Separate authorised TorBox setup is not completed by this rollback.
+
+---
+
+## Pause integrated VOD; restore pre-VOD live gateway | 25 November 2026 NZDT
+
+Owner stated to switch to TorBox if integrated VOD could not be brought to an acceptable state. Given failed device acceptance and unresolved Nuvio import and playback compatibility, operator chose to stop the trial rather than continue speculative production changes. Guarded rollback workflow [45470783899](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45470783899), commit `18bdd471f62e063f9eb5f2c9371b013b8cfc1555`, triggered to restore original live-only Worker `8a90126d-709e-4f18-bd6c-1b631ac05bc4` only if active version is failed trial `3c8ebb6c-df07-4daa-ba41-1d09b7ff193b` (or verify already restored). Health/auth rejection checks and deployment readback required. Rollback result pending at this record. Preserve approved snapshot, VOD release `v0474549ed95eb581b84507c4`, migration branch, all Supabase services, account bindings and live/EPG pointers. No TorBox configuration or account changes performed. Actual TV live/EPG playback and separate authorised on-demand setup require validation. Do not merge temporary deployment workflows or remove Supabase.
+
+---
+
+## Preserve audited VOD baseline | 25 November 2026 NZDT
+
+Owner clarified the original database was already audited and approved; do not re-audit or arbitrarily shrink inventory. Re-read actual deployed Supabase `lounge-vod-qa` v1 and verified its `vod-catalogue.mjs` is identical (6,501 characters) to Cloudflare `standalone-xtream/vod/curation.mjs`. Export SQL uses active release `admission='keep'` and rejects excluded titles and adult-flagged inventory. Therefore no evidence of a wholesale loss of editorial algorithm or replacement with raw supplier inventory; presentation loss in M3U and native metadata parity gaps are confirmed. Next compare exact approved release rows and prior API payloads to compiled R2 payload, preserving audited IDs, membership/order and source decisions; resolve Nuvio display/import compatibility and investigate authorised playback separately. Do not introduce new subjective rating thresholds or discard approved titles without evidence. No production or Supabase changes. Last verified active Worker 3c8ebb6c-df07-4daa-ba41-1d09b7ff193b; immediate rollback 26671536-cd71-4606-b694-8d38820a75cf. Physical acceptance remains failed.
+
+---
+
+## Nuvio device acceptance failed | 25 November 2026 NZDT
+
+Owner confirms VOD appears after M3U trial, but reports oversized posters, low-quality/suggestive movie inventory, unacceptable browsing experience, missing New Releases/Popular/Featured home rows, and black screen on The Mitchells vs. the Machines. Import PASS; presentation and sampled movie playback FAIL; series playback, sustained playback, Live TV/EPG regression NOT TESTED in this report. Candidate `3c8ebb6c-df07-4daa-ba41-1d09b7ff193b` is the last verified active version, not an accepted release. Source review: `vod/build.mjs` emits only the primary category as M3U group; `curation.mjs` prefers genre over featured memberships, so curated secondary rows are lost. Current public upstream NuvioPlusIPTV main `OnDemandRepository.kt` reads M3U group-title and logo, and native list parser reads a single category_id plus scalar metadata, skipping arrays; `OnDemandHomeScreen.kt` inherits Home poster width and uses 2:3 proportions. Exact installed release not reverified. Movie native list also omits available TMDB ID, release year and genre. Do not assume changing artwork resolution fixes card size, or that native import alone restores multi-category home rows. Investigate exact installed client, native VOD import independently of DRM live fallback, compatible curated row model, stricter quality/adult admission, and authorised provider playback failure before further production changes. No new release or storage/pointer/account/Supabase changes in this review. Immediate rollback `26671536-cd71-4606-b694-8d38820a75cf`; original `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. Do not retire Supabase or mark VOD accepted.
+
+---
+
+## Nuvio M3U VOD trial active | 25 November 2026 NZDT
+
+[Run 45468000679](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45468000679), job 138707986479, completed successfully. All 26 gateway tests passed; verified native catalogue objects and 53,511 VOD M3U entries against release manifest and existing live template. Existing bindings/runtime parity and before/after public health/auth rejection checks passed. Active Worker `3c8ebb6c-df07-4daa-ba41-1d09b7ff193b` confirmed at 100%; native and M3U VOD enabled. Owner instructed to refresh existing playlist; device classification, memory, actual playback and live/EPG regression remain pending. Immediate rollback `26671536-cd71-4606-b694-8d38820a75cf`; original baseline `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. No R2 pointer, account or Supabase changes.
+
+---
+
+## Nuvio import shows Live TV only | 25 November 2026 NZDT
+
+Owner confirmed same-login Nuvio playlist displays Live TV but no Movies/Series. Source confirms DRM-aware `get_live_streams` fallback to `get.php`, with `ENABLE_VOD_M3U=false` in first active trial. This is the likely explanation, not a verified client parser diagnosis. Direct owner-authenticated API request from chat sandbox failed due network access; credentials never committed or logged. Commit `c833105b768540edc5282319172b2222fdc14540` enables existing M3U VOD extension for a reversible trial. [Run 45468000679](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45468000679), job 138707986479, started; verifies native R2 catalogue and all 53,511 VOD M3U entries and existing live template, runs gateway regression tests, then uploads/activates with binding checks and rollback on smoke failure. Previous active native-only version `26671536-cd71-4606-b694-8d38820a75cf` is the immediate rollback, original Worker `8a90126d-709e-4f18-bd6c-1b631ac05bc4` remains original rollback. M3U client classification and memory remain unverified; existing prefix, live/EPG pointers, accounts and Supabase remain unchanged. No new playlist or credentials. Do not claim VOD working until physical test.
+
+---
+
+## Same-login VOD trial active | 25 November 2026 NZDT
+
+[Trial run 45466549140](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45466549140), job 138702855399: 26/26 gateway tests passed; existing/candidate binding and runtime parity verified (only VOD flags differ); public health and synthetic invalid-auth checks passed before and after activation. Cloudflare deployment readback confirmed candidate `26671536-cd71-4606-b694-8d38820a75cf` at 100% on tv.loungetv.nz. Log: TRIAL ACTIVE. Native Xtream VOD enabled, combined M3U extension remains disabled. Owner asked to refresh existing Nuvio playlist and test Movies, Series, TVNZ, Sky Sport and EPG. Authenticated device import/playback and final acceptance pending. This is an owner-authorised reversible production trial, not final acceptance. Rollback: restore Worker `8a90126d-709e-4f18-bd6c-1b631ac05bc4` at 100% (no force); preserve all R2 pointers. No database or Supabase changes, no retirement. Automatic new-content admission remains outstanding.
+
+---
+
+## Same-login VOD device trial | 25 November 2026 NZDT
+
+Candidate upload [45464188035](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45464188035), attempt 2, job 138699930201 succeeded: Cloudflare version `26671536-cd71-4606-b694-8d38820a75cf` uploaded with no traffic change. Owner requested trial on existing TV/login. Trial is an explicitly authorised, reversible test on existing `tv.loungetv.nz`, not final production acceptance; no separate endpoint, new credentials or M3U extension. [Trial workflow 45466549140](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45466549140) runs 26 gateway tests, compares existing/candidate binding and runtime metadata, checks health and synthetic invalid-auth requests, then attempts candidate activation and readback; on smoke failure, restores baseline version `8a90126d-709e-4f18-bd6c-1b631ac05bc4` if the candidate is active. No force deployment or database/R2 writes. Job 138702855399 in progress; activation and authenticated real-device playback not yet verified. Keep Supabase and VOD storage release unchanged. Trial script `standalone-xtream/scripts/vod_worker_trial.py` and one-time workflow are on migration branch only. Final promotion decision remains gated by owner device results. Remove temporary deployment workflows before merge.
+
+---
+
+## VOD Worker credential retry | 25 November 2026 NZDT
+
+Owner confirmed configuring the protected `CLOUDFLARE_API_TOKEN`. Retried existing candidate workflow 45464188035 through GitHub. Attempt 2 job 138699930201 passed all 26 Node tests and the Cloudflare deployment preflight, confirming `8a90126d-709e-4f18-bd6c-1b631ac05bc4` serving 100%. Zero-traffic candidate upload in progress at this record. No production promotion command is in the workflow. No new account, customer playlist, live/EPG pointer or Supabase change. Device verification and promotion still pending.
+
+---
+
+## VOD Worker deployment attempt | 25 November 2026 NZDT
+
+Owner authorised deployment. Candidate config commit `dc0d38420aa921ba665ed04296b9d6c0c63533e7` enables native Xtream VOD and leaves combined M3U VOD disabled; existing live/DRM/D1/R2 settings preserved. Removed temporary bootstrap recovery trigger in `6f589f94d6cc59ffef0e48c25969f1ae72631b65`. One-time branch-restricted candidate upload workflow commit `0cf35c512a47ad8b6048bc500c3bf1bad2395686` ran [45464188035](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45464188035). Job 138694556785 passed 26/26 Node tests and failed closed at credential preflight: configured `CLOUDFLARE_API_TOKEN` or account ID missing (R2 account ID previously verified). Upload step skipped. No Cloudflare Worker version or traffic changes; no Supabase change. Next: authorise a narrowly scoped Workers deployment credential in protected environment or use local Wrangler OAuth, verify current active version, upload candidate without changing traffic, authenticated verification, then promote after release gates. Rollback reference `8a90126d-709e-4f18-bd6c-1b631ac05bc4` remains recorded; actual current deployment could not be rechecked without access. VOD storage release remains verified at `v0474549ed95eb581b84507c4`. Remove one-time candidate workflow before merging.
+
+---
+
+## VOD catalogue publication verified | 25 November 2026 NZDT
+
+[Recovery run 45452617304](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45452617304), job 138653633930, succeeded. Builder counts 5,142 movies, 1,641 series, 48,369 episodes. Reused 527 existing release objects; uploaded missing objects and verified 7,336/7,336 plus manifest. Publisher confirmed pointer readback for `v0474549ed95eb581b84507c4`, previous release null. Logged VOD prefix 45,702,704 existing bytes and 46,642,367 additional bytes (approximately 92.35 MB combined, excluding pointer). This is a storage release only; no Worker deployment or physical playback verification. Preserve Supabase project and all legacy services; retire VOD-only dependencies only after authenticated gateway, physical device, automation and dependency verification. Existing Worker rollback reference `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. Original R2 error cause remains unknown. Branch recovery trigger should be removed before merging.
+
+---
+
+## Resumable VOD publication recovery | 25 November 2026 NZDT
+
+Recovery commit `f34b99b7cc5575cffbcab26c606881841753f5c7` changes only the VOD publisher and test/workflow infrastructure. It adds bounded concurrent immutable writes/readback, standard transient retries, safe R2 operation and HTTP diagnostics, verifies existing manifests, accepts identical partial writes after conditional conflicts, and refuses replacing a different VOD pointer during bootstrap. A branch-only commit-marker push trigger was used to execute the already-authorised bootstrap without another manual command. [Recovery run 45452617304](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45452617304) test job 138653492337 passed 26 Node and 26 Python tests, including five new recovery regressions. Catalogue job 138653633930 is in progress at this record; actual R2 recovery/activation is not yet confirmed. No Worker or Supabase change. Live/EPG and customer credentials untouched; rollback Worker reference unchanged. Original ClientError cause remains unknown until R2 evidence arrives.
+
+---
+
+## VOD bootstrap publication failed | 25 November 2026 NZDT
+
+[Run 45375972898](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45375972898), job 138382274009, completed with failure after ~14 minutes of the compilation/publication step. Actual builder counts still match 5,142 movies, 1,641 series and 48,369 episodes. Error output is only `ClientError` (publisher sanitises third-party exceptions); exact failed R2 operation/status is unknown. Partial immutable objects may exist; pointer creation/readback not confirmed. Do not delete or overwrite staged data or live/EPG pointers. Inspect VOD prefix and improve safe error diagnostics before resuming publication. No Worker deployment or Supabase retirement performed. Rollback Worker reference remains `8a90126d-709e-4f18-bd6c-1b631ac05bc4`.
+
+---
+
+## R2 catalogue validation passed | 24 November 2026 NZDT
+
+Owner staged the approved snapshot at `vod/approved.json` in the existing private R2 bucket. [Validation run 45375220812](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45375220812), job 138379528587, completed successfully. The actual builder printed `{"movie":5142,"series":1641,"episodes":48369}`. This confirms R2 read access and full catalogue compilation; write access and immutable release readback remain to be tested via `bootstrap`. Validation did not publish a pointer or deploy a Worker. Next: bootstrap VOD-only release, then authenticated candidate and physical device checks before production promotion. No changes to live/EPG pointers or Supabase. Existing Worker rollback reference `8a90126d-709e-4f18-bd6c-1b631ac05bc4`.
+
+---
+
+## Private VOD snapshot file verification | 24 November 2026 NZDT
+
+Uploaded copy of approved.json independently parsed: 45,030,410 bytes, SHA-256 `ee65f17ce9d5365b07b7d4e575d2ec2bc9490d0ef97d3d2634f9ded1c293190e`. Counts 5,142 movies, 1,641 series, 48,369 episodes, all IDs unique within kind and valid; zero missing provider IDs, orphan episodes, empty series or duplicate episode coordinates. No credential-like top-level record field names observed. Structural checks only; full builder and R2 readback still pending. No production changes.
+
+---
+
+## Approved private VOD export | 24 November 2026 NZDT
+
+Owner reports successful local export through the Supabase read-only Management API: 5,142 movies, 1,641 series, 48,369 episodes, exactly matching the approved baseline. No database password reset or new database role required. Local file remains private; no catalogue data committed. R2 staging, compiled validation, supplier access and release remain pending. Evidence is owner-reported terminal output, not independent file readback. No production changes made.
+
+---
+
+## Private VOD stage attempt | 24 November 2026 NZDT
+
+Owner successfully dispatched [run 45369513198](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45369513198) on the migration branch. Setup completed; private export/stage failed before any database or R2 call: `Missing authorised read-only export connection`. The protected `LTV_VOD_EXPORT_DATABASE_URL` secret was empty or unavailable. R2 permissions remain untested. No production change or pointer write. Previous regression run 45367127250 passed Node and Python. Configure the protected read-only export connection in `lounge-tv-xtream-production-refresh` and retry the failed job.
+
+---
+
+## VOD migration continuation | 24 November 2026 NZDT
+
+PR #31 original head `29ff7c6` passed the [Node and Python CI job](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45365692414); catalogue job skipped. Subsequent candidate changes fix Xtream `category_id=0` for both VOD lists, add regression assertions, and add a manual private export/stage operation to the existing VOD workflow. Staging uses a read-only PostgreSQL connection (`LTV_VOD_EXPORT_DATABASE_URL`, protected environment secret) and existing R2 credential names, with counts and SHA-256 checked and no pointer mutation. These new changes have not yet been verified by CI. Workflow is absent on default branch, so manual UI dispatch registration remains unresolved. Regular Chat connector lacks workflow dispatch, secret configuration and Cloudflare control; connected browser requires the originating browser session. R2 access has not been retested. No private data exported, no production changes, no Supabase writes or retirement. Legacy VOD QA v1 still present. Authorised supplier intake of new titles/episodes remains unimplemented; current refresh only filters approved inventory. Rollback baseline recorded below. Do not activate VOD or retire legacy services before validation.
+
+---
+ 
+## Cloudflare On Demand migration candidate | 24 November 2026 NZDT
+
+[Issue #29](https://github.com/Gazzamoo111/lounge-tv-feed/issues/29). The Cloudflare dashboard confirms `tv.loungetv.nz` serves `loungetv-xtream-production` `8a90126d-709e-4f18-bd6c-1b631ac05bc4` at 100%, backed by its existing D1 and private R2. The standalone source currently gives empty authenticated VOD results. Legacy Supabase `n` v39, Plus v8 and standalone VOD QA v1 remain deployed. The read-only approved export counted 5,142 movie IDs, 1,641 series IDs and 48,369 distinct episode IDs.
+
+The candidate adds six authenticated Xtream VOD actions, account-bound playback and an independently gated same-playlist M3U extension. The VOD publisher only writes under the private bucket's `vod/` prefix. 26 Node tests and 21 existing Python tests passed locally. No Cloudflare release, catalogue pointer change, account change, VOD-specific Supabase retirement or paid upgrade occurred. Supplier access, private snapshot staging, Fire TV import and sustained movie/episode playback remain open. Rollback reference is the Worker version above and a VOD-only pointer restore. See the [VOD runbook](../standalone-xtream/vod/README.md).
+
+---
+
 ## Relax playback restored and extra entries removed | 24 November 2026 NZDT
 
 The owner confirmed Relax playback recovered after the BEST entitlement change and requested removal of the 21 extra test entries. [Production cleanup and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45347800545) verified all 28 catalogue assets and changed only the catalogue pointer from `vprod-relax-45345094940-1` to `vprod-order-45153376801-1`, leaving the active EPG pointer intact. Relax has 25 original entries and the overall catalogue has 12,714. The BEST live 4K package remains enabled. The 21 D1 IDs remain available for rollback. To restore the overflow, switch only the catalogue pointer to `vprod-relax-45345094940-1` using the current ETag. Playback after removing the extra catalogue entries has not been separately verified.
