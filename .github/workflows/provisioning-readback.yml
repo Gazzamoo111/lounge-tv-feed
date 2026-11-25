@@ -1,0 +1,41 @@
+name: Provisioning activation readback
+on:
+  push:
+    branches: [feature/secure-provisioning-20261125]
+permissions:
+  contents: read
+jobs:
+  readback:
+    if: contains(github.event.head_commit.message, '[provisioning-readback]')
+    runs-on: ubuntu-latest
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read deployment and form availability
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+        run: |
+          python - <<'PY'
+          import sys, urllib.request, urllib.error
+          sys.path.insert(0,"standalone-xtream/scripts")
+          import provision_release as t
+          active=t.current()
+          print("ACTIVE",active,flush=True)
+          for version in active:
+              bindings,runtime=t.bindings(version)
+              old,oldruntime=t.bindings(t.BASE)
+              print("TOKEN_CONFIGURED",bindings.get("PROVISION_ADMIN_TOKEN",{}).get("type")=="secret_text",flush=True)
+              print("OTHER_BINDINGS_MATCH", {k:v for k,v in bindings.items() if k!="PROVISION_ADMIN_TOKEN"}==old, "RUNTIME_MATCH",runtime==oldruntime,flush=True)
+          t.smoke()
+          for agent in ("LoungeTV-release-check","Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"):
+              req=urllib.request.Request(t.ORIGIN+"/operator/provision",headers={"User-Agent":agent,"Accept":"text/html","Cache-Control":"no-cache"})
+              try:
+                  with urllib.request.urlopen(req,timeout=12) as r: print("FORM",r.status,"MARKER",b"Register a customer" in r.read(16000),flush=True)
+              except urllib.error.HTTPError as e:
+                  print("FORM",e.code,"CHALLENGE",e.headers.get("cf-mitigated")=="challenge","APP_NOT_FOUND",b"not_found" in e.read(4096),flush=True)
+          try: t.check_operator()
+          except Exception as e: print("OPERATOR_CHECK",str(e),flush=True)
+          PY
