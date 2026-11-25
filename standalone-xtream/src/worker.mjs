@@ -1,3 +1,4 @@
+import {provisionRoute} from './provision.mjs';
 import {nzSource,nzLicenseRelay} from './nz-live.mjs';
 // Lounge TV's independent Xtream-compatible Live TV control plane.
 // No Supabase, no shared provider credentials, no media byte proxying.
@@ -167,6 +168,7 @@ async function redirectStream(url,env,parts){
 export default {
   async fetch(request,env){
     const url=new URL(request.url);const path=url.pathname;
+    if(path==='/operator/provision'||path==='/operator/provision.js')return provisionRoute(request,env,digest);
     if(path==='/health')return js({service:'lounge-tv-xtream-standalone',status:'ok',version:'m3u-v1'});
     if(path==='/nz-license.php'){
       if(request.method==='OPTIONS')return nzLicenseRelay(request,url);
