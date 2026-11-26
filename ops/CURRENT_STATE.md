@@ -1,5 +1,25 @@
 ## BEST catalogue sync | 26 November 2026 NZDT
 
+### Production additions-only catalogue sync live
+
+The operator approved production publication and waived further manual Nuvio tests.
+[Production dry run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45781428959)
+validated 79 event and 11 permanent source-category mappings, existing rows and
+guide parity. [PR #35](https://github.com/Gazzamoo111/lounge-tv-feed/pull/35)
+merged as `eee2bdcf2adf7a5975d493eb948a5444b3288b7f`.
+The [production run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45781618812)
+published and read back `vcat-sync-45781618812-1` at 21:16 NZDT with ten additions
+(two events and eight permanent entries), zero renames, zero removals, zero missing
+and 3,680 pending classifications. D1 registration was verified before activation.
+The category list, existing catalogue rows and EPG pointer were preserved.
+The public gateway health check passed. Nuvio device playback was not verified.
+
+The main-branch catalogue workflow is enabled. It runs hourly at :17 for
+PPV and live events, and daily at 04:47 UTC for approved permanent additions.
+To stop publishing, set `LTV_BEST_CATALOGUE_SYNC` to a value other than `enabled`.
+For the initial production release, the rollback parent is
+`vprod-order-45153376801-1`; use the workflow rollback to preserve the current guide.
+
 ### Two-event candidate active in QA
 
 The [isolated QA inventory](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45779128194/attempts/2)
