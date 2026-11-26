@@ -1,7 +1,7 @@
 name: Lounge TV targeted catalogue cleanup
 on:
   push:
-    branches: [feature/catalogue-cleanup-36, main]
+    branches: [feature/catalogue-cleanup-36, feature/nine-alternate-38, main]
 permissions:
   contents: read
 concurrency:

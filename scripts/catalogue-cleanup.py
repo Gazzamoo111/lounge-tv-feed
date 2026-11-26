@@ -71,16 +71,22 @@ def select_nine(rows, provider):
 
 
 def alternate_nine_probe(r2):
-    pointer, _ = sync.active(r2, sync.PROD)
-    assets = sync.catalogue(r2, sync.PROD, pointer['release'])
-    visible = {row['stream_id'] for row in json.loads(assets[sync.LIVE])}
-    _, inventory = sync.provider_inventory()
+    del r2
+    categories, inventory = sync.provider_inventory()
+    names = {str(row['category_id']): row['category_name'] for row in categories}
+    head = re.compile(r'^(?:(?:AU|AUS|AUSTRALIA)\s*[|:]\s*)?(?:CHANNEL\s*)?(?:0?9|NINE)\b', re.I)
+    region = re.compile(r'\b(?:national|sydney|nsw|melbourne|vic|brisbane|qld|adelaide|sa|darwin|nt|hobart|tas|canberra|act|gold coast)\b', re.I)
+    candidates = []
     for row in inventory:
         label = rules.audited_label(row['name'])
-        if re.match(r'^(?:AUS?\s*[|:]\s*)?(?:CHANNEL\s*)?(?:9|NINE)\b', label, re.I) and re.search(
-                r'\b(?:sydney|nsw|national)\b', label, re.I):
-            sync.report({'alternate_check': label, 'currently_visible': int(row['stream_id']) in visible,
-                         'playback': video_probe(row)})
+        group = names.get(str(row['category_id']), '')
+        if not head.match(label) or re.search(r'\b(?:perth|wa)\b', label, re.I):
+            continue
+        if region.search(label) or re.search(r'\b(?:au|aus|australia)\b', f'{label} {group}', re.I):
+            candidates.append(row)
+    sync.report({'non_perth_nine_candidates': len(candidates)})
+    for row in candidates:
+        sync.report({'alternative': rules.audited_label(row['name']), 'playback': video_probe(row)})
 
 
 def duplicate_sets(kids):
