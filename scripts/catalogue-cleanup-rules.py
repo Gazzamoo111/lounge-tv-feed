@@ -13,6 +13,11 @@ def audited_label(label):
     return unicodedata.normalize('NFKC', label).strip()
 
 
+def is_nine_sydney(label):
+    match = NINE.match(audited_label(label))
+    return bool(match and match[1].lower() == 'sydney')
+
+
 def reason(category, category_name, label):
     label = audited_label(label)
     if category in ('1', '2') and ESPN.search(label):

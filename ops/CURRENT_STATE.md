@@ -11,7 +11,9 @@ and the authenticated production playlist playback path returned upstream HTTP
 458. Production is still on the baseline and the existing reconciliation
 schedule remains enabled. [Draft PR #37](https://github.com/Gazzamoo111/lounge-tv-feed/pull/37)
 and [Issue #36](https://github.com/Gazzamoo111/lounge-tv-feed/issues/36)
-remain open pending working Channel 9 playback evidence.
+record the scoped cleanup. The operator subsequently authorised publication
+with Sydney temporarily hidden if it still fails. Provider recovery is tracked
+separately in [Issue #38](https://github.com/Gazzamoo111/lounge-tv-feed/issues/38).
 
 ---
 

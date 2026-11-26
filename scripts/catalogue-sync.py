@@ -367,6 +367,7 @@ def snapshot(client, bucket, pointer, mode):
         for stream in streams:
             category = destinations.get(str(stream['category_id']))
             if category and (rules.reason(category, names[category], stream['name'])
+                             or category == '2' and cleanup.get('sydney_suppressed') and rules.is_nine_sydney(stream['name'])
                              or category == '23' and rules.KIDS.fullmatch(rules.audited_label(stream['name']))):
                 excluded.add(int(stream['stream_id']))
     protected = sorted({*FREEVIEW, *policy.get('protectedIds', []), *guide})

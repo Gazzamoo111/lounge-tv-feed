@@ -142,7 +142,7 @@ def playlist(assets, updated, moved, kids_name):
     return prefix + b''.join(block(row) for row in updated)
 
 
-def transform(assets, nine, probe):
+def transform(assets, nine, probe, *, nine_verified):
     rows = json.loads(assets[sync.LIVE])
     categories = json.loads(assets[sync.CATEGORIES])
     names = {str(cat['category_id']): cat['category_name'] for cat in categories}
@@ -176,7 +176,11 @@ def transform(assets, nine, probe):
 
     sync.require(nine in after['2'], 'Chosen Channel 9 is not a retained Australian entry')
     after['2'].remove(nine)
-    after['2'].insert(0, nine)
+    if nine_verified:
+        after['2'].insert(0, nine)
+    else:
+        sync.require(rules.is_nine_sydney(nine['name']), 'Only the unavailable Sydney feed may be held')
+        excluded['Nine Sydney temporarily hidden'].append(nine['stream_id'])
     sync.require(after['25'] == before['25'], 'Live events changed')
     new_categories = [cat for cat in categories if str(cat['category_id']) != '23' or after['23']]
     after_rows = [row for cat in new_categories for row in after[str(cat['category_id'])]]
@@ -198,10 +202,12 @@ def transform(assets, nine, probe):
             expected = dict(row, category_id=type(row['category_id'])('13')) if sid in moved_ids else row
             sync.require(retained[sid] == expected, 'Unrelated channel data changed')
     output[MARKER] = sync.encode({'excluded_ids': sorted(removed_ids), 'moved_ids': sorted(moved_ids),
-                                  'categories_sha256': sync.sha(output[sync.CATEGORIES])})
+                                  'categories_sha256': sync.sha(output[sync.CATEGORIES]),
+                                  'sydney_suppressed': not nine_verified})
     return output, {'removed': {key: len(ids) for key, ids in excluded.items()},
                     'removed_ids': dict(excluded), 'moved_ids': sorted(moved_ids), 'duplicate_decisions': decisions,
                     'selected_nine': {'name': nine['name'], 'id': nine['stream_id'], 'epg': nine['epg_channel_id']},
+                    'sydney_restore_row': None if nine_verified else nine,
                     'total': [len(rows), len(after_rows)], 'category_total': [len(categories), len(new_categories)],
                     'counts': {names[key]: [len(before[key]), len(after[key])] for key in names if before[key] != after[key]}}
 
@@ -232,7 +238,7 @@ def prepare(r2, artifact):
         guide_evidence = [str(row.get('source_id', '')) + ' ' + str(row.get('channel_name', '')) for row in linked]
         sync.require(any(re.search(r'sydney|\bnsw\b', value, re.I) for value in guide_evidence),
                      'Frozen guide data did not independently confirm Channel 9 Sydney')
-    candidate, evidence = transform(original, nine, video_probe)
+    candidate, evidence = transform(original, nine, video_probe, nine_verified=nine_verified)
     sync.run_builder(candidate, baselineOnly=True)
     after = sync.guide_contract(r2, sync.PROD, candidate)
     removed = {sid for ids in evidence['removed_ids'].values() for sid in ids}
@@ -255,7 +261,14 @@ def stage_or_publish(r2, artifact, bucket):
     manifest = {'parent': pointer['release'], 'production_baseline': bundle['baseline'],
                 'assets': {key: sync.sha(data) for key, data in assets.items()}}
     if bucket == sync.PROD:
-        sync.require(bundle['nine_verified'], 'Channel 9 playback validation did not pass')
+        held = bundle['evidence']['sydney_restore_row']
+        if not bundle['nine_verified']:
+            marker = json.loads(assets[MARKER])
+            sync.require(held and marker['sydney_suppressed'] and held['stream_id'] in marker['excluded_ids']
+                         and all(row['stream_id'] != held['stream_id'] for row in json.loads(assets[sync.LIVE])),
+                         'Unavailable Sydney feed is still exposed or lacks restoration data')
+            registered = sync.d1(bucket, 'SELECT stream_id FROM stream_ids WHERE stream_id = ?', (held['stream_id'],))
+            sync.require(len(registered) == 1, 'Sydney playback ID is missing from D1')
         sync.require(pointer['release'] == bundle['baseline'], 'Production baseline changed during QA')
         sync.guide_contract(r2, bucket, assets)
         original = sync.catalogue(r2, bucket, pointer['release'])
@@ -267,7 +280,11 @@ def stage_or_publish(r2, artifact, bucket):
     sync.put_json(r2, bucket, f'releases/{release}/cleanup-report.json', bundle['evidence'], IfNoneMatch='*')
     if bucket == sync.PROD:
         sync.switch(r2, bucket, pointer, etag, release)
-        sync.report({'published': release, 'rollback_snapshot': rollback, 'guide': pointer.get('epg_release', pointer['release'])})
+        live_pointer, _ = sync.active(r2, bucket)
+        sync.require(live_pointer['release'] == release, 'Production cleanup is not active')
+        sync.require(sync.catalogue(r2, bucket, release) == assets, 'Production catalogue differs from QA')
+        sync.report({'published': release, 'rollback_snapshot': rollback,
+                     'guide': live_pointer.get('epg_release', live_pointer['release'])})
     else:
         sync.report({'qa_staged': release, 'production_baseline': bundle['baseline'],
                      'sha256': sync.sha(assets[sync.LIVE])})
