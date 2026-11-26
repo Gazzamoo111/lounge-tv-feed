@@ -1,5 +1,23 @@
 ## BEST catalogue sync | 26 November 2026 NZDT
 
+### Live inventory restored and read-only event rehearsal
+
+The operator-approved HTTP route and D1 credentials allowed the inventory job to
+complete. [The successful readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775113219/attempts/3)
+found 189 provider groups and 16,768 streams. All 12,709 provider-backed
+production entries matched, including 6,756 events. The five Freeview overrides
+continue to use independent sources. The approved D1 token is stored in the
+production and QA GitHub environments.
+
+[Read-only event rehearsal](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45777171601)
+validated a one-group candidate with two additions, zero renames and zero missing
+IDs. Across all 79 provisional event-only groups, the same additions came
+with 2,974 proposed renames, exceeding the normal 1,000-change cap.
+Pending: QA provider secrets, private category policy approval, event label
+reconciliation, candidate playback, QA rollback and physical Nuvio verification.
+Production scheduled publishing stays disabled. Rollback reference
+`vprod-order-45153376801-1`.
+
 ### Inventory and isolated QA readback, 26 November 2026 NZDT
 
 The authorised BEST secrets are present in the production GitHub environment.
