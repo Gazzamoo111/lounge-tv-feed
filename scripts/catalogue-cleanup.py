@@ -70,6 +70,19 @@ def select_nine(rows, provider):
     return fallback, False
 
 
+def alternate_nine_probe(r2):
+    pointer, _ = sync.active(r2, sync.PROD)
+    assets = sync.catalogue(r2, sync.PROD, pointer['release'])
+    visible = {row['stream_id'] for row in json.loads(assets[sync.LIVE])}
+    _, inventory = sync.provider_inventory()
+    for row in inventory:
+        label = rules.audited_label(row['name'])
+        if re.match(r'^(?:AUS?\s*[|:]\s*)?(?:CHANNEL\s*)?(?:9|NINE)\b', label, re.I) and re.search(
+                r'\b(?:sydney|nsw|national)\b', label, re.I):
+            sync.report({'alternate_check': label, 'currently_visible': int(row['stream_id']) in visible,
+                         'playback': video_probe(row)})
+
+
 def duplicate_sets(kids):
     by_key = defaultdict(list)
     for row in kids:
@@ -265,7 +278,9 @@ if __name__ == '__main__':
         action = sys.argv[1]
         artifact = Path('cleanup.bundle')
         r2 = client()
-        if action == 'prepare':
+        if action == 'probe-nine':
+            alternate_nine_probe(r2)
+        elif action == 'prepare':
             prepare(r2, artifact)
         elif action in ('qa', 'publish'):
             stage_or_publish(r2, artifact, sync.QA if action == 'qa' else sync.PROD)

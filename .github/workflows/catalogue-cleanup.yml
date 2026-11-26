@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   prepare:
-    if: contains(github.event.head_commit.message, '[catalogue-36-stage]') || contains(github.event.head_commit.message, '[catalogue-36-publish]')
+    if: contains(github.event.head_commit.message, '[catalogue-36-stage]') || contains(github.event.head_commit.message, '[catalogue-36-publish]') || contains(github.event.head_commit.message, '[catalogue-36-probe]')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     environment: lounge-tv-xtream-production-refresh
@@ -22,8 +22,9 @@ jobs:
           node-version: '24'
       - run: pip install boto3==1.42.78 cryptography==46.0.3
       - run: command -v ffmpeg || (sudo apt-get -qq update && sudo apt-get -qq install ffmpeg)
-      - run: python scripts/catalogue-cleanup.py prepare
+      - run: python scripts/catalogue-cleanup.py "$ACTION"
         env:
+          ACTION: ${{ contains(github.event.head_commit.message, '[catalogue-36-probe]') && 'probe-nine' || 'prepare' }}
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
@@ -33,11 +34,13 @@ jobs:
           BEST_SYNC_PASSWORD: ${{ secrets.BEST_SYNC_PASSWORD }}
           BEST_SYNC_ALLOW_HTTP: ${{ vars.BEST_SYNC_ALLOW_HTTP }}
       - uses: actions/upload-artifact@v4
+        if: '!contains(github.event.head_commit.message, ''[catalogue-36-probe]'')'
         with:
           name: encrypted-cleanup-candidate
           path: cleanup.bundle
           retention-days: 1
   qa:
+    if: '!contains(github.event.head_commit.message, ''[catalogue-36-probe]'')'
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 5
