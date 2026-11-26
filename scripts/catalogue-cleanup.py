@@ -258,6 +258,54 @@ def prepare(r2, artifact):
     sync.report({'moved': len(evidence['moved_ids']), 'selected_nine': nine['name'], 'nine_verified': nine_verified, 'rollback': pointer['release']})
 
 
+def prepare_nine_restore(r2, artifact):
+    pointer, _ = sync.active(r2, sync.PROD)
+    original = sync.catalogue(r2, sync.PROD, pointer['release'])
+    marker = json.loads(original[MARKER])
+    sync.require(marker.get('sydney_suppressed'), 'Sydney is not currently held')
+    archived = 'vcat-cleanup-36-45910023387-1'
+    report = json.loads(sync.get(r2, sync.PROD, f'releases/{archived}/cleanup-report.json')[0])
+    row = report['sydney_restore_row']
+    sid = row['stream_id']
+    sync.require(rules.is_nine_sydney(row['name']) and str(row['category_id']) == '2'
+                 and row['epg_channel_id'] and sid in marker['excluded_ids'], 'Sydney restoration row is invalid')
+    sync.provider_inventory()  # Validate the configured origin before an authorised playback probe.
+    sync.require(video_probe(row) == 'decoded', 'Sydney playback has not recovered')
+    registered = sync.d1(sync.PROD, 'SELECT stream_id FROM stream_ids WHERE stream_id = ?', (sid,))
+    sync.require(len(registered) == 1, 'Original Sydney D1 registration is missing')
+    old_guide = sync.guide_contract(r2, sync.PROD, original)
+    sync.run_builder(original, baselineOnly=True)
+    backup = sync.catalogue(r2, sync.PROD, f'{archived}-rollback')
+    source = backup[sync.PLAYLIST]
+    target_route = re.compile(rb'^\{\{BASE\}\}/live/\{\{USER\}\}/\{\{PASS\}\}/' +
+                              str(sid).encode() + rb'\.(?:ts|mpd|m3u8)\r?$', re.M)
+    matches = [block for block in re.split(rb'(?m)(?=^#EXTINF:)', source)[1:] if target_route.search(block)]
+    rows = json.loads(original[sync.LIVE])
+    sync.require(len(matches) == 1 and all(item['stream_id'] != sid for item in rows),
+                 'Sydney playback route cannot be restored uniquely')
+    first_au = next(i for i, item in enumerate(rows) if str(item['category_id']) == '2')
+    rows.insert(first_au, row)
+    assets = dict(original)
+    group_key = 'catalog/by-category/2.json'
+    assets[group_key] = sync.encode([row, *json.loads(original[group_key])])
+    assets[sync.LIVE] = sync.encode(rows)
+    assets[sync.PLAYLIST] += matches[0]
+    assets[sync.PLAYLIST] = playlist(assets, rows, set(), '')
+    marker['sydney_suppressed'] = False
+    marker['excluded_ids'].remove(sid)
+    assets[MARKER] = sync.encode(marker)
+    sync.run_builder(assets, baselineOnly=True)
+    sync.require(sync.guide_contract(r2, sync.PROD, assets) == {**old_guide, sid: row['epg_channel_id']},
+                 'Restoration changes unrelated guide mappings')
+    evidence = {'sydney_restored': row['name'], 'position': 1, 'total': len(rows),
+                'playback': 'decoded', 'sydney_restore_row': None}
+    bundle = {'baseline': pointer['release'], 'assets': {key: raw.decode() for key, raw in assets.items()},
+              'evidence': evidence, 'nine_verified': True}
+    artifact.write_bytes(bundle_cipher().encrypt(sync.encode(bundle)))
+    sync.report(evidence)
+
+
+
 def stage_or_publish(r2, artifact, bucket):
     bundle = json.loads(bundle_cipher().decrypt(artifact.read_bytes()))
     assets = {key: data.encode() for key, data in bundle['assets'].items()}
@@ -303,6 +351,8 @@ if __name__ == '__main__':
         r2 = client()
         if action == 'probe-nine':
             alternate_nine_probe(r2)
+        elif action == 'restore-nine':
+            prepare_nine_restore(r2, artifact)
         elif action == 'prepare':
             prepare(r2, artifact)
         elif action in ('qa', 'publish'):

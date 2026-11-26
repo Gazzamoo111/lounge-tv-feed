@@ -9,7 +9,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   prepare:
-    if: contains(github.event.head_commit.message, '[catalogue-36-stage]') || contains(github.event.head_commit.message, '[catalogue-36-publish]') || contains(github.event.head_commit.message, '[catalogue-36-probe]')
+    if: contains(github.event.head_commit.message, '[catalogue-36-stage]') || contains(github.event.head_commit.message, '[catalogue-36-publish]') || contains(github.event.head_commit.message, '[catalogue-36-probe]') || contains(github.event.head_commit.message, '[catalogue-38-restore]')
     runs-on: ubuntu-latest
     timeout-minutes: 8
     environment: lounge-tv-xtream-production-refresh
@@ -24,7 +24,7 @@ jobs:
       - run: command -v ffmpeg || (sudo apt-get -qq update && sudo apt-get -qq install ffmpeg)
       - run: python scripts/catalogue-cleanup.py "$ACTION"
         env:
-          ACTION: ${{ contains(github.event.head_commit.message, '[catalogue-36-probe]') && 'probe-nine' || 'prepare' }}
+          ACTION: ${{ contains(github.event.head_commit.message, '[catalogue-36-probe]') && 'probe-nine' || contains(github.event.head_commit.message, '[catalogue-38-restore]') && 'restore-nine' || 'prepare' }}
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
@@ -63,7 +63,7 @@ jobs:
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
           LTV_CATALOGUE_D1_TOKEN: ${{ secrets.LTV_CATALOGUE_D1_TOKEN }}
   publish:
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[catalogue-36-publish]')
+    if: github.ref == 'refs/heads/main' && (contains(github.event.head_commit.message, '[catalogue-36-publish]') || contains(github.event.head_commit.message, '[catalogue-38-restore]'))
     needs: qa
     runs-on: ubuntu-latest
     timeout-minutes: 5

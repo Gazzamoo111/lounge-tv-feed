@@ -490,7 +490,7 @@ def rollback(client, bucket, pointer, etag, expected):
     active_assets = catalogue(client, bucket, expected)
     before = guide_contract(client, bucket, active_assets)
     after = guide_contract(client, bucket, old)
-    require((all(after.get(sid) == guide for sid, guide in before.items()) if cleanup else before == after),
+    require((all(after[sid] == before[sid] for sid in before.keys() & after.keys()) if cleanup else before == after),
             'Rollback guide mappings differ')
     switch(client, bucket, pointer, etag, parent)
     report({'restored_catalogue': parent, 'replaced_catalogue': expected})
