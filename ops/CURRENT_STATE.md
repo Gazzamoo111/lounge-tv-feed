@@ -1,5 +1,18 @@
 ## BEST catalogue sync | 26 November 2026 NZDT
 
+### Two-event candidate active in QA
+
+The [isolated QA inventory](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45779128194/attempts/2)
+verified BEST access and a two-addition, zero-rename, zero-missing event delta.
+The [QA release and rollback rehearsal](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45779433008)
+staged and verified immutable assets, registered both category 25 IDs in QA D1,
+verified activation, restored the baseline pointer, and reactivated
+`vcat-sync-45779433008-1` for device testing. The QA guide and rollback baseline
+are both `vqa-freeview-45136607167-1`. Existing catalogue rows and their order
+were validated before the switch. No production mutation or schedule activation.
+Physical Nuvio Sports Hub playback, policy approval and the wider rename
+reconciliation remain pending.
+
 ### Live inventory restored and read-only event rehearsal
 
 The operator-approved HTTP route and D1 credentials allowed the inventory job to
