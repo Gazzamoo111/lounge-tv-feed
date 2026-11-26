@@ -9,7 +9,7 @@ import re
 import subprocess
 import sys
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 from urllib.request import Request, urlopen
 
 sync = importlib.import_module('catalogue-sync')
@@ -269,7 +269,11 @@ def prepare_nine_restore(r2, artifact):
     sid = row['stream_id']
     sync.require(rules.is_nine_sydney(row['name']) and str(row['category_id']) == '2'
                  and row['epg_channel_id'] and sid in marker['excluded_ids'], 'Sydney restoration row is invalid')
-    sync.provider_inventory()  # Validate the configured origin before an authorised playback probe.
+    upstream = urlsplit(os.environ['BEST_SYNC_ORIGIN'])
+    schemes = {'https', 'http'} if os.environ.get('BEST_SYNC_ALLOW_HTTP') == 'true' else {'https'}
+    sync.require(upstream.scheme in schemes and upstream.hostname and upstream.path in ('', '/')
+                 and not any((upstream.username, upstream.password, upstream.query, upstream.fragment)),
+                 'Invalid approved playback origin')
     sync.require(video_probe(row) == 'decoded', 'Sydney playback has not recovered')
     registered = sync.d1(sync.PROD, 'SELECT stream_id FROM stream_ids WHERE stream_id = ?', (sid,))
     sync.require(len(registered) == 1, 'Original Sydney D1 registration is missing')
