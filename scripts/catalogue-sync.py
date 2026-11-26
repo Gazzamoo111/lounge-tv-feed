@@ -250,24 +250,34 @@ def inspect_inventory(bucket, assets):
         return
     source_names = {str(group['category_id']): group['category_name'] for group in groups}
     require(event_groups.keys() <= source_names.keys(), 'Event candidate references an unknown provider group')
-    exploratory_policy = {
-        'eventTarget': event_id,
-        'groups': {
-            source: {'sourceName': source_names[source], 'targetName': event['category_name'], 'target': event_id}
-            for source in event_groups
-        },
-        'minimumGroupCounts': {source: max(1, row[event_id] * 85 // 100) for source, row in event_groups.items()},
-    }
-    result = run_builder(
-        assets, providerCategories=groups, providerStreams=streams, mappings=exploratory_policy,
-        mode='events', protectedIds=sorted(FREEVIEW), excludedIds=sorted(excluded),
-    )
-    plan = result['plan']
-    report({'read_only_event_candidate': {
-        'provisional_groups': len(event_groups),
-        'additions': len(plan['additions']), 'renames': len(plan['renames']),
-        'missing': len(plan['missing']), 'held': len(plan['pending']),
-    }})
+    def rehearsed_plan(selected_groups, max_changes):
+        exploratory_policy = {
+            'eventTarget': event_id,
+            'groups': {
+                source: {'sourceName': source_names[source], 'targetName': event['category_name'], 'target': event_id}
+                for source in selected_groups
+            },
+            'minimumGroupCounts': {
+                source: max(1, row[event_id] * 85 // 100) for source, row in selected_groups.items()
+            },
+            'maxChanges': max_changes,
+        }
+        result = run_builder(
+            assets, providerCategories=groups, providerStreams=streams, mappings=exploratory_policy,
+            mode='events', protectedIds=sorted(FREEVIEW), excludedIds=sorted(excluded),
+        )
+        plan = result['plan']
+        return {
+            'provisional_groups': len(selected_groups),
+            'additions': len(plan['additions']), 'renames': len(plan['renames']),
+            'missing': len(plan['missing']), 'held': len(plan['pending']),
+        }
+
+    groups_with_additions = {source: row for source, row in event_groups.items() if row.get('outside_catalogue')}
+    if groups_with_additions:
+        report({'read_only_event_addition_groups': rehearsed_plan(groups_with_additions, 100)})
+    # Rehearse the whole candidate only for a report. Publication still uses the normal limit.
+    report({'read_only_full_event_rehearsal': rehearsed_plan(event_groups, len(rows))})
 
 
 def snapshot(client, bucket, pointer, mode):
