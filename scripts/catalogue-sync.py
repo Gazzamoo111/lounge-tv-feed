@@ -3,6 +3,7 @@ import argparse
 from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import importlib
 import json
 import os
 from pathlib import Path
@@ -283,7 +284,9 @@ def inspect_inventory(bucket, assets):
 def approved_production_policy(assets, rows, groups, streams):
     approved = json.loads(Path(__file__).with_name('catalogue-sync-approved-groups.json').read_text())
     categories = json.loads(assets[CATEGORIES])
-    require(sha(assets[CATEGORIES]) == '18b818148b610594c387d2a9c87934f44cec747142c58280ab58569beaba9d5d',
+    cleanup = json.loads(assets.get('catalog/cleanup-36.json', b'{}'))
+    approved_hash = cleanup.get('categories_sha256', '18b818148b610594c387d2a9c87934f44cec747142c58280ab58569beaba9d5d')
+    require(sha(assets[CATEGORIES]) == approved_hash,
             'Production category structure differs from the approved baseline')
     targets = {str(row['category_id']): row['category_name'] for row in categories}
     source_names = {str(row['category_id']): row['category_name'] for row in groups}
@@ -355,6 +358,17 @@ def snapshot(client, bucket, pointer, mode):
     journal, _ = get(client, bucket, RUNS + 'registered-pending.json', optional=True)
     tracked = json.loads(journal) if journal else []
     excluded = set(suppressed_ids(bucket, rows)) - set(tracked)
+    if 'catalog/cleanup-36.json' in assets:
+        cleanup = json.loads(assets['catalog/cleanup-36.json'])
+        excluded.update(cleanup['excluded_ids'])
+        rules = importlib.import_module('catalogue-cleanup-rules')
+        names = {str(cat['category_id']): cat['category_name'] for cat in categories}
+        destinations = {group: str(rule['target']) for group, rule in policy['groups'].items()}
+        for stream in streams:
+            category = destinations.get(str(stream['category_id']))
+            if category and (rules.reason(category, names[category], stream['name'])
+                             or category == '23' and rules.KIDS.fullmatch(rules.audited_label(stream['name']))):
+                excluded.add(int(stream['stream_id']))
     protected = sorted({*FREEVIEW, *policy.get('protectedIds', []), *guide})
     # EPG rows remain independently protected against removal by the planner.
     # Only reserved and explicit overrides are exempt from provider overlap.
@@ -464,14 +478,18 @@ def publish(client, bucket, pointer, etag, output):
 
 
 def rollback(client, bucket, pointer, etag, expected):
-    require(pointer['release'] == expected and SYNC_RELEASE.fullmatch(expected), 'Active catalogue differs from rollback target')
+    cleanup = re.fullmatch(r'vcat-cleanup-36-\d+-\d+', expected)
+    require(pointer['release'] == expected and (SYNC_RELEASE.fullmatch(expected) or cleanup),
+            'Active catalogue differs from rollback target')
     root = f'releases/{expected}/'
     manifest = json.loads(get(client, bucket, root + 'sync.json')[0])
-    parent = manifest['parent']
+    parent = manifest['rollback_snapshot'] if cleanup else manifest['parent']
     require(bool(RELEASE.fullmatch(parent)), 'Invalid rollback reference')
     old = catalogue(client, bucket, parent)
     active_assets = catalogue(client, bucket, expected)
-    require(guide_contract(client, bucket, old) == guide_contract(client, bucket, active_assets),
+    before = guide_contract(client, bucket, active_assets)
+    after = guide_contract(client, bucket, old)
+    require((all(after.get(sid) == guide for sid, guide in before.items()) if cleanup else before == after),
             'Rollback guide mappings differ')
     switch(client, bucket, pointer, etag, parent)
     report({'restored_catalogue': parent, 'replaced_catalogue': expected})

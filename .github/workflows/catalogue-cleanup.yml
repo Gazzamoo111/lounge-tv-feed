@@ -1,28 +1,84 @@
 name: Lounge TV targeted catalogue cleanup
 on:
   push:
-    branches: [feature/catalogue-cleanup-36]
+    branches: [feature/catalogue-cleanup-36, main]
 permissions:
   contents: read
 concurrency:
   group: lounge-tv-best-catalogue-production
   cancel-in-progress: false
 jobs:
-  inspect:
+  prepare:
+    if: contains(github.event.head_commit.message, '[catalogue-36-stage]') || contains(github.event.head_commit.message, '[catalogue-36-publish]')
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     environment: lounge-tv-xtream-production-refresh
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - run: pip install boto3==1.42.78
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: pip install boto3==1.42.78 cryptography==46.0.3
       - run: command -v ffmpeg || (sudo apt-get -qq update && sudo apt-get -qq install ffmpeg)
-      - run: python scripts/catalogue-cleanup.py
+      - run: python scripts/catalogue-cleanup.py prepare
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          LTV_CATALOGUE_D1_TOKEN: ${{ secrets.LTV_CATALOGUE_D1_TOKEN }}
           BEST_SYNC_ORIGIN: ${{ secrets.BEST_SYNC_ORIGIN }}
           BEST_SYNC_USERNAME: ${{ secrets.BEST_SYNC_USERNAME }}
           BEST_SYNC_PASSWORD: ${{ secrets.BEST_SYNC_PASSWORD }}
           BEST_SYNC_ALLOW_HTTP: ${{ vars.BEST_SYNC_ALLOW_HTTP }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-cleanup-candidate
+          path: cleanup.bundle
+          retention-days: 1
+  qa:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: lounge-tv-xtream-qa-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: encrypted-cleanup-candidate
+      - run: pip install boto3==1.42.78 cryptography==46.0.3
+      - run: python scripts/catalogue-cleanup.py qa
+        env:
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          LTV_CATALOGUE_D1_TOKEN: ${{ secrets.LTV_CATALOGUE_D1_TOKEN }}
+  publish:
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[catalogue-36-publish]')
+    needs: qa
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: lounge-tv-xtream-production-refresh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/download-artifact@v4
+        with:
+          name: encrypted-cleanup-candidate
+      - run: pip install boto3==1.42.78 cryptography==46.0.3
+      - run: python scripts/catalogue-cleanup.py publish
+        env:
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          LTV_CATALOGUE_D1_TOKEN: ${{ secrets.LTV_CATALOGUE_D1_TOKEN }}
