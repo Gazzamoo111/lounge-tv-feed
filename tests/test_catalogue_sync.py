@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import unittest
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 spec = importlib.util.spec_from_file_location(
     'catalogue_sync', Path(__file__).resolve().parents[1] / 'scripts/catalogue-sync.py'
@@ -34,6 +35,15 @@ class FakeR2:
 
 
 class CatalogueReleaseTest(unittest.TestCase):
+    def test_provider_diagnostic_preserves_error_code_without_exposing_response(self):
+        failure = HTTPError(
+            'https://private.example.invalid/player_api.php?password=secret', 530, 'Error', {},
+            io.BytesIO(b'<h1>Error <span>1016</span></h1><p>Private upstream details</p>'),
+        )
+        self.assertEqual(str(sync.provider_http_error(failure, 'get_live_categories')),
+                         'BEST inventory get_live_categories returned HTTP 530 (Cloudflare error 1016)')
+
+
     def test_switch_and_rollback_preserve_latest_guide(self):
         r2 = FakeR2()
         old = dict(r2.pointer)

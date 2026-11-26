@@ -121,6 +121,21 @@ def guide_contract(client, bucket, assets):
     return {sid: epg for sid, epg in rows.items() if epg}
 
 
+def provider_http_error(error, action):
+    message = f'BEST inventory {action} returned HTTP {error.code}'
+    if error.code != 530:
+        return SyncError(message)
+    code = error.headers.get('cf-error-type', '')
+    if not re.fullmatch(r'1[0-9]{3}', code):
+        body = error.read(16_384).decode('utf-8', errors='replace')
+        text = re.sub(r'<[^>]*>', ' ', body)
+        match = re.search(r'\berror\s*(?:code\s*)?:?\s*(1[0-9]{3})\b', text, re.IGNORECASE)
+        code = match.group(1) if match else ''
+    if code:
+        message += f' (Cloudflare error {code})'
+    return SyncError(message)
+
+
 def provider_inventory():
     origin = os.environ.get('BEST_SYNC_ORIGIN', '')
     user = os.environ.get('BEST_SYNC_USERNAME', '')
@@ -144,7 +159,7 @@ def provider_inventory():
             with opener.open(request, timeout=55) as response:
                 raw = response.read(limit + 1)
         except HTTPError as error:
-            raise SyncError(f'BEST inventory API returned HTTP {error.code}') from None
+            raise provider_http_error(error, action) from None
         except (OSError, URLError):
             raise SyncError('BEST inventory API is unreachable') from None
         require(len(raw) <= limit, 'BEST inventory exceeded size limit')
