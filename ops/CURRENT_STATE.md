@@ -1,3 +1,69 @@
+## BEST catalogue sync | 26 November 2026 NZDT
+
+### Two-event candidate active in QA
+
+The [isolated QA inventory](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45779128194/attempts/2)
+verified BEST access and a two-addition, zero-rename, zero-missing event delta.
+The [QA release and rollback rehearsal](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45779433008)
+staged and verified immutable assets, registered both category 25 IDs in QA D1,
+verified activation, restored the baseline pointer, and reactivated
+`vcat-sync-45779433008-1` for device testing. The QA guide and rollback baseline
+are both `vqa-freeview-45136607167-1`. Existing catalogue rows and their order
+were validated before the switch. No production mutation or schedule activation.
+Physical Nuvio Sports Hub playback, policy approval and the wider rename
+reconciliation remain pending.
+
+### Live inventory restored and read-only event rehearsal
+
+The operator-approved HTTP route and D1 credentials allowed the inventory job to
+complete. [The successful readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775113219/attempts/3)
+found 189 provider groups and 16,768 streams. All 12,709 provider-backed
+production entries matched, including 6,756 events. The five Freeview overrides
+continue to use independent sources. The approved D1 token is stored in the
+production and QA GitHub environments.
+
+[Read-only event rehearsal](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45777171601)
+validated a one-group candidate with two additions, zero renames and zero missing
+IDs. Across all 79 provisional event-only groups, the same additions came
+with 2,974 proposed renames, exceeding the normal 1,000-change cap.
+Pending: QA provider secrets, private category policy approval, event label
+reconciliation, candidate playback, QA rollback and physical Nuvio verification.
+Production scheduled publishing stays disabled. Rollback reference
+`vprod-order-45153376801-1`.
+
+### Inventory and isolated QA readback, 26 November 2026 NZDT
+
+The authorised BEST secrets are present in the production GitHub environment.
+The [inventory attempt and retry](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45774918884) returned HTTP 530.
+The [redacted diagnostic run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775113219)
+identified Cloudflare error 1016 at the BEST categories endpoint. This is an
+upstream origin DNS failure, so no authenticated inventory or category mappings
+were validated. Obtain a working HTTPS Xtream API origin for the same BEST line
+before retrying. No inference about the username or password is possible.
+
+[Isolated QA baseline](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775178488)
+validated catalogue and guide `vqa-freeview-45136607167-1`, 25 categories,
+13,070 streams, 6,756 events in final category 25 and 2,100 EPG-linked rows.
+Xtream JSON and M3U parity passed against private QA R2. The
+[branch validation workflow](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775186367)
+passed 11 Node and 4 Python checks, including redacted error reporting.
+No candidate was published and no runtime or scheduled workflow was activated.
+Cloudflare publication and rollback, playback and physical-device acceptance remain pending.
+
+
+[Issue #34](https://github.com/Gazzamoo111/lounge-tv-feed/issues/34) and [draft PR #35](https://github.com/Gazzamoo111/lounge-tv-feed/pull/35).
+Cloudflare dashboard confirms `tv.loungetv.nz` serves Worker version
+`e0bce7dc-8f2d-45bd-80e2-0f8f14978882`. The [production read-only baseline](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45772091526)
+validated catalogue `vprod-order-45153376801-1`, active guide `vepg-auto-45746342394-1`,
+24 categories, 12,714 streams, 6,756 event/PPV IDs in final category 25, and 1,877 visible
+streams carrying EPG IDs. The run checked catalogue, group assets and playlist order against the live private R2 assets.
+Catalogue sync exists on the draft branch. Scheduled publishing, BEST-side inventory comparison,
+provider category mappings, isolated Cloudflare write/rollback and device playback remain unverified.
+Use [the sync runbook](CATALOGUE_SYNC.md) for the release gates and rollback.
+No production mutation from the sync work.
+
+---
+
 ## BEST VOD QA | 24 November 2026 NZDT
 
 [Issue #29](https://github.com/Gazzamoo111/lounge-tv-feed/issues/29). Production `n` v39 and Plus v8 retained. Matching production n source was verified at `947488d573b2ee6429fe9408dd3fbb925552b873`. Standalone `lounge-vod-qa` v1 is owner and catalogue-line restricted. Readback matched all 17 files, bundle `74e55f8a82c1ddaf38a3f2ac7bc0cd55ae32794f056f078a0ab690c16d46a3e1`. Gateway checks returned 200 for all six VOD actions. QA has 5,142 movies and 1,641 series with qualifying episode mappings. Production detail checks returned `entitlement_unavailable` and direct provider checks from the database returned 451. Live remains on the established DRM-aware fallback. Physical device verification and a fresh upstream inventory remain pending. See [audit and QA evidence](https://github.com/Gazzamoo111/lounge-tv-feed/blob/5a6d165d4c9ace3b14e0b3720051d22ff7309d9d/ops/VOD_AUDIT_20261124.md).
