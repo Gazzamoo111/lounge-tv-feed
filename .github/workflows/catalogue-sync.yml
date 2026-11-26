@@ -1,0 +1,74 @@
+name: Lounge TV BEST catalogue sync
+on:
+  schedule:
+    - cron: '17 * * * *'
+    - cron: '47 4 * * *'
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [production, qa]
+        default: production
+      mode:
+        type: choice
+        options: [baseline, events, daily]
+        default: baseline
+      operation:
+        type: choice
+        options: [inspect, publish, rollback]
+        default: inspect
+      expected_release:
+        description: Active catalogue release for rollback
+        type: string
+  push:
+    branches: [feature/catalogue-sync-34]
+    paths:
+      - '.github/workflows/catalogue-sync.yml'
+      - 'scripts/catalogue-sync.py'
+      - 'scripts/catalogue-sync-plan.mjs'
+
+permissions:
+  contents: read
+concurrency:
+  group: lounge-tv-best-catalogue-${{ inputs.target || 'production' }}
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.event_name != 'schedule' || vars.LTV_BEST_CATALOGUE_SYNC == 'enabled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: ${{ inputs.target == 'qa' && 'lounge-tv-xtream-qa-refresh' || 'lounge-tv-xtream-production-refresh' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install boto3==1.42.78
+      - name: Validate and reconcile the designated catalogue
+        env:
+          TARGET: ${{ inputs.target || 'production' }}
+          MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || inputs.mode || 'baseline' }}
+          OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation || 'inspect' }}
+          EXPECTED_RELEASE: ${{ inputs.expected_release }}
+          PRODUCTION_ENABLED: ${{ vars.LTV_BEST_CATALOGUE_SYNC }}
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          LTV_CATALOGUE_D1_TOKEN: ${{ secrets.LTV_CATALOGUE_D1_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          BEST_SYNC_ORIGIN: ${{ secrets.BEST_SYNC_ORIGIN }}
+          BEST_SYNC_USERNAME: ${{ secrets.BEST_SYNC_USERNAME }}
+          BEST_SYNC_PASSWORD: ${{ secrets.BEST_SYNC_PASSWORD }}
+          BEST_SYNC_ALLOW_HTTP: ${{ vars.BEST_SYNC_ALLOW_HTTP }}
+        run: |
+          if [[ "$TARGET:$OPERATION" == "production:publish" && "$PRODUCTION_ENABLED" != "enabled" ]]; then
+            echo "Production catalogue publication is disabled."
+            exit 1
+          fi
+          python scripts/catalogue-sync.py --target "$TARGET" --mode "$MODE" \
+            --operation "$OPERATION" --expected-release "$EXPECTED_RELEASE"

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planCatalogue } from '../scripts/catalogue-sync-plan.mjs';
+import { buildCatalogue, planCatalogue } from '../scripts/catalogue-sync-plan.mjs';
 
 const fixture = () => ({
   categories: [{category_id:"1",category_name:"NZ TV"},{category_id:"25",category_name:"Events & PPV"}],
@@ -18,7 +18,7 @@ test('hourly: only event additions and event name changes',()=>{
 test('daily: known category additions, quarantine duplicate and unknown',()=>{
   const p=planCatalogue({...fixture(),mode:"daily"});
   assert.deepEqual(p.additions.map(x=>x.stream_id),[201,101]);
-  assert.deepEqual(p.pending.map(x=>x.reason),["possible_duplicate","unmapped_group"]);
+  assert.deepEqual(p.pending.map(x=>x.reason),["possible_duplicate_or_excluded","unmapped_group"]);
 });
 test('missing streams are reported, not removed; protect independent NZ IDs',()=>{
   const f=fixture();
@@ -53,4 +53,67 @@ test('planner never mutates input and subsequent accepted changes are idempotent
   const again=planCatalogue(f);
   assert.deepEqual(again.additions,[]);
   assert.deepEqual(again.renames,[]);
+});
+
+test('age out only events after three consecutive complete hourly observations', () => {
+  const f = fixture();
+  f.live = f.live.concat(Array.from({ length: 7 }, (_, i) => ({
+    stream_id: 210 + i, category_id: '25', name: 'Event ' + i,
+  })));
+  f.providerStreams.push(...f.live.slice(3).map(row => ({ ...row, category_id: '20' })));
+  const first = planCatalogue({ ...f, slot: 10 });
+  assert.deepEqual(first.missing.map(row => row.stream_id), [210]);
+  assert.deepEqual(first.removals, []);
+  const second = planCatalogue({ ...f, slot: 11, previous: first.state });
+  assert.deepEqual(planCatalogue({ ...f, slot: 11, previous: second.state }).removals, []);
+  assert.deepEqual(planCatalogue({ ...f, slot: 13, previous: second.state }).removals, []);
+  const third = planCatalogue({ ...f, slot: 12, previous: second.state });
+  assert.deepEqual(third.removals, [210]);
+  assert.deepEqual(third.state.retired, ['210']);
+  f.live.find(row => row.stream_id === 210).epg_channel_id = 'approved-guide-id';
+  assert.deepEqual(planCatalogue({ ...f, slot: 12, previous: second.state }).removals, []);
+});
+
+test('withhold previously excluded streams and quality aliases across categories', () => {
+  const f = fixture();
+  f.providerStreams.push({ stream_id: 103, category_id: '10', name: 'Channel One FHD' });
+  const p = planCatalogue({ ...f, mode: 'daily', excludedIds: [101, 201] });
+  assert.deepEqual(p.additions, []);
+  assert.equal(p.pending.find(row => row.stream_id === 103).reason, 'possible_duplicate_or_excluded');
+});
+
+test('hold publication on mismatched category identity or a partial event group', () => {
+  const f = fixture();
+  f.mappings.groups['20'] = { target: '25', targetName: 'Events & PPV', sourceName: 'Unapproved' };
+  assert.throws(() => planCatalogue(f), /identity changed/);
+  f.mappings.groups['20'].sourceName = 'PPV';
+  f.mappings.minimumGroupCounts = { '20': 3 };
+  assert.throws(() => planCatalogue(f), /inventory floor/);
+});
+
+test('build matching Xtream, per-category and M3U assets and preserve existing routing', () => {
+  const f = fixture();
+  f.live[0].epg_channel_id = 'guide.one';
+  f.live.forEach((row, i) => { row.num = i + 1; });
+  const block = (sid, title, format, extra = '') =>
+    `#EXTINF:-1 tvg-name="${title}" tvg-id="guide.one",${title}\n${extra}{{BASE}}/live/{{USER}}/{{PASS}}/${sid}.${format}\n`;
+  const nz = block(100, 'Channel One', 'mpd', '#KODIPROP:inputstream.adaptive.license_type=com.widevine.alpha\n');
+  const assets = {
+    'catalog/live_categories.json': JSON.stringify(f.categories),
+    'catalog/live_all.json': JSON.stringify(f.live),
+    'catalog/by-category/1.json': JSON.stringify(f.live.slice(0, 1)),
+    'catalog/by-category/25.json': JSON.stringify(f.live.slice(1)),
+    'catalog/template.m3u': '#EXTM3U x-tvg-url="{{EPG_URL}}"\n' + nz + block(200, 'Event A', 'ts'),
+  };
+  const result = buildCatalogue({ ...f, assets, mode: 'daily' });
+  const rows = JSON.parse(result.assets['catalog/live_all.json']);
+  assert.deepEqual(rows.map(row => row.stream_id), [100, 101, 200, 201]);
+  assert.deepEqual(rows[0], f.live[0]);
+  assert.equal(rows[2].name, 'Event B');
+  assert.deepEqual(JSON.parse(result.assets['catalog/by-category/25.json']), rows.slice(2));
+  assert.equal(result.assets['catalog/live_categories.json'], assets['catalog/live_categories.json']);
+  assert.ok(result.assets['catalog/template.m3u'].includes(nz));
+  assert.match(result.assets['catalog/template.m3u'], /tvg-name="Event B".*,Event B/);
+  assert.ok(result.assets['catalog/template.m3u'].endsWith('{{BASE}}/live/{{USER}}/{{PASS}}/201.ts\n'));
+  assert.throws(() => buildCatalogue({ ...f, assets: { ...assets, 'catalog/by-category/25.json': '[]' } }), /category assets differ/);
 });
