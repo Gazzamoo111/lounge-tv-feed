@@ -1,3 +1,18 @@
+## Channel 9 Sydney restored | 27 November 2026 NZDT
+
+The [alternate BEST inventory probe](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45912859104)
+found no distinct non-Perth main Channel 9 feed, but decoded Sydney again.
+[PR #39](https://github.com/Gazzamoo111/lounge-tv-feed/pull/39) restored its
+original stream ID, Sydney EPG and exact M3U route as the first Australia entry.
+[Production verification](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45913291105)
+published `vcat-cleanup-36-45913291105-1`, preserved the guide pointer
+`vepg-auto-45877364012-1`, and passed reconciliation with zero changes.
+Authenticated production M3U readback showed Sydney first and Perth absent.
+Rollback snapshot is `vcat-cleanup-36-45913291105-1-rollback`.
+See [Issue #38](https://github.com/Gazzamoo111/lounge-tv-feed/issues/38).
+
+---
+
 ## Issue #36 catalogue cleanup | 27 November 2026 NZDT
 
 [PR #37](https://github.com/Gazzamoo111/lounge-tv-feed/pull/37) merged. The
