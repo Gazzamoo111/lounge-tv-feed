@@ -438,13 +438,70 @@ def rollback(client, bucket, pointer, etag, expected):
     report({'restored_catalogue': parent, 'replaced_catalogue': expected})
 
 
+def rehearse_qa_events(client, bucket, pointer, etag, expected):
+    require(bucket == QA and expected and pointer['release'] == expected,
+            'Rehearsal requires the expected isolated QA baseline')
+    assets = catalogue(client, bucket, expected)
+    live = json.loads(assets[LIVE])
+    categories = json.loads(assets[CATEGORIES])
+    target = str(categories[-1]['category_id'])
+    groups, streams = provider_inventory()
+    group_id = '1580'
+    provider_ids = {int(row['stream_id']) for row in streams if str(row['category_id']) == group_id}
+    existing = [row for row in live if int(row['stream_id']) in provider_ids]
+    require(existing and all(str(row['category_id']) == target for row in existing),
+            'QA rehearsal source group has lost its event-only match')
+    names = [row['category_name'] for row in groups if str(row['category_id']) == group_id]
+    require(len(names) == 1, 'QA rehearsal source category changed')
+    policy = {
+        'eventTarget': target,
+        'groups': {group_id: {'sourceName': names[0], 'target': target, 'targetName': categories[-1]['category_name']}},
+        'minimumGroupCounts': {group_id: len(existing)},
+        'maxChanges': 2,
+    }
+    journal_path = RUNS + 'qa-rehearsal-pending.json'
+    journal, journal_etag = get(client, bucket, journal_path, optional=True)
+    pending = set(json.loads(journal)) if journal else set()
+    excluded = set(suppressed_ids(bucket, live)) - pending
+    candidate = run_builder(assets, providerCategories=groups, providerStreams=streams, mappings=policy,
+                            mode='events', protectedIds=sorted(FREEVIEW), excludedIds=sorted(excluded))
+    plan = candidate['plan']
+    require(len(plan['additions']) == 2 and not any(plan[key] for key in ('renames', 'removals', 'missing')),
+            'QA rehearsal delta differs from the two approved event additions')
+    changed = {key: value.encode() for key, value in candidate['assets'].items()}
+    require(guide_contract(client, bucket, changed) == guide_contract(client, bucket, assets),
+            'QA rehearsal changes existing EPG mappings')
+    addition_ids = {row['stream_id'] for row in plan['additions']}
+    require([row for row in json.loads(changed[LIVE]) if row['stream_id'] not in addition_ids] == live,
+            'QA rehearsal changes existing catalogue rows or order')
+
+    release = release_id()
+    manifest = {'parent': expected, 'counts': plan['counts'], 'state': plan['state'],
+                'assets': {key: sha(value) for key, value in changed.items()}}
+    stage(client, bucket, release, changed, manifest)
+    require(active(client, bucket)[1] == etag, 'QA pointer changed during rehearsal staging')
+    put_json(client, bucket, journal_path, sorted(addition_ids),
+             **({'IfMatch': journal_etag} if journal_etag else {'IfNoneMatch': '*'}))
+    register(bucket, plan['additions'])
+    switch(client, bucket, pointer, etag, release)
+    candidate_pointer, candidate_etag = active(client, bucket)
+    rollback(client, bucket, candidate_pointer, candidate_etag, release)
+    baseline_pointer, baseline_etag = active(client, bucket)
+    require(baseline_pointer['release'] == expected, 'QA rollback readback failed')
+    switch(client, bucket, baseline_pointer, baseline_etag, release)
+    report({'qa_candidate_active': release, 'qa_baseline_restored_in_rehearsal': expected,
+            'added_events': len(addition_ids), 'category_id': target,
+            'rollback_verified': True, 'guide': baseline_pointer['epg_release']})
+
+
+
 def main():
     import boto3
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--target', choices=('production', 'qa'), required=True)
     parser.add_argument('--mode', choices=(BASELINE, 'inventory', 'events', 'daily'), default=BASELINE)
-    parser.add_argument('--operation', choices=('inspect', 'publish', 'rollback'), default='inspect')
+    parser.add_argument('--operation', choices=('inspect', 'publish', 'rollback', 'qa-rehearse'), default='inspect')
     parser.add_argument('--expected-release', default='')
     args = parser.parse_args()
     bucket = PROD if args.target == 'production' else QA
@@ -454,6 +511,9 @@ def main():
                           aws_access_key_id=os.environ['R2_ACCESS_KEY_ID'],
                           aws_secret_access_key=os.environ['R2_SECRET_ACCESS_KEY'])
     pointer, etag = active(client, bucket)
+    if args.operation == 'qa-rehearse':
+        rehearse_qa_events(client, bucket, pointer, etag, args.expected_release)
+        return
     if args.operation == 'rollback':
         rollback(client, bucket, pointer, etag, args.expected_release)
         return

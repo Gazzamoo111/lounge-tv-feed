@@ -15,7 +15,7 @@ on:
         default: baseline
       operation:
         type: choice
-        options: [inspect, publish, rollback]
+        options: [inspect, publish, rollback, qa-rehearse]
         default: inspect
       expected_release:
         description: Active catalogue release for rollback
@@ -49,8 +49,8 @@ jobs:
         env:
           TARGET: ${{ inputs.target || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-baseline]') && 'qa') || 'production' }}
           MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-inventory]') && 'inventory') || inputs.mode || 'baseline' }}
-          OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation || 'inspect' }}
-          EXPECTED_RELEASE: ${{ inputs.expected_release }}
+          OPERATION: ${{ github.event_name == 'schedule' && 'publish' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-rehearse]') && 'qa-rehearse') || inputs.operation || 'inspect' }}
+          EXPECTED_RELEASE: ${{ inputs.expected_release || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-rehearse]') && 'vqa-freeview-45136607167-1') }}
           PRODUCTION_ENABLED: ${{ vars.LTV_BEST_CATALOGUE_SYNC }}
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}

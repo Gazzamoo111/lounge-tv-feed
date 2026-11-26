@@ -44,6 +44,13 @@ class CatalogueReleaseTest(unittest.TestCase):
                          'BEST inventory get_live_categories returned HTTP 530 (Cloudflare error 1016)')
 
 
+    def test_qa_rehearsal_cannot_touch_production_or_unexpected_baseline(self):
+        r2 = FakeR2()
+        for bucket, expected in ((sync.PROD, 'vbaseline'), (sync.QA, 'vwrong')):
+            with self.assertRaisesRegex(sync.SyncError, 'expected isolated QA baseline'):
+                sync.rehearse_qa_events(r2, bucket, dict(r2.pointer), r2.etag, expected)
+        self.assertEqual(r2.mutations, [])
+
     def test_switch_and_rollback_preserve_latest_guide(self):
         r2 = FakeR2()
         old = dict(r2.pointer)
