@@ -1,3 +1,20 @@
+## Issue #36 catalogue cleanup | 27 November 2026 NZDT
+
+[QA stage and validation](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45907507016)
+verified `vcat-cleanup-36-45907507016-1` against production baseline
+`vcat-sync-45781618812-1`. The candidate suppresses 92 rows, moves 12 numbered
+kids feeds, retains 24 categories and preserves existing event/PPV order and
+retained EPG mappings. No Kids duplicate was removed without confirmed playback
+of an equivalent feed. The provider inventory exposed no Channel 9 National.
+The Sydney candidate retains its existing regional guide, but both direct BEST
+and the authenticated production playlist playback path returned upstream HTTP
+458. Production is still on the baseline and the existing reconciliation
+schedule remains enabled. [Draft PR #37](https://github.com/Gazzamoo111/lounge-tv-feed/pull/37)
+and [Issue #36](https://github.com/Gazzamoo111/lounge-tv-feed/issues/36)
+remain open pending working Channel 9 playback evidence.
+
+---
+
 ## BEST catalogue sync | 26 November 2026 NZDT
 
 ### Production additions-only catalogue sync live
