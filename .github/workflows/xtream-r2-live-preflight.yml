@@ -1,0 +1,32 @@
+name: Lounge TV read-only live R2 QA release preflight
+on:
+  push:
+    branches:
+      - feature/qa-catalog-audit-cleanup-20261123
+    paths:
+      - '.github/workflows/xtream-r2-live-preflight.yml'
+      - 'standalone-xtream/scripts/live_r2_preflight.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: loungetv-r2-readonly-preflight
+  cancel-in-progress: false
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    environment: lounge-tv-xtream-qa-refresh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned R2 client
+        run: python -m pip install boto3==1.42.78
+      - name: Read exact active QA R2 release and dry-run PR27 (never writes)
+        env:
+          R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+        run: python standalone-xtream/scripts/live_r2_preflight.py

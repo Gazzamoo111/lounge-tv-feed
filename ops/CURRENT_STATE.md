@@ -1,3 +1,131 @@
+## Relax playback restored and extra entries removed | 24 November 2026 NZDT
+
+The owner confirmed Relax playback recovered after the BEST entitlement change and requested removal of the 21 extra test entries. [Production cleanup and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45347800545) verified all 28 catalogue assets and changed only the catalogue pointer from `vprod-relax-45345094940-1` to `vprod-order-45153376801-1`, leaving the active EPG pointer intact. Relax has 25 original entries and the overall catalogue has 12,714. The BEST live 4K package remains enabled. The 21 D1 IDs remain available for rollback. To restore the overflow, switch only the catalogue pointer to `vprod-relax-45345094940-1` using the current ETag. Playback after removing the extra catalogue entries has not been separately verified.
+
+---
+
+## BEST Relax entitlement enabled | 24 November 2026 NZDT
+
+The signed-in BEST reseller portal listed one enabled line. The live `4K UHD 3840P` bouquet was disabled and the portal listed no separate Relax bouquet. Enabled that single live-TV entitlement and reopened the package to verify persistence. Compared all 128 checkbox states and confirmed only that one changed. No catalogue or EPG deploy. The separate 4K UHD category stays excluded from the Lounge TV catalogue; Relax retains all 46 entries. Awaiting owner playback confirmation on the existing Nuvio login. Rollback is to clear only the `4K UHD 3840P` checkbox for the same enabled line in the provider portal. [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28)
+
+---
+
+## Relax playback still failing | 24 November 2026 NZDT
+
+The owner confirmed none of the 46 Relax entries play after the catalogue release. A read-only search found separate archived BEST IDs in curator groups 1745 and 1747. All 45 archived playable-name entries in those groups are marked absent by the historical provider import and have no verified current media response. No current BEST reseller session or valid production test login was available. Failure hop remains unconfirmed. No additional deployment. Next verification requires the Relax inventory and an authenticated playback check on the BEST line assigned to production. [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28)
+
+---
+
+## Older Relax variants live | 24 November 2026 NZDT
+
+Owner authorised adding the older Relax variants alongside the existing channels. [Production release and readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45345094940) activated `vprod-relax-45345094940-1` on `tv.loungetv.nz`. Relax has 46 unique IDs and total catalogue count is 12,735. Added BEST IDs 895154–895174 to D1 (0 before, 21 verified after). Three catalogue objects changed and all 28 release objects were verified. All prior entries and positions, the category list, NZ, AU, PPV and EPG pointer `vepg-auto-45329870461-1` were preserved. New variants have blank guide IDs. Authenticated Nuvio playback is pending. To roll back, conditionally restore catalogue `vprod-order-45153376801-1` while retaining the guide active at rollback time. After the pointer restore, remove only the 21 additive D1 entries if a full rollback is required.
+
+See [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28).
+
+---
+
+## Relax playback incident | 24 November 2026 NZDT
+
+The owner reports all Relax channels fail in Nuvio. The production catalogue readback for `vprod-order-45153376801-1` lists 25 channels in Relax, all labelled 4K. The checked Worker source uses the customer's BEST line for ordinary stream IDs, and the legacy Relax inventory has no mapped backups. Live authentication boundary returned HTTP 401 for invalid credentials and 24 local Worker tests passed. The owner then confirmed HTTP 405 on all 25. Live GET and HEAD with invalid credentials received 401, while POST and OPTIONS returned the Worker's `method_not_allowed` 405. Cloudflare confirms Worker `8a90126d` still serves 100% of traffic and a temporary live trace captured the synthetic control. An earlier BEST trial had UHD/Relax entitlement gaps, and the historical production login was rejected. A current same-account playback comparison is needed to identify which server returned the device's 405. No release or rollback. See [Issue #28](https://github.com/Gazzamoo111/lounge-tv-feed/issues/28).
+
+---
+
+## Automatic production guide refresh enabled | 24 November 2026 NZDT
+
+Production EPG refresh is enabled on `main` at 37 minutes past every six hours (02:37, 08:37, 14:37 and 20:37 UTC). The workflow uses a durable, production-bucket-scoped Cloudflare key through the existing GitHub environment. It fetches only existing approved EPG sources, keeps still-valid listings when a replacement is weaker, skips unnecessary publishes, and requires at least 95% current and next-12-hour coverage across mapped visible streams plus all five protected Freeview listings. Scheduled output has a 2 GB budget and prunes only its own retired releases older than seven days, excluding the live guide and immediate rollback. No catalogue, ordering, playback, account, or Supabase changes.
+
+Local verification passed 21 Python and 24 JavaScript tests. [Live dry run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45259388863) passed. The [first workflow run on main](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45260057646) used the durable key and published `vepg-auto-45260057646-1`, validating all 3,241 guide assets and confirming the active pointer. Current coverage was 1,829 streams, 1,830 had listings in the next 12 hours, and 500 streams gained a longer schedule with zero visible regressions. The 09:37 NZDT clock-triggered run was not yet listed as of 09:42 NZDT. Owner reported the prior guide visible and playback working in Nuvio; a newly provisioned customer login has not been independently tested. Rollback is an ETag-conditional EPG pointer restore to `vepg-45242777277-1` with catalogue `vprod-order-45153376801-1` retained.
+
+---
+
+## Production EPG expiry and recovery | 24 November 2026 NZDT
+
+At 07:47 NZDT the live catalogue was still `vprod-order-45153376801-1`, and the production guide hash matched the prior release `vprod-freeview-45145113439-1`. On the same catalogue and same guide, 1,816 streams had a current listing at the prior evening's release time, 1,139 did at the first incident readback, and 677 had lost overnight coverage. At that readback, 699 mapped streams had no listings ending in the future. This was programme expiry, with the production EPG schedule inactive. No playlist reorder or mapping rollback was needed. [Incident readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45242099470).
+
+With owner approval, refreshed the guide using existing mapped sources and retained still-current listings where replacements were weaker. [Dry run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45242443243) passed. [Publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45242777277) validated 3,241 guide objects and conditionally switched only the EPG pointer to `vepg-45242777277-1`. At publish comparison, current coverage was 1,136 to 1,827 visible streams, next-12-hour coverage 1,131 to 1,831, and zero visible freshness regressions. Catalogue ID, channel order, accounts and routes stayed intact.
+
+[Live readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45242859328) verified 1,827 current and 1,833 future programme mappings on 12,714 streams, with 1,846 catalogue rows mapped to an XMLTV ID. NZ 26/26 mapped and AU 53/53 had current programmes, Sky Sport 1 and 8 regained current listings, and the TVNZ 1 and BBC One London short EPG matched XMLTV. Authenticated Nuvio device display was not tested. Automatic refresh remains inactive. Roll back with a conditional EPG-only pointer restore to `vprod-freeview-45145113439-1` while retaining the active catalogue. The old snapshot has the known expiry issue.
+
+---
+
+## Featured channel order live on production | 23 November 2026 NZDT
+
+Published catalogue `vprod-order-45153376801-1` at `tv.loungetv.nz`. All 24 categories now start with 20 featured entries selected using editorial recognition (and the previous curated order to fill unmatched slots), followed by an A–Z tail that sorts numeric names naturally. NZ begins TVNZ 1, TVNZ 2, Three, Whakaata Māori, Te Reo, and Sky Sport. UK TV & Entertainment begins BBC One, BBC Two, ITV1, Channel 4, and Channel 5. The same order is used in Xtream category lists and M3U. Top PPV picks skip identified dividers and no-event placeholders. This release changes channel positions/`num` only, preserves the 12,714 IDs and all playback blocks, and keeps categories, names, logos, and guide mappings intact. No 4K UHD category was reintroduced. All 6,756 PPV stream IDs are retained.
+
+[Dry run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45153268267), [publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45153376801), and [live readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45153641962) passed. Production keeps guide `vprod-freeview-45145113439-1` and its previous SHA. Public HTTPS responded; Nuvio display and device playback were not directly tested. For rollback, conditionally restore the previous catalogue `vprod-stations-45150504093-1`, retaining guide `vprod-freeview-45145113439-1` and previous guide `v20261123-issue22`. QA, Worker, accounts, and Supabase were untouched.
+
+---
+
+## Production follow-up duplicate cleanup | 23 November 2026 NZDT
+
+Published catalogue `vprod-stations-45150504093-1` at `tv.loungetv.nz`. Reviewed 98 additional pairs in the active catalogue using market and normalized names, including 27 pairs across categories, and kept one feed per pair. Existing valid guide data won when only one variant had it. Examples include UK SYFY, TNT Sports 1 and 4, Premier Sports 1 and 2, UK Nickelodeon, US BET, and repeated 24/7 titles. Distinct regional/language labels and timeshift qualifiers were preserved. The catalogue now has 12,714 unique stream IDs, 24 categories, no 4K UHD category, and all 6,756 PPV entries. NZ and Sky Sport routes were protected. The unified guide remained `vprod-freeview-45145113439-1` with the same SHA-256 and all five Freeview mappings.
+
+[Publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45150504093) verified 28 catalogue objects and switched the pointer conditionally. [Independent readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45150746509) confirmed exactly one survivor per reviewed pair, zero further groups under this rule, and no missing NZ guide IDs. Public HTTPS responded; authenticated device playback was not verified. Rollback is a conditional restore to catalogue `vprod-stations-45149065010-1` with guide `vprod-freeview-45145113439-1` and previous guide `v20261123-issue22`. QA, auth, Worker and Supabase were untouched.
+
+---
+
+## Production station consolidation and 4K UHD removal | 23 November 2026 NZDT
+
+Production catalogue `vprod-stations-45149065010-1` is active at `tv.loungetv.nz`. The customer-visible catalogue keeps BBC One London (392911), suppressing 22 other BBC One entries including BBC1 aliases and regional variants. A further 100 station variants were suppressed across the eligible categories. UK TV & Entertainment dropped from 147 to 73 entries. The broken 4K UHD category and all 79 entries were removed from browse results and M3U. Known distinct services, +1 feeds as separate services, protected NZ/Sky Sport routes and the 6,756 PPV records remain. The station rules preserve protected event and dedicated 24/7 categories, and classify channels using explicit UK aliases and category-bound quality normalization elsewhere.
+
+[Publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45149065010) verified all 28 catalogue objects prior to the conditional pointer switch. [Independent readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45149230079) confirmed 24 categories, 12,812 unique entries, one BBC One, no 4K UHD entries/category and no remaining matches under the applied station rules. The guide stayed on `vprod-freeview-45145113439-1` with its original SHA-256 and all five Freeview IDs present. Anonymous public endpoint responds. Device playback was not verified. Rollback restores the previous catalogue and guide pointers, both `vprod-freeview-45145113439-1`, preserving `previous_epg_release: v20261123-issue22`, using the current R2 pointer ETag. Account data, Worker, D1, Supabase and QA were not changed.
+
+---
+
+## Production catalogue cleanup and Freeview guide live | 23 November 2026 NZDT
+
+Activated `vprod-freeview-45145113439-1` at `tv.loungetv.nz`. The candidate reproduced the verified QA Freeview guide and QA playlist before the expanded duplicate pass. It removed 70 confirmed entries in total (13 from the earlier QA change and 57 from the full catalogue pass). Existing region labels, distinct schedules, protected NZ routes and the 6,756-entry PPV group were retained. The new unified guide includes all five mappings for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo, and the publish validated current listings. Production account records, playback routing, D1, Worker, Supabase and the legacy gateway were untouched.
+
+[Publish](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45145113439) verified 3,269 objects and atomically changed the production R2 pointer. [Independent production readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45145767999) verified 13,013 unique streams, 25 categories, all five NZ guide mappings, and zero remaining duplicates meeting the confirmed rule. 133 similar-name groups lacked enough matching guide evidence and were retained. Public HTTPS responded as expected without credentials. An authenticated device playback check and a fresh customer Nuvio test remain outstanding. The previous immutable production catalogue `v20261123-deduplicated25-au9` and guide `v20261123-issue22` are the conditional R2 pointer rollback pair. The temporary production deployment key expires after 24 hours.
+
+---
+
+## Scoped catalogue and Freeview fix live in QA | 23 November 2026 NZDT
+
+Activated QA release `vqa-freeview-45136607167-1` for both the standalone Cloudflare catalogue and unified EPG. Removed exactly 12 confirmed UK duplicates and one confirmed US duplicate. Restored the verified legacy guide IDs and current/upcoming schedules for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo. The release scope preserves the existing 25 categories and their order, Sky Sport order and 4K category, 64 AU rows, 6,756 PPV streams and the NZ stream IDs and playback metadata. The existing guide was extended by five channels and 1,087 genuine programme rows. Current QA is 13,070 unique visible streams and 2,854 XMLTV IDs.
+
+[Publish run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45136607167) validated 3,269 R2 objects and switched `current.json` conditionally. [Independent readback](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45138025650) confirmed the active pointer, all five guide mappings present and zero remaining candidates under the confirmed duplicate rule. The workflow is back in read-only mode. The unauthenticated QA Xtream HTTPS endpoint responded as expected. Authenticated Nuvio import and device playback were not checked. No changes to production, D1, the Worker or Supabase. Roll back by conditionally restoring `current.json` to `{"release":"v20261123-deduplicated25-au9","epg_release":"v20261123-issue22"}` using the current pointer ETag. Previous immutable assets remain available.
+
+---
+
+## Freeview mappings recovered from the legacy Nuvio feed | 23 November 2026 NZDT
+
+Read the deployed Supabase `lounge-core-live-m3u` and `lounge-core-live-xmltv` source without changing either function. The legacy playlist uses `mjh-tvnz-1`, `mjh-tvnz-2`, `mjh-three`, `mjh-maori-tv`, and `mjh-te-reo` for the five named channels. The legacy XMLTV function's existing static Lounge TV guide (`lounge-tv-player`, `epg-data`, `epg/guide.xml`) was downloaded and parsed. All five IDs are present. Each returned one current programme and upcoming counts of 240, 260, 160, 341 and 154 respectively. The direct MJH gzip URL returned HTML from this runner, so the existing static guide supplies the verified schedules.
+
+The QA catalogue is still `v20261123-deduplicated25-au9` with unified guide `v20261123-issue22`. No deployment or device verification occurred. For the scoped QA release, reuse the five legacy schedules in the unified guide and remove the 13 confirmed UK/US duplicates. The remaining deployment dependency is authenticated QA R2 read/write access in a runner that can stage the release and conditionally update `current.json`. The existing GitHub preflight reported missing R2 configuration and the browser session did not supply that publish path. Keep the current catalogue and guide pair as rollback.
+
+---
+
+## QA-only duplicate and Freeview follow-up | 23 November 2026 NZDT
+
+The signed-in Cloudflare dashboard confirmed QA R2 `current.json` points to catalogue `v20261123-deduplicated25-au9` and unified EPG `v20261123-issue22`. Running PR #27's existing UK/US planners against the active category JSON previews (162 UK, 157 US) found 13 UK and one US candidates. Twelve UK pairs and the US TNT pair shared a non-empty guide ID. UK Sky Arts 1 FHD/HD had blank guide IDs on both rows and remains unconfirmed. The requested scope excludes 4K removal and Sky Sport reordering.
+
+The five `epg_channel_id` values for TVNZ 1, TVNZ 2, Three, Whakaata Māori and Te Reo were blank in both the active catalogue and the archived `v20261123-premium25-nz5` NZ category. The earlier working mapping/configuration has not been recovered. The browser did not deliver the full catalogue download to the release workspace, and a conditional pointer write remains unavailable through the dashboard. No QA or production deployment. Existing tests passed (24 Node, 20 Python). Live QA returned `auth: 0` without credentials. Updated catalogue/guide and physical Nuvio verification remain pending. Active/rollback pair: `v20261123-deduplicated25-au9` + `v20261123-issue22`.
+
+---
+
+## Issue #26 direct Cloudflare R2 read blocked | 23 November 2026 NZDT
+
+Read-only live QA preflight added to [draft PR #27](https://github.com/Gazzamoo111/lounge-tv-feed/pull/27): `standalone-xtream/scripts/live_r2_preflight.py` and `.github/workflows/xtream-r2-live-preflight.yml`. [Run 45126061821](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45126061821) failed prior to contacting Cloudflare because the existing GitHub Actions `lounge-tv-xtream-qa-refresh` environment exposed **empty** `vars.LTV_XTREAM_R2_ACCOUNT_ID`, `secrets.LTV_XTREAM_R2_ACCESS_KEY_ID` and `secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY`. These secrets were not fetched or printed. Direct chat has no Cloudflare connector and container DNS is unavailable. This is a verified access blocker, not an EPG compilation failure.
+
+PR #27's cleanup code now **retains UK/US regional channels with distinct EPG IDs**, avoiding the earlier broad suppressions of BBC Scotland / US WEST. [Run 45126253761](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45126253761) passed the full Node/Python suite. No current active R2 catalogue, EPG or release pointer has been read or changed in this task, so no live before/after counts, QA publication or production promotion can be claimed.
+
+Latest verified previous Cloudflare R2 pair: catalogue `v20261123-deduplicated25-au9`, EPG `v20261123-issue22`; 25 category/13,083 visible/6,756 PPV, XMLTV 2,849 channel IDs/187,840 programmes (23 Nov verified prior release). Historical matched-now/next source compile was 3,235/4,439 (72.88%), **not a new live-R2 coverage measurement**. Keep the intact EPG until a genuine comparison is available. Isolated Cloudflare production `tv.loungetv.nz` and Supabase-backed legacy `connect.loungetv.nz` remain untouched. All remaining blockers logged to [Issue #26](https://github.com/Gazzamoo111/lounge-tv-feed/issues/26) and Issue #25.
+
+---
+
+## QA cleanup investigation and guarded staging | 23 November 2026 NZDT | NOT DEPLOYED
+
+[Issue #26](https://github.com/Gazzamoo111/lounge-tv-feed/issues/26), [draft PR #27](https://github.com/Gazzamoo111/lounge-tv-feed/pull/27) on branch `feature/qa-catalog-audit-cleanup-20261123`. Owner photos show blank Freeview/TVNZ schedules, crowded UK (BBC One/Two, ITV1, Channel 4/5) and US duplicate entries, unwanted 4K UHD, and interleaved NZ Sky Sport RAW and FHD streams. The photos do **not establish the exact login hostname**; both QA and isolated production must be checked before promotion.
+
+- **Latest known serving baseline (from earlier verified Issue #23/#25 logs, not re-fetched from R2 in this chat):** isolated QA `xtream-qa.loungetv.nz` has `v20261123-deduplicated25-au9` and `v20261123-issue22`; isolated production `tv.loungetv.nz` independently uses the same 25-category/13,083-entry catalogue and 2,849-guide-ID EPG. Both retain 6,756 live event/PPV entries. Existing legacy `connect.loungetv.nz`/Supabase remains active.
+- **Read-only full master audit:** approved historical source 14,717 streams, no stream-ID collisions. 343 exact-display-name groups (384 entries beyond first), 601 normalized-quality groups (892 beyond first), 249 shared-guide-ID groups (355 beyond first); these overlap and are **not** automatically confirmed redundant. Historical 13,297-entry pre-dedup QA snapshot had 81 4K, UK 205 and US 159. It is NOT the latest 13,083-serving release. The original raw source includes a malformed embedded PPV group-title that was already fixed in live QA.
+- **Draft PR code:** `standalone-xtream/scripts/cleanup_qa_catalog.py` stages guarded removal of the browsing 4K category, one preferred entry for five requested UK networks and conservative UK/US alias suppression, and NZ Sky Sport RAW-before-FHD reordering; output decision log for review, original M3U playback blocks/Freeview DRM and all 6,756 PPV preserved. `stage_nz_freeview_epg.py` independently stages five NZ guide mappings only from fresh genuine unique Freeview XMLTV programmes, with fail-closed ID, time and placeholder validation. **Neither script ran on active R2.**
+- **Tests:** six catalogue + three synthetic EPG unit tests PASS locally; historic adjusted 13,294-entry fixture dry-run and application invariants PASS with 81 4K, 105 UK and 56 US hidden (NOT claims about serving release). GitHub Actions [CI 45124968962](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45124968962) PASS after correcting an earlier CI path error; existing Node tests PASS. Stage was not published; physical Nuvio/device playback NOT TESTED for the candidate.
+- **Unresolved/required:** exact current Cloudflare QA R2 objects + ETag unavailable via this chat; re-run dry-run against 13,083 actual entries, review stream winners, integrate genuine five-channel NZ EPG into stable automatic refresh rather than one-time overwrite, regenerate a consistent R2 SHA manifest for the new immutable catalogue/EPG releases, verify media and Nuvio. Then promote QA only through conditional pointer switch with rollback, and isolated production only after device approval. No R2, Worker, D1, Supabase, customer or production change occurred. **Rollback references:** active QA/isolated production `{\"release\":\"v20261123-deduplicated25-au9\",\"epg_release\":\"v20261123-issue22\"}`; prior QA catalogue `v20261123-deduplicated25-ppv-meta`.
+
+---
+
 ## Isolated Cloudflare production deployed | 23 November 2026 NZDT
 
 Issue #25 is open. The production acceptance origin is **https://tv.loungetv.nz**. Worker `loungetv-xtream-production` is on version `8a90126d-709e-4f18-bd6c-1b631ac05bc4`. It uses dedicated D1 `loungetv-xtream-production` and private Standard R2 `loungetv-xtream-production-private`, with independent authentication and encryption secrets. The bucket has public and custom domains disabled. The production Worker has its workers.dev and preview endpoints disabled.

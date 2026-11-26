@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - feature/xtream-no-supabase-20261123
+      - feature/qa-catalog-audit-cleanup-20261123
     paths:
       - 'standalone-xtream/**'
       - '.github/workflows/xtream-standalone-tests.yml'
