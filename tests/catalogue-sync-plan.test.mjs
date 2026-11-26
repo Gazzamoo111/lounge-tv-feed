@@ -117,3 +117,15 @@ test('build matching Xtream, per-category and M3U assets and preserve existing r
   assert.ok(result.assets['catalog/template.m3u'].endsWith('{{BASE}}/live/{{USER}}/{{PASS}}/201.ts\n'));
   assert.throws(() => buildCatalogue({ ...f, assets: { ...assets, 'catalog/by-category/25.json': '[]' } }), /category assets differ/);
 });
+
+test('existing streams with no source group count as present and new ungrouped streams are held', () => {
+  const f = fixture();
+  f.providerStreams[0].category_id = null;
+  f.providerStreams.push({ stream_id: 301, category_id: null, name: 'Unassigned' });
+  const p = planCatalogue(f);
+  assert.deepEqual(p.missing, []);
+  assert.deepEqual(p.pending.at(-1), {
+    stream_id: 301, source_category_id: null, reason: 'missing_provider_group',
+  });
+  assert.ok(!p.additions.some(row => row.stream_id === 301));
+});

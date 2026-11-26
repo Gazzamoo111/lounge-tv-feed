@@ -85,10 +85,10 @@ export function planCatalogue({
   const nextMissing = {};
   const groups = new Map();
   for (const [streamId, row] of source) {
-    const group = id(row.category_id);
-    if (!sourceCats.has(group)) throw new Error('Unknown provider group');
+    const group = row.category_id == null ? null : id(row.category_id);
+    if (group !== null && !sourceCats.has(group)) throw new Error('Unknown provider group');
     const target = groupMap.get(group);
-    groups.set(group, (groups.get(group) ?? 0) + 1);
+    if (group !== null) groups.set(group, (groups.get(group) ?? 0) + 1);
     if (protectedSet.has(streamId)) continue;
 
     const old = current.get(streamId);
@@ -103,7 +103,7 @@ export function planCatalogue({
     }
     if (excluded.has(streamId) && !(retired.has(streamId) && target === eventId)) continue;
     if (!target) {
-      pending.push({ stream_id: Number(streamId), source_category_id: group, reason: 'unmapped_group' });
+      pending.push({ stream_id: Number(streamId), source_category_id: group, reason: group === null ? 'missing_provider_group' : 'unmapped_group' });
       continue;
     }
     if (mode === 'events' && target !== eventId) continue;

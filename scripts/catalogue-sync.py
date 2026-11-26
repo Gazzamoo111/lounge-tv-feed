@@ -238,6 +238,37 @@ def inspect_inventory(bucket, assets):
     report({'provider_groups': len(groups), 'provider_streams': len(streams),
             'production_group_overlaps': dict(counts), 'registered_suppressed_ids': len(excluded)})
 
+    categories = json.loads(assets[CATEGORIES])
+    event = categories[-1]
+    event_id = str(event['category_id'])
+    event_groups = {
+        source: row for source, row in counts.items()
+        if row.get(event_id) and source != 'None'
+        and not any(key.isdigit() and key != event_id for key in row)
+    }
+    if not event_groups:
+        return
+    source_names = {str(group['category_id']): group['category_name'] for group in groups}
+    require(event_groups.keys() <= source_names.keys(), 'Event candidate references an unknown provider group')
+    exploratory_policy = {
+        'eventTarget': event_id,
+        'groups': {
+            source: {'sourceName': source_names[source], 'targetName': event['category_name'], 'target': event_id}
+            for source in event_groups
+        },
+        'minimumGroupCounts': {source: max(1, row[event_id] * 85 // 100) for source, row in event_groups.items()},
+    }
+    result = run_builder(
+        assets, providerCategories=groups, providerStreams=streams, mappings=exploratory_policy,
+        mode='events', protectedIds=sorted(FREEVIEW), excludedIds=sorted(excluded),
+    )
+    plan = result['plan']
+    report({'read_only_event_candidate': {
+        'provisional_groups': len(event_groups),
+        'additions': len(plan['additions']), 'renames': len(plan['renames']),
+        'missing': len(plan['missing']), 'held': len(plan['pending']),
+    }})
+
 
 def snapshot(client, bucket, pointer, mode):
     assets = catalogue(client, bucket, pointer['release'])
