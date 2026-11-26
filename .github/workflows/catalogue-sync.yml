@@ -26,14 +26,14 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: lounge-tv-best-catalogue-${{ inputs.target || 'production' }}
+  group: lounge-tv-best-catalogue-${{ inputs.target || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-baseline]') && 'qa') || 'production' }}
   cancel-in-progress: false
 jobs:
   sync:
     if: github.event_name != 'schedule' || vars.LTV_BEST_CATALOGUE_SYNC == 'enabled'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment: ${{ inputs.target == 'qa' && 'lounge-tv-xtream-qa-refresh' || 'lounge-tv-xtream-production-refresh' }}
+    environment: ${{ (inputs.target == 'qa' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-baseline]'))) && 'lounge-tv-xtream-qa-refresh' || 'lounge-tv-xtream-production-refresh' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -47,7 +47,7 @@ jobs:
       - run: python -m pip install boto3==1.42.78
       - name: Validate and reconcile the designated catalogue
         env:
-          TARGET: ${{ inputs.target || 'production' }}
+          TARGET: ${{ inputs.target || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-baseline]') && 'qa') || 'production' }}
           MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-inventory]') && 'inventory') || inputs.mode || 'baseline' }}
           OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation || 'inspect' }}
           EXPECTED_RELEASE: ${{ inputs.expected_release }}
