@@ -16,8 +16,13 @@ jobs:
         with:
           persist-credentials: false
       - run: pip install boto3==1.42.78
+      - run: command -v ffmpeg || (sudo apt-get -qq update && sudo apt-get -qq install ffmpeg)
       - run: python scripts/catalogue-cleanup.py
         env:
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.LTV_XTREAM_R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.LTV_XTREAM_R2_SECRET_ACCESS_KEY }}
+          BEST_SYNC_ORIGIN: ${{ secrets.BEST_SYNC_ORIGIN }}
+          BEST_SYNC_USERNAME: ${{ secrets.BEST_SYNC_USERNAME }}
+          BEST_SYNC_PASSWORD: ${{ secrets.BEST_SYNC_PASSWORD }}
+          BEST_SYNC_ALLOW_HTTP: ${{ vars.BEST_SYNC_ALLOW_HTTP }}
