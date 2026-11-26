@@ -1,3 +1,18 @@
+## BEST catalogue sync | 26 November 2026 NZDT
+
+[Issue #34](https://github.com/Gazzamoo111/lounge-tv-feed/issues/34) and [draft PR #35](https://github.com/Gazzamoo111/lounge-tv-feed/pull/35).
+Cloudflare dashboard confirms `tv.loungetv.nz` serves Worker version
+`e0bce7dc-8f2d-45bd-80e2-0f8f14978882`. The [production read-only baseline](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45772091526)
+validated catalogue `vprod-order-45153376801-1`, active guide `vepg-auto-45746342394-1`,
+24 categories, 12,714 streams, 6,756 event/PPV IDs in final category 25, and 1,877 visible
+streams carrying EPG IDs. The run checked catalogue, group assets and playlist order against the live private R2 assets.
+Catalogue sync exists on the draft branch. Scheduled publishing, BEST-side inventory comparison,
+provider category mappings, isolated Cloudflare write/rollback and device playback remain unverified.
+Use [the sync runbook](CATALOGUE_SYNC.md) for the release gates and rollback.
+No production mutation from the sync work.
+
+---
+
 ## BEST VOD QA | 24 November 2026 NZDT
 
 [Issue #29](https://github.com/Gazzamoo111/lounge-tv-feed/issues/29). Production `n` v39 and Plus v8 retained. Matching production n source was verified at `947488d573b2ee6429fe9408dd3fbb925552b873`. Standalone `lounge-vod-qa` v1 is owner and catalogue-line restricted. Readback matched all 17 files, bundle `74e55f8a82c1ddaf38a3f2ac7bc0cd55ae32794f056f078a0ab690c16d46a3e1`. Gateway checks returned 200 for all six VOD actions. QA has 5,142 movies and 1,641 series with qualifying episode mappings. Production detail checks returned `entitlement_unavailable` and direct provider checks from the database returned 451. Live remains on the established DRM-aware fallback. Physical device verification and a fresh upstream inventory remain pending. See [audit and QA evidence](https://github.com/Gazzamoo111/lounge-tv-feed/blob/5a6d165d4c9ace3b14e0b3720051d22ff7309d9d/ops/VOD_AUDIT_20261124.md).

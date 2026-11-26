@@ -1,5 +1,6 @@
 """Release standalone Xtream catalogue assets through the existing Cloudflare bindings."""
 import argparse
+from collections import Counter, defaultdict
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
@@ -209,6 +210,20 @@ def run_builder(assets, **inputs):
     return json.loads(result.stdout)
 
 
+def inspect_inventory(bucket, assets):
+    rows = json.loads(assets[LIVE])
+    groups, streams = provider_inventory()
+    known = {int(row['stream_id']): row['category_id'] for row in rows}
+    excluded = set(suppressed_ids(bucket, rows))
+    counts = defaultdict(Counter)
+    for row in streams:
+        sid = int(row['stream_id'])
+        group = str(row['category_id'])
+        counts[group][known.get(sid, 'suppressed' if sid in excluded else 'outside_catalogue')] += 1
+    report({'provider_groups': len(groups), 'provider_streams': len(streams),
+            'production_group_overlaps': dict(counts), 'registered_suppressed_ids': len(excluded)})
+
+
 def snapshot(client, bucket, pointer, mode):
     assets = catalogue(client, bucket, pointer['release'])
     guide = guide_contract(client, bucket, assets)
@@ -222,6 +237,9 @@ def snapshot(client, bucket, pointer, mode):
     if mode == BASELINE:
         report(run_builder(assets, baselineOnly=True))
         return None
+    if mode == 'inventory':
+        inspect_inventory(bucket, assets)
+        return None
     mapping_raw, mapping_etag = get(client, bucket, RUNS + 'policy.json')
     policy = json.loads(mapping_raw)
     require(policy['bucket'] == bucket and policy['categories_sha256'] == sha(assets[CATEGORIES]),
@@ -229,6 +247,11 @@ def snapshot(client, bucket, pointer, mode):
     require(policy['groups'] and all(isinstance(value, dict) and
             {'target', 'targetName', 'sourceName'} <= value.keys() for value in policy['groups'].values()),
             'Exact source and target category mappings are required')
+    event_groups = [group for group, rule in policy['groups'].items()
+                    if str(rule['target']) == str(policy['eventTarget'])]
+    floors = policy.get('minimumGroupCounts', {})
+    require(event_groups and all(group in floors for group in event_groups),
+            'Every approved event group needs a complete-inventory floor')
     groups, streams = provider_inventory()
     raw, state_etag = get(client, bucket, STATE, optional=True)
     previous = json.loads(raw) if raw else {}
@@ -238,8 +261,8 @@ def snapshot(client, bucket, pointer, mode):
         # A successful pointer write may outlive the runner before its state update.
         manifest = json.loads(get(client, bucket, f'releases/{pointer["release"]}/sync.json')[0])
         previous.setdefault('retired', manifest['state']['retired'])
-    # Prior failed candidates can register IDs before the pointer changes. Their
-    # immutable manifests allow the same IDs to be retried without restoring exclusions.
+    # Prior failed candidates can register IDs before the pointer changes.
+    # Journal only those explicitly staged IDs as eligible for a retry.
     journal, _ = get(client, bucket, RUNS + 'registered-pending.json', optional=True)
     tracked = json.loads(journal) if journal else []
     excluded = set(suppressed_ids(bucket, rows)) - set(tracked)
@@ -364,7 +387,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--target', choices=('production', 'qa'), required=True)
-    parser.add_argument('--mode', choices=(BASELINE, 'events', 'daily'), default=BASELINE)
+    parser.add_argument('--mode', choices=(BASELINE, 'inventory', 'events', 'daily'), default=BASELINE)
     parser.add_argument('--operation', choices=('inspect', 'publish', 'rollback'), default='inspect')
     parser.add_argument('--expected-release', default='')
     args = parser.parse_args()

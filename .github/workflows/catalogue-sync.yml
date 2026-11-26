@@ -11,7 +11,7 @@ on:
         default: production
       mode:
         type: choice
-        options: [baseline, events, daily]
+        options: [baseline, inventory, events, daily]
         default: baseline
       operation:
         type: choice
@@ -22,10 +22,6 @@ on:
         type: string
   push:
     branches: [feature/catalogue-sync-34]
-    paths:
-      - '.github/workflows/catalogue-sync.yml'
-      - 'scripts/catalogue-sync.py'
-      - 'scripts/catalogue-sync-plan.mjs'
 
 permissions:
   contents: read
@@ -52,7 +48,7 @@ jobs:
       - name: Validate and reconcile the designated catalogue
         env:
           TARGET: ${{ inputs.target || 'production' }}
-          MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || inputs.mode || 'baseline' }}
+          MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-inventory]') && 'inventory') || inputs.mode || 'baseline' }}
           OPERATION: ${{ github.event_name == 'schedule' && 'publish' || inputs.operation || 'inspect' }}
           EXPECTED_RELEASE: ${{ inputs.expected_release }}
           PRODUCTION_ENABLED: ${{ vars.LTV_BEST_CATALOGUE_SYNC }}

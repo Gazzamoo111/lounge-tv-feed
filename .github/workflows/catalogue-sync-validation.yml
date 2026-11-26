@@ -2,7 +2,9 @@ name: Catalogue sync planner validation
 on:
   pull_request:
     paths:
-      - 'scripts/catalogue-sync-plan.mjs'
+      - 'scripts/catalogue-sync*'
+      - 'tests/test_catalogue_sync.py'
+      - '.github/workflows/catalogue-sync.yml'
       - 'tests/catalogue-sync-plan.test.mjs'
       - '.github/workflows/catalogue-sync-validation.yml'
   workflow_dispatch:
@@ -20,3 +22,4 @@ jobs:
         with:
           node-version: '24'
       - run: node --test tests/catalogue-sync-plan.test.mjs
+      - run: python3 -m unittest discover -s tests -p 'test_catalogue_sync.py'
