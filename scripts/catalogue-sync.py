@@ -280,6 +280,35 @@ def inspect_inventory(bucket, assets):
     report({'read_only_full_event_rehearsal': rehearsed_plan(event_groups, len(rows))})
 
 
+def approved_production_policy(assets, rows, groups, streams):
+    approved = json.loads(Path(__file__).with_name('catalogue-sync-approved-groups.json').read_text())
+    categories = json.loads(assets[CATEGORIES])
+    require(sha(assets[CATEGORIES]) == '18b818148b610594c387d2a9c87934f44cec747142c58280ab58569beaba9d5d',
+            'Production category structure differs from the approved baseline')
+    targets = {str(row['category_id']): row['category_name'] for row in categories}
+    source_names = {str(row['category_id']): row['category_name'] for row in groups}
+    by_id = {row['stream_id']: str(row['category_id']) for row in rows}
+    overlaps = defaultdict(Counter)
+    for row in streams:
+        target = by_id.get(int(row['stream_id']))
+        if target is not None:
+            overlaps[str(row['category_id'])][target] += 1
+    mappings = {}
+    floors = {}
+    for group, (target, minimum) in approved.items():
+        observed = overlaps[group]
+        if group not in source_names or set(observed) != {target} or observed[target] < minimum:
+            continue
+        mappings[group] = {'sourceName': source_names[group], 'target': target, 'targetName': targets[target]}
+        floors[group] = minimum
+    report({'verified_groups': len(mappings), 'held_groups': len(approved) - len(mappings),
+            'permanent_groups': sum(rule['target'] != '25' for rule in mappings.values())})
+    return {
+        'bucket': PROD, 'categories_sha256': sha(assets[CATEGORIES]), 'eventTarget': '25',
+        'groups': mappings, 'minimumGroupCounts': floors, 'maxChanges': 100,
+    }
+
+
 def snapshot(client, bucket, pointer, mode):
     assets = catalogue(client, bucket, pointer['release'])
     guide = guide_contract(client, bucket, assets)
@@ -296,8 +325,13 @@ def snapshot(client, bucket, pointer, mode):
     if mode == 'inventory':
         inspect_inventory(bucket, assets)
         return None
-    mapping_raw, mapping_etag = get(client, bucket, RUNS + 'policy.json')
-    policy = json.loads(mapping_raw)
+    groups, streams = provider_inventory()
+    if bucket == PROD:
+        policy = approved_production_policy(assets, rows, groups, streams)
+        mapping_etag = None
+    else:
+        mapping_raw, mapping_etag = get(client, bucket, RUNS + 'policy.json')
+        policy = json.loads(mapping_raw)
     require(policy['bucket'] == bucket and policy['categories_sha256'] == sha(assets[CATEGORIES]),
             'Private category policy does not match the active catalogue')
     require(policy['groups'] and all(isinstance(value, dict) and
@@ -308,7 +342,6 @@ def snapshot(client, bucket, pointer, mode):
     floors = policy.get('minimumGroupCounts', {})
     require(event_groups and all(group in floors for group in event_groups),
             'Every approved event group needs a complete-inventory floor')
-    groups, streams = provider_inventory()
     raw, state_etag = get(client, bucket, STATE, optional=True)
     previous = json.loads(raw) if raw else {}
     if previous.get('catalogue') != pointer['release']:
@@ -329,13 +362,17 @@ def snapshot(client, bucket, pointer, mode):
         'providerCategories': groups, 'providerStreams': streams, 'mappings': policy, 'mode': mode,
         'protectedIds': sorted({*FREEVIEW, *policy.get('protectedIds', [])}),
         'excludedIds': sorted(excluded | set(policy.get('excludedIds', []))),
-        'previous': previous, 'slot': int(time.time()) // 3600,
+        'previous': previous, 'slot': int(time.time()) // 3600, 'additionsOnly': True,
     }
     candidate = run_builder(assets, **document)
     plan = candidate['plan']
     require(not (set(plan['removals']) & set(protected)), 'Candidate removes a protected or EPG-linked stream')
     changed = {key: value.encode() for key, value in candidate['assets'].items()}
     require(guide_contract(client, bucket, changed) == guide, 'Candidate changes approved EPG coverage')
+    require(not (plan['renames'] or plan['removals']), 'Catalogue sync may only add streams')
+    additions = {row['stream_id'] for row in plan['additions']}
+    require([row for row in json.loads(changed[LIVE]) if row['stream_id'] not in additions] == rows
+            and changed[CATEGORIES] == assets[CATEGORIES], 'Catalogue sync changes existing rows or categories')
     totals = {key: len(plan[key]) for key in ('additions', 'renames', 'missing', 'removals', 'pending', 'replacements')}
     by_category = {}
     for row in plan['additions']:
@@ -396,8 +433,10 @@ def release_id():
 
 def publish(client, bucket, pointer, etag, output):
     assets, plan, state_etag, mapping_etag, tracked = output
-    _, current_policy_etag = get(client, bucket, RUNS + 'policy.json')
-    require(current_policy_etag == mapping_etag, 'Category policy changed during synchronisation')
+    require(not (plan['renames'] or plan['removals']), 'Catalogue sync may only add streams')
+    if mapping_etag is not None:
+        _, current_policy_etag = get(client, bucket, RUNS + 'policy.json')
+        require(current_policy_etag == mapping_etag, 'Category policy changed during synchronisation')
     release = pointer['release']
     if any(plan[key] for key in ('additions', 'renames', 'removals')):
         prune(client, bucket, pointer, etag)

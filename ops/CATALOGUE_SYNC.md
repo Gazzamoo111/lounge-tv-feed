@@ -32,46 +32,21 @@ Reuse the existing R2 credentials. The D1 query credential is
 `LTV_CATALOGUE_D1_TOKEN` or the existing environment `CLOUDFLARE_API_TOKEN`.
 The script queries only `stream_ids`; it does not read the customer table.
 
-Use the authoritative readback for the target bucket. Store its verified
-`catalogue-sync/policy.json` in that private bucket. The policy shape is:
+Production uses the approved source-to-category mappings in
+`scripts/catalogue-sync-approved-groups.json`. Each run verifies the original
+category-list checksum and sufficient stream-ID overlap in each approved group.
+Mixed or changed groups are held, as are historical D1 entries omitted from
+the visible catalogue and potential permanent-channel duplicates. Hourly runs
+admit event additions only. Daily runs also admit approved permanent additions.
+Both reject any modification to existing rows or categories. Automatic title
+changes and row removals are disabled. New streams start without an EPG mapping.
 
-```json
-{
-  "bucket": "<target private R2 bucket>",
-  "categories_sha256": "<SHA-256 from the target baseline run>",
-  "eventTarget": "<existing final Lounge TV category ID>",
-  "groups": {
-    "<BEST group ID>": {
-      "sourceName": "<exact provider category name>",
-      "target": "<existing Lounge TV category ID>",
-      "targetName": "<exact Lounge TV category name>"
-    }
-  },
-  "minimumGroupCounts": { "<BEST event group ID>": 100 },
-  "excludedIds": [],
-  "protectedIds": [],
-  "maxChanges": 1000
-}
-```
-
-Use observed group densities to set floors, and catalogue overlap to verify
-unambiguous mappings. Review groups that mix approved and excluded content before
-enabling them. Include explicitly suppressed IDs absent from the D1 allowlist in
-`excludedIds`. Include any independent source or override IDs in `protectedIds`.
-Historical D1 entries omitted from the visible catalogue are suppressed
-automatically. Unknown groups remain pending. A single missing response reports
-absence. An unmapped, unprotected event can age out after three consecutive
-complete hourly observations. Permanent channel disappearances and category
-changes always require review.
-
-Run `inspect` for `events` and `daily` before publishing in isolated QA. Use
-environment-specific credentials and a QA policy that matches QA assets. Verify
-new ID registration, D1 route and genuine playback with an authorised QA account.
-Refresh the Xtream playlist on Nuvio, find the new event in the Sports Hub,
-check Freeview/Sky and current/next, then rehearse the rollback in QA.
-Set the production enable variable after those checks pass and verify the first
-scheduled runs. Private `catalogue-sync/latest-report.json` records changes and
-pending categories after a successful publish operation.
+QA uses an environment-specific private category policy, or the explicit
+two-event rehearsal operation on its pinned QA baseline. On 26 November 2026 NZDT
+the operator approved production publication after automated validation and
+waived further manual Nuvio testing. Private
+`catalogue-sync/latest-report.json` records changes and pending classifications
+after a successful publish operation.
 
 ## Publication and rollback
 
@@ -79,8 +54,7 @@ The workflow validates JSON/M3U parity and preserves the frozen production EPG
 mapping contract. It stages and hashes all catalogue objects, verifies additive
 D1 registration and conditionally changes the shared `current.json` using its
 read ETag. A concurrent EPG write causes a stale catalogue publication to fail.
-The next run reads the latest pointers. Existing URLs and IDs remain in the
-catalogue unless an unprotected stale event meets the repeated-absence rule.
+The next run reads the latest pointers. Existing URLs and IDs remain in the catalogue.
 
 Disable scheduled publishing by clearing `LTV_BEST_CATALOGUE_SYNC`. Wait for
 any running catalogue job, then dispatch the sync workflow with

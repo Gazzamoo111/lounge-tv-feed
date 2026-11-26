@@ -129,3 +129,10 @@ test('existing streams with no source group count as present and new ungrouped s
   });
   assert.ok(!p.additions.some(row => row.stream_id === 301));
 });
+
+test('additions-only planning preserves existing event titles', () => {
+  const result = planCatalogue({ ...fixture(), additionsOnly: true });
+  assert.equal(result.additions.length, 1);
+  assert.deepEqual(result.renames, []);
+  assert.deepEqual(result.removals, []);
+});

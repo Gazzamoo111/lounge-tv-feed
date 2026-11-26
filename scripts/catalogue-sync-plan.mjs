@@ -34,7 +34,7 @@ function identity(value) {
 
 export function planCatalogue({
   categories, live, providerCategories, providerStreams, mappings, mode = 'events',
-  protectedIds = [], excludedIds = [], maxAdditions = 1000, previous = {}, slot,
+  protectedIds = [], excludedIds = [], maxAdditions = 1000, previous = {}, slot, additionsOnly = false,
 }) {
   if (!['events', 'daily'].includes(mode) || !Number.isInteger(maxAdditions) || maxAdditions < 1) {
     throw new Error('Invalid configuration');
@@ -95,7 +95,7 @@ export function planCatalogue({
     if (old) {
       if (target === eventId && id(old.category_id) === eventId) {
         const title = name(row.name);
-        if (title !== old.name) renames.push({ stream_id: Number(streamId), name: title });
+        if (!additionsOnly && title !== old.name) renames.push({ stream_id: Number(streamId), name: title });
       } else if (target && target !== id(old.category_id)) {
         replacements.push({ stream_id: Number(streamId), source_category_id: group, reason: 'category_changed' });
       }
@@ -130,7 +130,7 @@ export function planCatalogue({
     const category = id(row.category_id);
     missing.push({ stream_id: Number(streamId), category_id: category });
     // Use distinct accepted snapshots. A gap in hourly observations resets the count.
-    if (slot === undefined || category !== eventId || row.epg_channel_id) continue;
+    if (additionsOnly || slot === undefined || category !== eventId || row.epg_channel_id) continue;
     const prior = previous.missing?.[streamId];
     const count = slot === previous.slot ? (prior ?? 1) : slot - previous.slot === 1 ? (prior ?? 0) + 1 : 1;
     if (count >= 3) {
@@ -173,7 +173,7 @@ function playlistBlocks(text) {
   return { header, blocks };
 }
 
-export function buildCatalogue({ assets, providerCategories, providerStreams, mappings, mode, protectedIds, excludedIds, previous, slot, baselineOnly = false }) {
+export function buildCatalogue({ assets, providerCategories, providerStreams, mappings, mode, protectedIds, excludedIds, previous, slot, additionsOnly = false, baselineOnly = false }) {
   const categories = JSON.parse(assets[paths.categories]);
   const live = JSON.parse(assets[paths.live]);
   const { header, blocks } = playlistBlocks(assets[paths.m3u]);
@@ -190,7 +190,7 @@ export function buildCatalogue({ assets, providerCategories, providerStreams, ma
   if (baselineOnly) return { categories: categoryIds.length, streams: live.length };
 
   const plan = planCatalogue({ categories, live, providerCategories, providerStreams, mappings, mode, protectedIds, excludedIds,
-    previous, slot, maxAdditions: mappings.maxChanges ?? 1000 });
+    previous, slot, additionsOnly, maxAdditions: mappings.maxChanges ?? 1000 });
   if (!plan.additions.length && !plan.renames.length && !plan.removals.length) return { plan, assets };
   const titles = new Map(plan.renames.map(row => [id(row.stream_id), row.name]));
   const remove = new Set(plan.removals);

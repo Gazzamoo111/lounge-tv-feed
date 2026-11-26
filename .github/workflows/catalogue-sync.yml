@@ -21,7 +21,7 @@ on:
         description: Active catalogue release for rollback
         type: string
   push:
-    branches: [feature/catalogue-sync-34]
+    branches: [feature/catalogue-sync-34, main]
 
 permissions:
   contents: read
@@ -30,7 +30,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   sync:
-    if: github.event_name != 'schedule' || vars.LTV_BEST_CATALOGUE_SYNC == 'enabled'
+    if: >-
+      (github.event_name != 'schedule' || vars.LTV_BEST_CATALOGUE_SYNC == 'enabled') &&
+      (github.event_name != 'push' || github.ref != 'refs/heads/main' ||
+      contains(github.event.head_commit.message, '[catalogue-prod-publish]'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: ${{ (inputs.target == 'qa' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-baseline]'))) && 'lounge-tv-xtream-qa-refresh' || 'lounge-tv-xtream-production-refresh' }}
@@ -48,8 +51,8 @@ jobs:
       - name: Validate and reconcile the designated catalogue
         env:
           TARGET: ${{ inputs.target || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-baseline]') && 'qa') || 'production' }}
-          MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-inventory]') && 'inventory') || inputs.mode || 'baseline' }}
-          OPERATION: ${{ github.event_name == 'schedule' && 'publish' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-rehearse]') && 'qa-rehearse') || inputs.operation || 'inspect' }}
+          MODE: ${{ github.event_name == 'schedule' && (github.event.schedule == '47 4 * * *' && 'daily' || 'events') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-inventory]') && 'inventory') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-prod-validate]') && 'daily') || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[catalogue-prod-publish]') && 'daily') || inputs.mode || 'baseline' }}
+          OPERATION: ${{ github.event_name == 'schedule' && 'publish' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-rehearse]') && 'qa-rehearse') || (github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[catalogue-prod-publish]') && 'publish') || inputs.operation || 'inspect' }}
           EXPECTED_RELEASE: ${{ inputs.expected_release || (github.event_name == 'push' && contains(github.event.head_commit.message, '[catalogue-qa-rehearse]') && 'vqa-freeview-45136607167-1') }}
           PRODUCTION_ENABLED: ${{ vars.LTV_BEST_CATALOGUE_SYNC }}
           R2_ACCOUNT_ID: ${{ vars.LTV_XTREAM_R2_ACCOUNT_ID }}
