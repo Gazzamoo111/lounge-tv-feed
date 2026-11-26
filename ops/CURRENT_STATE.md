@@ -1,5 +1,25 @@
 ## BEST catalogue sync | 26 November 2026 NZDT
 
+### Inventory and isolated QA readback, 26 November 2026 NZDT
+
+The authorised BEST secrets are present in the production GitHub environment.
+The [inventory attempt and retry](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45774918884) returned HTTP 530.
+The [redacted diagnostic run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775113219)
+identified Cloudflare error 1016 at the BEST categories endpoint. This is an
+upstream origin DNS failure, so no authenticated inventory or category mappings
+were validated. Obtain a working HTTPS Xtream API origin for the same BEST line
+before retrying. No inference about the username or password is possible.
+
+[Isolated QA baseline](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775178488)
+validated catalogue and guide `vqa-freeview-45136607167-1`, 25 categories,
+13,070 streams, 6,756 events in final category 25 and 2,100 EPG-linked rows.
+Xtream JSON and M3U parity passed against private QA R2. The
+[branch validation workflow](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45775186367)
+passed 11 Node and 4 Python checks, including redacted error reporting.
+No candidate was published and no runtime or scheduled workflow was activated.
+Cloudflare publication and rollback, playback and physical-device acceptance remain pending.
+
+
 [Issue #34](https://github.com/Gazzamoo111/lounge-tv-feed/issues/34) and [draft PR #35](https://github.com/Gazzamoo111/lounge-tv-feed/pull/35).
 Cloudflare dashboard confirms `tv.loungetv.nz` serves Worker version
 `e0bce7dc-8f2d-45bd-80e2-0f8f14978882`. The [production read-only baseline](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45772091526)
