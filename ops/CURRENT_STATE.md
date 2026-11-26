@@ -1,19 +1,25 @@
 ## Issue #36 catalogue cleanup | 27 November 2026 NZDT
 
-[QA stage and validation](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45907507016)
-verified `vcat-cleanup-36-45907507016-1` against production baseline
-`vcat-sync-45781618812-1`. The candidate suppresses 92 rows, moves 12 numbered
-kids feeds, retains 24 categories and preserves existing event/PPV order and
-retained EPG mappings. No Kids duplicate was removed without confirmed playback
-of an equivalent feed. The provider inventory exposed no Channel 9 National.
-The Sydney candidate retains its existing regional guide, but both direct BEST
-and the authenticated production playlist playback path returned upstream HTTP
-458. Production is still on the baseline and the existing reconciliation
-schedule remains enabled. [Draft PR #37](https://github.com/Gazzamoo111/lounge-tv-feed/pull/37)
-and [Issue #36](https://github.com/Gazzamoo111/lounge-tv-feed/issues/36)
-record the scoped cleanup. The operator subsequently authorised publication
-with Sydney temporarily hidden if it still fails. Provider recovery is tracked
-separately in [Issue #38](https://github.com/Gazzamoo111/lounge-tv-feed/issues/38).
+[PR #37](https://github.com/Gazzamoo111/lounge-tv-feed/pull/37) merged. The
+[production run](https://github.com/Gazzamoo111/lounge-tv-feed/actions/runs/45910023387)
+staged the candidate in QA, published `vcat-cleanup-36-45910023387-1`,
+and matched all live catalogue assets to the QA candidate by readback.
+The catalogue has 12,631 entries in 24 categories with Events & PPV last.
+Suppressed 6 ESPN, 76 replay, 9 Big Brother, Channel 9 Perth and temporarily
+Channel 9 Sydney. Moved all 12 numbered kids feeds. No duplicate was removed
+without a confirmed working equivalent.
+
+Sydney's original stream row and regional guide are in the private cleanup
+report and rollback snapshot. Its D1 registration was verified without changes.
+[Issue #38](https://github.com/Gazzamoo111/lounge-tv-feed/issues/38) tracks
+provider recovery and separate restoration. EPG pointer
+`vepg-auto-45877364012-1` was preserved at publication. The rollback snapshot
+is `vcat-cleanup-36-45910023387-1-rollback` and the prior production release
+was `vcat-sync-45781618812-1`.
+
+Post-publish reconciliation passed with zero proposed catalogue changes and
+one mapped group held by existing overlap checks. The hourly and daily
+schedules remain enabled. Public gateway health passed.
 
 ---
 
